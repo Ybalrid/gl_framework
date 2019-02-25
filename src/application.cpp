@@ -38,7 +38,7 @@ void application::handle_event(const sdl::Event& e)
 {
 }
 
-application::application(int argc, char** argv)
+application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
 {
 	FreeImage_Initialise(); //RAII this!!
 
@@ -68,27 +68,19 @@ application::application(int argc, char** argv)
 	//set vsync mode
 	activate_vsync();
 
-	physfs_raii physics_fs(argc > 0 ? argv[0] : nullptr);
 	for (const auto pak : resource_paks)
 	{
 		std::cerr << "adding to resources " << pak << '\n';
-		PHYSFS_addToSearchPath(pak.c_str(), 1);
+		resource_system::add_location(pak);
 	}
+
 	//in at least one of these resource pack, there's the polutropon logo at it's root
-	auto file = PHYSFS_openRead("/polutropon.png");
-	std::vector<uint8_t> data; //byte buffer
-	if(file)
-	{
-		const auto size = PHYSFS_fileLength(file);
-		data.resize(size);
-		PHYSFS_read(file, data.data(), 1, size);
-		PHYSFS_close(file);
-	}
+	std::vector<uint8_t> data = resource_system::get_file("/polutropon.png");
 
 	FIBITMAP* image = nullptr;
 	if (!data.empty())
 	{
-		auto image_memory_stream = FreeImage_OpenMemory(data.data(), data.size());
+		const auto image_memory_stream = FreeImage_OpenMemory(data.data(), data.size());
 		const auto type = FreeImage_GetFileTypeFromMemory(image_memory_stream);
 		if (type != FIF_UNKNOWN)
 		{
@@ -106,6 +98,7 @@ application::application(int argc, char** argv)
 	{
 		const auto w = FreeImage_GetWidth(image);
 		const auto h = FreeImage_GetHeight(image);
+		const auto px_count = w * h;
 		const auto bpp = FreeImage_GetBPP(image);
 		const auto bits = FreeImage_GetBits(image);
 		const auto red_mask = FreeImage_GetRedMask(image);
@@ -113,15 +106,14 @@ application::application(int argc, char** argv)
 
 		if (bpp == 32 && red_mask > blue_mask)
 		{
-			uint32_t* data_array = reinterpret_cast<uint32_t*>(bits);
-			for(size_t i = 0; i < w*h; ++i)
+			auto* data_array = reinterpret_cast<uint32_t*>(bits);
+			for(size_t i = 0; i < px_count; ++i)
 			{
 				const auto pixel = data_array[i];
-				uint32_t r, g, b, a;
-				a = 0xff000000 & pixel;
-				r = 0x00ff0000 & pixel;
-				g = 0x0000ff00 & pixel;
-				b = 0x000000ff & pixel;
+				const auto a = 0xff000000 & pixel;
+				const auto r = 0x00ff0000 & pixel;
+				const auto g = 0x0000ff00 & pixel;
+				const auto b = 0x000000ff & pixel;
 
 				data_array[i] = (a) | (b << 16) | (g) | (r >> 16 );
 			}
@@ -133,8 +125,8 @@ application::application(int argc, char** argv)
 			color_type = GL_RGB;
 			if (red_mask > blue_mask)
 			{
-				uint8_t* data_array = reinterpret_cast<uint8_t*>(bits);
-				for (size_t i = 0; i < w*h; ++i)
+				auto* data_array = reinterpret_cast<uint8_t*>(bits);
+				for (size_t i = 0; i < px_count; ++i)
 				{
 					std::swap(data_array[i * 3 + 0], data_array[i * 3 + 2]);
 				}
@@ -154,18 +146,24 @@ application::application(int argc, char** argv)
 		FreeImage_Unload(image);
 	}
 
+#pragma pack(push, 1)
 	float plane[] = {
-			-0.9,		0.9,		0,			0,	1,
-			0.9,		0.9,		0,			1,	1,
-			-0.9,		-0.9,		0,			0,	0,
-			0.9,		-0.9,		0,			1,	0
+	//	 x=		 y=		z=		u=	v=
+		-0.9,	 0.9,	0,		0,	1,
+		 0.9,	 0.9,	0,		1,	1,
+		-0.9,	-0.9,	0,		0,	0,
+		 0.9,	-0.9,	0,		1,	0
 	};
 
 	unsigned int plane_indices[] =
 	{
-		0,1,2,
-		1,3,2
+		0, 1, 2, //triangle 0
+		1, 3, 2  //triangle 1
 	};
+#pragma pack(pop)
+
+	const auto index_count = sizeof(plane_indices) / sizeof(unsigned int);
+
 	GLuint VBO = 0, EBO = 0;
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -184,35 +182,37 @@ application::application(int argc, char** argv)
 	glBindVertexArray(0);
 
 	const char* vertex_source = R"GLSL(
-	#version 330 core
 
-	layout (location = 0) in vec3 in_pos;
-	layout (location = 1) in vec2 in_uv;
+#version 330 core
 
-	out vec2 texture_coords;
+layout (location = 0) in vec3 in_pos;
+layout (location = 1) in vec2 in_uv;
+
+out vec2 texture_coords;
 
 
-	void main()
-	{
-		gl_Position = vec4(in_pos, 1.0);
-		texture_coords = in_uv;
-	}
-	)GLSL";
+void main()
+{
+	gl_Position = vec4(in_pos, 1.0);
+	texture_coords = in_uv;
+}
+
+)GLSL";
 
 	const char* fragment_source = R"GLSL(
-	
-	#version 330 core
 
-	out vec4 FragColor;
-	in vec2 texture_coords;
-	uniform sampler2D in_texture;
+#version 330 core
 
-	void main()
-	{
-		FragColor = texture(in_texture, texture_coords);
-		//FragColor = vec4(texture_coords.x, texture_coords.y, 0.0, 1.0);
-	}
-	)GLSL";
+out vec4 FragColor;
+in vec2 texture_coords;
+uniform sampler2D in_texture;
+
+void main()
+{
+	FragColor = texture(in_texture, texture_coords);
+}
+
+)GLSL";
 
 	GLint success = 0; GLchar info_log[512] = {0};
 	const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -270,7 +270,7 @@ application::application(int argc, char** argv)
 		glUseProgram(program);
 		glBindTexture(GL_TEXTURE_2D, polutropon_logo_texture);
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr);
 
 		//swap buffers
 		window.gl_swap();

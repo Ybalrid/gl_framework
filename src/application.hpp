@@ -7,8 +7,7 @@
 
 #include <vector>
 #include <string>
-
-#include <physfs.h>
+#include "resource_system.hpp"
 #include <FreeImage.h>
 class application
 {
@@ -16,6 +15,8 @@ class application
 	static void activate_vsync();
 
 	void handle_event(const sdl::Event& e);
+
+	resource_system resources;
 
 public:
 	application(int argc, char** argv);
