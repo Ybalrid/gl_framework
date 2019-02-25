@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(test_project)
 set(CMAKE_CXX_STANDARD 17)
-file(GLOB sources CONFIGURE_DEPENDS ./src/*.cpp ./src/*.hpp ./README.md)
+file(GLOB sources CONFIGURE_DEPENDS ./src/*.cpp ./src/*.hpp ./unpacked_res/shaders/*.glsl ./README.md)
 
 add_subdirectory(third_party/physfs/)
 
@@ -16,4 +16,8 @@ target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_p
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/chaiscript/include/chaiscript")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
 target_include_directories(test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
-target_link_libraries(test_project_exe PRIVATE physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES}) 
+target_link_libraries(test_project_exe PRIVATE physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES})
+
+add_custom_command(TARGET test_project_exe POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
+COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res ${CMAKE_BINARY_DIR}/unpakced_res)

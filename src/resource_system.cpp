@@ -1,7 +1,15 @@
 #include "resource_system.hpp"
-
+#include <iostream>
 resource_system::resource_system(char* arg0): pysics_fs(arg0)
 {
+#if 0
+	std::cout << "Initialized resource system for " << arg0 << '\n';
+	for (auto i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
+	{
+		printf("Supported archive: [%s], which is [%s].\n",
+			(*i)->extension, (*i)->description);
+	}
+#endif
 }
 
 void resource_system::add_location(const std::string& real_path, bool last)

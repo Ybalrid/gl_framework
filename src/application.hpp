@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include "resource_system.hpp"
+#include "texture.hpp"
 #include <FreeImage.h>
 class application
 {
