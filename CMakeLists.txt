@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(test_project)
 set(CMAKE_CXX_STANDARD 17)
-file(GLOB sources CONFIGURE_DEPENDS ./src/*.cpp ./src/*.hpp ./unpacked_res/shaders/*.glsl ./README.md)
+file(GLOB sources CONFIGURE_DEPENDS ./src/*.cpp ./src/*.hpp ./unpacked_res/shaders/*.glsl  ./third_party/imgui/imgui*.cpp ./third_party/imgui/examples/imgui_impl_sdl.cpp ./third_party/imgui/examples/imgui_impl_opengl3.cpp ./README.md)
 
 add_subdirectory(third_party/physfs/)
 
@@ -17,6 +17,8 @@ target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_p
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/glm/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
+target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
+target_compile_definitions(test_project_exe PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLEW)
 target_include_directories(test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 target_link_libraries(test_project_exe PRIVATE physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES})
 

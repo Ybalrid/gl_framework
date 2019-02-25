@@ -7,6 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "camera.hpp"
 
+#include "gui.hpp"
+
 std::vector<std::string> application::resource_paks;
 
 void application::activate_vsync()
@@ -69,6 +71,8 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		abort();
 	}
 
+	gui ui(window, context);
+
 	std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
 	//set vsync mode
 	activate_vsync();
@@ -119,6 +123,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		//event polling
 		while (event.poll())
 		{
+			ui.handle_event(event);
 			switch (event.type)
 			{
 			case SDL_QUIT:
@@ -129,6 +134,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			}
 		}
 
+		ui.frame();
 		const auto size = window.size();
 		cam.update_projection(size.x, size.y);
 		
@@ -148,6 +154,10 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		model = glm::translate(model, glm::vec3(-4.f, 0.f, 0));
 		textured_plane.set_mvp_matrix(cam.view_porjection_matrix() * model);
 		textured_plane.draw();
+
+		ImGui::ShowDemoWindow();
+
+		ui.render();
 
 		//swap buffers
 		window.gl_swap();
