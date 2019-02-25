@@ -57,7 +57,7 @@ public:
 	{
 		auto image_data = resource_system::get_file(virtual_path);
 
-		const auto image_memory_stream = FreeImage_OpenMemory(image_data.data(), image_data.size());
+		const auto image_memory_stream = FreeImage_OpenMemory(image_data.data(), unsigned long(image_data.size()));
 		const auto image_type = FreeImage_GetFileTypeFromMemory(image_memory_stream);
 
 		if (image_type == FIF_UNKNOWN)

@@ -28,7 +28,7 @@ public:
 			glDeleteTextures(1, &name);
 	}
 
-	void bind(GLenum target = GL_TEXTURE_2D)
+	void bind(GLenum target = GL_TEXTURE_2D) const
 	{
 		glBindTexture(target, name);
 	}

@@ -1,8 +1,8 @@
 #pragma once
 #include "application.hpp"
-#include "physfs_raii.hpp"
 #include "image.hpp"
 #include "shader.hpp"
+#include "renderable.hpp"
 
 std::vector<std::string> application::resource_paks;
 
@@ -83,42 +83,22 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		polutropon_logo_texture.generate_mipmaps();
 	}
 
-#pragma pack(push, 1)
-	float plane[] = {
+	std::vector<float> plane = {
 	//	 x=		 y=		z=		u=	v=
-		-0.9,	 0.9,	0,		0,	1,
-		 0.9,	 0.9,	0,		1,	1,
-		-0.9,	-0.9,	0,		0,	0,
-		 0.9,	-0.9,	0,		1,	0
+		-0.9f,	 0.9f,	0,		0,	1,
+		 0.9f,	 0.9f,	0,		1,	1,
+		-0.9f,	-0.9f,	0,		0,	0,
+		 0.9f,	-0.9f,	0,		1,	0
 	};
 
-	unsigned int plane_indices[] =
+	std::vector<unsigned int> plane_indices =
 	{
 		0, 1, 2, //triangle 0
 		1, 3, 2  //triangle 1
 	};
-#pragma pack(pop)
-
-	const auto index_count = sizeof(plane_indices) / sizeof(unsigned int);
-
-	GLuint VBO = 0, EBO = 0;
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	GLuint VAO = 0;
-	glGenVertexArrays(1, &VAO);
-
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(plane), plane, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(plane_indices), plane_indices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	glBindVertexArray(0);
 
 	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+	renderable textured_plane(simple_shader, polutropon_logo_texture, plane, plane_indices, 3 + 2, 0, 3);
 	//set opengl clear color
 	glClearColor(0.2f, 0.3f, 0.4f, 1);
 
@@ -141,10 +121,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		//clear viewport
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		simple_shader.use();
-		polutropon_logo_texture.bind();
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr);
+		textured_plane.draw();
 
 		//swap buffers
 		window.gl_swap();

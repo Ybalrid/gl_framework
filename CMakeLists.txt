@@ -15,6 +15,8 @@ add_executable(test_project_exe ${sources})
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/chaiscript/include/chaiscript")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
+target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/glm/")
+target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
 target_include_directories(test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 target_link_libraries(test_project_exe PRIVATE physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES})
 

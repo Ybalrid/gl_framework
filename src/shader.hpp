@@ -3,11 +3,22 @@
 #include <GL/glew.h>
 #include <vector>
 #include "resource_system.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 class shader
 {
 	GLuint program = 0;
+
+	GLint uniform_indices[1];
+
 public:
+
+	enum class uniform
+	{
+		mvp = 0
+	};
+
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
 	{
 		//Load source files as C strings
@@ -58,6 +69,8 @@ public:
 
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
+
+		uniform_indices[int(uniform::mvp)] = glGetUniformLocation(program, "mvp");
 		
 	}
 
@@ -81,4 +94,8 @@ public:
 	}
 
 	//todo set uniforms
+	void set_uniform(uniform type, const glm::mat4& matrix) const
+	{
+		glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
+	}
 };
