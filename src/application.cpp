@@ -2,6 +2,7 @@
 #include "application.hpp"
 #include "physfs_raii.hpp"
 #include "image.hpp"
+#include "shader.hpp"
 
 std::vector<std::string> application::resource_paks;
 
@@ -117,46 +118,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-	auto frag_bytes = resource_system::get_file("/shaders/simple.frag.glsl");
-	auto vert_bytes = resource_system::get_file("/shaders/simple.vert.glsl");
-	//transform into C strings by pushing a null terminator
-	frag_bytes.push_back(0);
-	vert_bytes.push_back(0);
-	const char* fragment_source = (const char*)frag_bytes.data();
-	const char* vertex_source = (const char*)vert_bytes.data();
-
-	GLint success = 0; GLchar info_log[512] = {0};
-	const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-	const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(vertex_shader, 1, &vertex_source, NULL);
-	glShaderSource(fragment_shader, 1,&fragment_source, NULL);
-	glCompileShader(vertex_shader);
-	glCompileShader(fragment_shader);
-	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-	if(!success)
-	{
-		glGetShaderInfoLog(vertex_shader, sizeof(info_log), nullptr, info_log);
-		std::cout << "vertex shader compile error " << info_log << '\n';
-	}
-	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-	if(!success)
-	{
-		glGetShaderInfoLog(fragment_shader, sizeof(info_log), nullptr, info_log);
-		std::cout << "fragment shader compile error " << info_log << '\n';
-	}
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
-	glLinkProgram(program);
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if(!success)
-	{
-		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
-		std::cout << "shader program link error " << info_log << '\n';
-	}
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
-
+	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	//set opengl clear color
 	glClearColor(0.2f, 0.3f, 0.4f, 1);
 
@@ -178,7 +140,8 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		//clear viewport
 		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(program);
+
+		simple_shader.use();
 		polutropon_logo_texture.bind();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr);
