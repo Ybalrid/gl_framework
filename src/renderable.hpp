@@ -36,7 +36,7 @@ class renderable
 
 public:
 
-	renderable(shader& program, texture& tex, const std::vector<float>& vertex_buffer, const std::vector<unsigned int>& index_buffer, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, GLenum buffer_usage = GL_STATIC_DRAW, GLenum draw_operation = GL_TRIANGLES):
+	renderable(shader& program, texture& tex, const std::vector<float>& vertex_buffer, const std::vector<unsigned int>& index_buffer, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, GLenum draw_operation = GL_TRIANGLES, GLenum buffer_usage = GL_STATIC_DRAW):
 		shader_program(&program), main_texture(&tex), draw_mode(draw_operation)
 	{
 		glGenBuffers(1, &VBO);

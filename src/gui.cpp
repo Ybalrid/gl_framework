@@ -1,6 +1,4 @@
-
 #include "gui.hpp"
-
 
 void dummy()
 {
