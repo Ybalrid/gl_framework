@@ -78,17 +78,6 @@ void application::draw_debug_ui()
 	}
 }
 
-void application::animate(scene_object& plane0, scene_object& plane1, scene_object& plane2)
-{
-	return;
-	glm::mat4 model = glm::rotate(glm::mat4(1.f), glm::radians(45.f * (float(SDL_GetTicks())/1000.f)), glm::vec3(0, 1.f, 0));
-	model = glm::scale(model, (2 + glm::sin(SDL_GetTicks() / 1000.f)) * glm::vec3(0.5f) );
-	plane0.set_model(model);
-	model = glm::translate(model, glm::vec3(2.f, 0.f, 0));
-	plane1.set_model(model);
-	model = glm::translate(model, glm::vec3(-4.f, 0.f, 0));
-	plane2.set_model(model);
-}
 
 void application::update_timing()
 {
@@ -176,25 +165,17 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	//set opengl clear color
 	glClearColor(0.2f, 0.3f, 0.4f, 1);
 
-	gltf_loader loader(simple_shader, polutropon_logo_texture);
+	gltf_loader gltf(simple_shader, polutropon_logo_texture);
 
 	camera cam;
-	{
-		auto tr = glm::translate(glm::mat4(1.f), glm::vec3(0, 3.f, 3.f));
-		auto rot = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(-1.f, 0, 0));
-		cam.set_model(tr*rot);
-	}
+	cam.xform.set_position({ 0,10, 0 });
+	cam.xform.set_orientation( glm::angleAxis(glm::radians(-90.f), transform::X_AXIS) );
 
 	camera cam_2d;
 	cam_2d.set_projection_type(camera::projection_type::ortho);
-	{
-		
-		auto tr = glm::translate(glm::mat4(1.f), glm::vec3(0, 5.f, 0));
-		auto rot = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(-1.f, 0, 0));
-		cam_2d.set_model(tr*rot);
-	}
+	cam.xform.set_position({ 0,5,0 });
 
-	auto duck_renderable = loader.load_mesh("/gltf/Duck.glb", 0);
+	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 
 	scene_object plane0(textured_plane);
 	scene_object plane1(textured_plane);
@@ -238,8 +219,8 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		duck_renderable.set_light_0_position(light_position_0);
 		textured_plane.set_light_0_position(light_position_0);
+		duck.xform.set_scale(0.01f * transform::UNIT_SCALE);
 
-		duck.set_model(glm::scale(glm::mat4(1.f), glm::vec3(0.01f)));
 		//plane0.draw(cam.view_porjection_matrix());
 		plane1.draw(cam);
 		plane2.draw(cam);

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "transform.hpp"
 
 class camera
 {
@@ -10,10 +9,12 @@ public:
 	enum projection_type { perspective, ortho };
 private:
 	projection_type current_projection{ projection_type::perspective };
-	glm::mat4 model, projection;
-	GLfloat near_clip = 0.1f, far_clip = 1000.f, fov = 45.f;
+	glm::mat4 projection{1.f};
 
 public:
+	transform xform;
+	GLfloat near_clip = 0.1f, far_clip = 1000.f, fov = 45.f;
+
 	void set_projection_type(projection_type type)
 	{
 		current_projection = type;
@@ -21,7 +22,7 @@ public:
 
 	glm::mat4 view_matrix() const
 	{
-		return glm::inverse(model);
+		return glm::inverse(xform.get_model());
 	}
 
 	glm::mat4 projection_matrix() const
@@ -54,15 +55,5 @@ public:
 		}
 		break;
 		}
-	}
-
-	void set_fov(GLfloat degree)
-	{
-		fov = degree;
-	}
-
-	void set_model(glm::mat4 matrix)
-	{
-		model = matrix;
 	}
 };

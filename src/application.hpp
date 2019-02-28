@@ -20,7 +20,6 @@ class application
 
 	void handle_event(const sdl::Event& e);
 	void draw_debug_ui();
-	void animate(scene_object& plane0, scene_object& plane1, scene_object& plane2);
 	void update_timing();
 
 	resource_system resources;

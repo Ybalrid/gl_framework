@@ -65,13 +65,13 @@ void main()
 	float diffuse_factor = max(dot(normalized_normals, light_direction), 0.0);
 	vec3 diffuse_color = diffuse_factor * light_color;
 	vec4 textured_diffuse_color = vec4(diffuse_color, 1) * texture(in_texture, texture_coords);
+
 	//specular calculation
 	//TODO get the view position from uniform ( = camera's position)
 	vec3 view_pos = ExtractCameraPos(view * model);
 	vec3 view_dir = normalize(view_pos - world_position);
 	vec3 reflect_dir = (reflect(-light_direction, normalized_normals));
 	float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 64);
-
 	float specular_strengh = 0.01;
 	vec4 specular_color = vec4(specular_strengh + spec * light_color, 1);
 
