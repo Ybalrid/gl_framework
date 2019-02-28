@@ -11,6 +11,11 @@ class texture
 		glGenTextures(1, &name);
 	}
 
+	void steal_guts(texture& o)
+	{
+		name = o.name;
+		o.name = 0;
+	}
 
 public:
 	texture()
@@ -28,8 +33,21 @@ public:
 			glDeleteTextures(1, &name);
 	}
 
+	texture(const texture&) = delete;
+	texture& operator=(const texture&) = delete;
+	texture(texture&& o) noexcept
+	{
+		steal_guts(o);
+	}
+	texture& operator=(texture&& o) noexcept
+	{
+		steal_guts(o);
+		return *this;
+	}
+
 	void bind(GLenum target = GL_TEXTURE_2D) const
 	{
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(target, name);
 	}
 

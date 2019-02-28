@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderable.hpp"
+#include "camera.hpp"
 
 class scene_object
 {
@@ -13,14 +14,21 @@ public:
 
 	}
 
-	void draw(glm::mat4 vp_matrix)
+	void draw(const camera& camera)
 	{
-		mesh.set_mvp_matrix(vp_matrix*model);
+		mesh.set_model_matrix(model);
+		mesh.set_view_matrix(camera.view_matrix());
+		mesh.set_mvp_matrix(camera.view_porjection_matrix() *model);
 		mesh.draw();
 	}
 
 	void set_model(glm::mat4 matrix)
 	{
 		model = matrix;
+	}
+
+	glm::mat4 get_model() const
+	{
+		return model;
 	}
 };

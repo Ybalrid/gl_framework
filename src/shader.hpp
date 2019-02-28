@@ -9,14 +9,17 @@
 class shader
 {
 	GLuint program = 0;
-
-	GLint uniform_indices[1];
+	GLint uniform_indices[10];
 
 public:
 
 	enum class uniform
 	{
-		mvp = 0
+		mvp = 0,
+		model = 1,
+		normal = 2,
+		view = 3,
+		light_position_0 = 4
 	};
 
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
@@ -71,6 +74,10 @@ public:
 		glDeleteShader(fragment_shader);
 
 		uniform_indices[int(uniform::mvp)] = glGetUniformLocation(program, "mvp");
+		uniform_indices[int(uniform::model)] = glGetUniformLocation(program, "model");
+		uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
+		uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
+		uniform_indices[int(uniform::light_position_0)] = glGetUniformLocation(program, "light_position_0");
 		
 	}
 
@@ -97,5 +104,15 @@ public:
 	void set_uniform(uniform type, const glm::mat4& matrix) const
 	{
 		glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
+	}
+
+	void set_uniform(uniform type, const glm::mat3& matrix) const
+	{
+		glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
+	}
+
+	void set_uniform(uniform type, const glm::vec3& v) const
+	{
+		glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
 	}
 };

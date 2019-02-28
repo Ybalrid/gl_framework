@@ -54,8 +54,7 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 		return false;
 	}
 
-	const auto freeimage_image = FreeImage_LoadFromMemory(type, image_stream);
-	FreeImage_CloseMemory(image_stream);
+	auto freeimage_image = FreeImage_LoadFromMemory(type, image_stream);
 
 	if (!freeimage_image)
 	{
@@ -66,7 +65,6 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 
 	const auto w = FreeImage_GetWidth(freeimage_image);
 	const auto h = FreeImage_GetWidth(freeimage_image);
-	const auto bits = FreeImage_GetBits(freeimage_image);
 	const auto bpp = FreeImage_GetBPP(freeimage_image);
 
 	if(req_width && w != req_width)
@@ -87,14 +85,28 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 
 	image->width = w;
 	image->height = h;
-	image->component = bpp / 8U;
-	image->image.resize(size_t(w*h*image->component));
-	std::copy(bits, bits + image->component * w*h, image->image.begin());
-	FreeImage_Unload(freeimage_image);
-	return true;
+	FIBITMAP* converted32bit = FreeImage_ConvertTo32Bits(freeimage_image);
+	FreeImage_FlipVertical(converted32bit);
+	image->component = 4;
+	RGBQUAD pixel;
+	for (int x = 0; x < w; ++x)
+		for (int y = 0; y < h; ++y)
+		{
+			FreeImage_GetPixelColor(converted32bit, y, x, &pixel);
+			image->image.push_back(pixel.rgbRed);
+			image->image.push_back(pixel.rgbGreen);
+			image->image.push_back(pixel.rgbBlue);
+			image->image.push_back(0xFF);
+		}
+	image->image.shrink_to_fit();
 
+	FreeImage_Unload(converted32bit);
+	FreeImage_Unload(freeimage_image);
+	FreeImage_CloseMemory(image_stream);
+	return true;
 	error_exit:
 	FreeImage_Unload(freeimage_image);
+	FreeImage_CloseMemory(image_stream);
 	return false;
 }
 

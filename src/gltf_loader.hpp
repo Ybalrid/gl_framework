@@ -19,6 +19,8 @@ class gltf_loader
 	shader& dshader;
 	texture& dtexture;
 
+	std::vector<texture> gltf_textures;
+
 public:
 	gltf_loader(shader& default_shader, texture& default_texture) : dshader{ default_shader }, dtexture{ default_texture }
 	{
@@ -103,15 +105,93 @@ public:
 	}
 
 
-	std::vector<float> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index)
+	std::vector<float> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
 	{
+		const auto c = 3 /*position*/ + 2/*texture_coords*/ + 3/*normal*/;
 		std::vector<float> vertex_buffer;
 		const auto vertex_accessor = model.accessors[vertex_accessor_index];
 		const auto texture_accessor = model.accessors[texture_accessor_index];
+		const auto normal_accessor = model.accessors[normal_accessor_index];
 
-		//TODO, fill the vertex buffer with xyzuv 
+		// fill the vertex buffer with xyzuv 
+		vertex_buffer.resize(vertex_accessor.count * (c));
 
+		const auto vertex_buffer_view = model.bufferViews[vertex_accessor.bufferView];
+		const auto vertex_buffer_buffer = model.buffers[vertex_buffer_view.buffer];
+		const auto vertex_data_start_ptr = vertex_buffer_buffer.data.data() + (vertex_buffer_view.byteOffset + vertex_accessor.byteOffset);
+		const auto vertex_data_byte_stride = vertex_accessor.ByteStride(vertex_buffer_view);
+		const auto texture_buffer_view = model.bufferViews[texture_accessor.bufferView];
+		const auto texture_buffer_buffer = model.buffers[texture_buffer_view.buffer];
+		const auto texture_data_start_ptr = texture_buffer_buffer.data.data() + (texture_buffer_view.byteOffset + texture_accessor.byteOffset);
+		const auto texture_data_byte_stride = texture_accessor.ByteStride(texture_buffer_view);
+		const auto normal_buffer_view = model.bufferViews[normal_accessor.bufferView];
+		const auto normal_buffer_buffer = model.buffers[normal_buffer_view.buffer];
+		const auto normal_data_start_ptr = normal_buffer_buffer.data.data() + (normal_buffer_view.byteOffset + normal_accessor.byteOffset);
+		const auto normal_data_byte_stride = normal_accessor.ByteStride(normal_buffer_view);
+
+		assert(vertex_accessor.count == texture_accessor.count);
+		
+		for (auto i = 0; i < vertex_accessor.count; i++)
+		{	
+			for(int j = 0; j < 3; ++j)	switch(vertex_accessor.componentType)
+			{
+			case TINYGLTF_COMPONENT_TYPE_FLOAT:
+				vertex_buffer[i * c + j] = ((float*)(vertex_data_start_ptr + (i*vertex_data_byte_stride )))[j];
+				break;
+			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+				vertex_buffer[i * c + j] = (float)((double*)(vertex_data_start_ptr + (i*vertex_data_byte_stride )))[j];
+				break;
+			}
+			for(int j = 3; j < 5; ++j) switch(texture_accessor.componentType)
+			{
+			case TINYGLTF_COMPONENT_TYPE_FLOAT:
+				vertex_buffer[i * c + j] = ((float*)(texture_data_start_ptr+(i*texture_data_byte_stride)))[j-3];
+				break;
+			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+				vertex_buffer[i * c + j] = (float)((double*)(texture_data_start_ptr+(i*texture_data_byte_stride)))[j-3];
+				
+			}
+			for(int j = 5; j < 8; ++j) switch(normal_accessor.componentType)
+			{
+			case TINYGLTF_COMPONENT_TYPE_FLOAT:
+				vertex_buffer[i * c + j] = ((float*)(normal_data_start_ptr+(i*normal_data_byte_stride)))[j-5];
+				break;
+			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+				vertex_buffer[i * c + j] = (float)((double*)(normal_data_start_ptr+(i*normal_data_byte_stride)))[j-5];
+				
+			}
+		}
+		
 		return vertex_buffer;
+	}
+
+	std::vector<unsigned int> get_indices(const tinygltf::Model& model, int indices_accessor)
+	{
+		std::vector<unsigned int> index_buffer;
+
+		const auto index_accessor = model.accessors[indices_accessor];
+		const auto index_buffer_view = model.bufferViews[index_accessor.bufferView];
+		const auto index_buffer_buffer = model.buffers[index_buffer_view.buffer];
+		const auto index_buffer_start_ptr = index_buffer_buffer.data.data() + (index_buffer_view.byteOffset + index_accessor.byteOffset);
+		const auto index_buffer_byte_stride = index_accessor.ByteStride(index_buffer_view);
+
+		index_buffer.resize(index_accessor.count);
+
+		for(auto i = 0; i < index_buffer.size(); ++i) switch(index_accessor.componentType)
+		{
+		case TINYGLTF_COMPONENT_TYPE_INT:
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+			index_buffer[i] = ((unsigned int*)(index_buffer_start_ptr+(i*index_buffer_byte_stride)))[0];
+			break;
+		case TINYGLTF_COMPONENT_TYPE_SHORT:
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+			index_buffer[i] = ((unsigned short*)(index_buffer_start_ptr+(i*index_buffer_byte_stride)))[0];
+			break;
+
+		default: throw std::runtime_error("unreconginzed component type for index buffer");
+		}
+
+		return index_buffer;
 	}
 
 	renderable build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
@@ -126,8 +206,38 @@ public:
 		const auto indices_accessor_index = primitive.indices;
 		const auto vertex_coord_accessor_index = primitive.attributes.at("POSITION");
 		const auto texture_coord_accessor_index = primitive.attributes.at("TEXCOORD_0");
+		const auto normal_accessor_index = primitive.attributes.at("NORMAL");
 
-		renderable rd(dshader, dtexture, vertex, index, 0, 0, 0, draw_mode);
+		vertex = get_vertices(model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index);
+		index = get_indices(model, indices_accessor_index);
+
+		if(mesh.primitives[0].material>=0)
+		{
+
+			const auto material = model.materials[mesh.primitives[0].material];
+			const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
+			const auto color_image = model.images[color_texture.source];
+
+			GLuint tex;
+			glActiveTexture(GL_TEXTURE0);
+			glGenTextures(1, &tex);
+			glBindTexture(GL_TEXTURE_2D, tex);
+			glTexImage2D(GL_TEXTURE_2D, 
+				0,
+				GL_RGBA,
+				color_image.width, 
+				color_image.height, 
+				0,
+				GL_RGBA, 
+				GL_UNSIGNED_BYTE, 
+				color_image.image.data());
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			gltf_textures.emplace_back(tex);
+			return { dshader, gltf_textures.back(), vertex, index,{true, true, true} , 8, 0, 3, 5, draw_mode };
+		}
+
+		return { dshader, dtexture, vertex, index, {true, true, true}, 8, 0, 3, 5, draw_mode };
 	}
 
 };

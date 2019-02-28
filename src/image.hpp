@@ -32,18 +32,6 @@ class image
 				data_array[i] = (a) | (b << 16) | (g) | (r >> 16);
 			}
 		}
-
-		if (bits_per_pixel == 24)
-		{
-			if (red_mask > blue_mask)
-			{
-				auto* data_array = reinterpret_cast<uint8_t*>(bits);
-				for (size_t i = 0; i < px_count; ++i)
-				{
-					std::swap(data_array[i * 3 + 0], data_array[i * 3 + 2]);
-				}
-			}
-		}
 	}
 
 	void steal_guts(image& other)
@@ -76,6 +64,11 @@ public:
 			throw std::runtime_error("Couldn't load bitmap from " + virtual_path);
 		}
 
+		auto old_bitmap = bitmap;
+		bitmap = FreeImage_ConvertTo32Bits(bitmap);
+		FreeImage_FlipVertical(bitmap);
+		FreeImage_Unload(old_bitmap);
+
 		rgbize_bitmap();
 	}
 
@@ -87,12 +80,12 @@ public:
 
 	image(const image&&) = delete;
 	image& operator=(const image&&) = delete;
-	image(image&& other)
+	image(image&& other) noexcept
 	{
 		steal_guts(other);
 	}
 
-	image& operator=(image&& other)
+	image& operator=(image&& other) noexcept
 	{
 		steal_guts(other);
 		return *this;

@@ -11,7 +11,7 @@ public:
 private:
 	projection_type current_projection{ projection_type::perspective };
 	glm::mat4 model, projection;
-	GLfloat near_clip = 0.1f, far_clip = 100.f, fov = 45.f;
+	GLfloat near_clip = 0.1f, far_clip = 1000.f, fov = 45.f;
 
 public:
 	void set_projection_type(projection_type type)
@@ -19,17 +19,17 @@ public:
 		current_projection = type;
 	}
 
-	glm::mat4 view_matrix()
+	glm::mat4 view_matrix() const
 	{
 		return glm::inverse(model);
 	}
 
-	glm::mat4 projection_matrix()
+	glm::mat4 projection_matrix() const
 	{
 		return projection;
 	}
 
-	glm::mat4 view_porjection_matrix()
+	glm::mat4 view_porjection_matrix() const
 	{
 		return projection * view_matrix();
 	}

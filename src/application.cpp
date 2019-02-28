@@ -80,6 +80,7 @@ void application::draw_debug_ui()
 
 void application::animate(scene_object& plane0, scene_object& plane1, scene_object& plane2)
 {
+	return;
 	glm::mat4 model = glm::rotate(glm::mat4(1.f), glm::radians(45.f * (float(SDL_GetTicks())/1000.f)), glm::vec3(0, 1.f, 0));
 	model = glm::scale(model, (2 + glm::sin(SDL_GetTicks() / 1000.f)) * glm::vec3(0.5f) );
 	plane0.set_model(model);
@@ -128,11 +129,18 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		abort();
 	}
 
+	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param)
+	{
+		std::cerr << "-----\n";
+		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);
+		std::cerr << "-----\n";
+	}, nullptr);
+
 	gui ui(window, context);
 
 	std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
 	//set vsync mode
-	//activate_vsync();
+	activate_vsync();
 	sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
 
 	for (const auto pak : resource_paks)
@@ -149,11 +157,11 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	}
 
 	std::vector<float> plane = {
-	//	 x=		 y=		z=		u=	v=
-		-0.9f,	0.0f,	 0.9f,		0,	0,
-		 0.9f,	0.0f,	 0.9f,		1,	0,
-		-0.9f,	0.0f,	-0.9f,		0,	1,
-		 0.9f,	0.0f,	-0.9f,		1,	1
+	//	 x=		 y=		z=		u=	v=		normal
+		-0.9f,	0.0f,	 0.9f,		0,	1, 0,1,0,
+		 0.9f,	0.0f,	 0.9f,		1,	1, 0,1,0,
+		-0.9f,	0.0f,	-0.9f,		0,	0, 0,1,0,
+		 0.9f,	0.0f,	-0.9f,		1,	0, 0,1,0
 	};
 
 	std::vector<unsigned int> plane_indices =
@@ -163,13 +171,16 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	};
 
 	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable textured_plane(simple_shader, polutropon_logo_texture, plane, plane_indices, 3 + 2, 0, 3);
+	renderable textured_plane(simple_shader, polutropon_logo_texture,  plane, plane_indices, 
+		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	//set opengl clear color
 	glClearColor(0.2f, 0.3f, 0.4f, 1);
 
+	gltf_loader loader(simple_shader, polutropon_logo_texture);
+
 	camera cam;
 	{
-		auto tr = glm::translate(glm::mat4(1.f), glm::vec3(0, 2.f, 2.f));
+		auto tr = glm::translate(glm::mat4(1.f), glm::vec3(0, 3.f, 3.f));
 		auto rot = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(-1.f, 0, 0));
 		cam.set_model(tr*rot);
 	}
@@ -183,9 +194,12 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		cam_2d.set_model(tr*rot);
 	}
 
+	auto duck_renderable = loader.load_mesh("/gltf/Duck.glb", 0);
+
 	scene_object plane0(textured_plane);
 	scene_object plane1(textured_plane);
 	scene_object plane2(textured_plane);
+	scene_object duck(duck_renderable);
 
 	//view = glm::transpose(view);
 	//main loop
@@ -217,10 +231,19 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		const auto size = window.size();
 		cam.update_projection(size.x, size.y);
 
-		animate(plane0, plane1, plane2);
-		plane0.draw(cam.view_porjection_matrix());
-		plane1.draw(cam.view_porjection_matrix());
-		plane2.draw(cam.view_porjection_matrix());
+		float t_in_sec =(current_time) / 1000.f;
+
+		glm::vec3 light_position_0(5*glm::sin(t_in_sec), 3, 5*glm::cos(t_in_sec));
+		std::cout << light_position_0.x << ' ' << light_position_0.z << '\n';
+
+		duck_renderable.set_light_0_position(light_position_0);
+		textured_plane.set_light_0_position(light_position_0);
+
+		duck.set_model(glm::scale(glm::mat4(1.f), glm::vec3(0.01f)));
+		//plane0.draw(cam.view_porjection_matrix());
+		plane1.draw(cam);
+		plane2.draw(cam);
+		duck.draw(cam);
 
 		//glClear(GL_DEPTH_BUFFER_BIT);
 		//cam_2d.update_projection(size.x, size.y);
