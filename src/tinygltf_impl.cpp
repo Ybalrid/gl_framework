@@ -4,6 +4,7 @@
 #include <tiny_gltf.h>
 #include "FreeImage.h"
 #include "resource_system.hpp"
+#include "image.hpp"
 
 std::string expand_file_path(const std::string& filepath, void*)
 {
@@ -31,68 +32,67 @@ bool read_whole_file(std::vector<unsigned char>* bytes, std::string* err, const 
 	return true;
 }
 
-bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* error, std::string* , int req_width, int req_height, const unsigned char* bytes, int size, void* context)
+bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* error, std::string*, int req_width, int req_height, const unsigned char* bytes, int size, void* context)
 {
 	//FreeImage's API inst const correct. Need to cast const away to give the pointer
 	//Opening a memory stream in freeimage doesn't change the bytes given to it in our usage
 	//But you could write to the opened memory stream...
-	const auto image_stream = FreeImage_OpenMemory(const_cast<unsigned char*>(bytes), size);
-	if(!image_stream)
+	freeimage_memory image_stream(FreeImage_OpenMemory(const_cast<unsigned char*>(bytes), size));
+	if (!image_stream.get())
 	{
-		if(error) *error = "FreeImage  " + std::to_string(image_idx) + " cannot open the image memory stream from the given pointer";
-
+		if (error)
+			*error = "FreeImage  " + std::to_string(image_idx) + " cannot open the image memory stream from the given pointer";
 		return false;
 	}
 
-	const auto type = FreeImage_GetFileTypeFromMemory(image_stream);
-	if(type == FIF_UNKNOWN)
+	const auto type = FreeImage_GetFileTypeFromMemory(image_stream.get());
+	if (type == FIF_UNKNOWN)
 	{
-		if(error)
+		if (error)
 			*error = "FreeImage " + std::to_string(image_idx) + " cannot understand the type of the image";
-
-		FreeImage_CloseMemory(image_stream);
 		return false;
 	}
 
-	auto freeimage_image = FreeImage_LoadFromMemory(type, image_stream);
+	freeimage_image loaded_image(image_stream.load());
 
-	if (!freeimage_image)
+	if (!loaded_image.get())
 	{
-		if(error)
-		*error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
-		//goto error_exit;
+		if (error)
+			*error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
+		return false;
 	}
 
-	const auto w = FreeImage_GetWidth(freeimage_image);
-	const auto h = FreeImage_GetWidth(freeimage_image);
-	const auto bpp = FreeImage_GetBPP(freeimage_image);
+	const auto w = FreeImage_GetWidth(loaded_image.get());
+	const auto h = FreeImage_GetWidth(loaded_image.get());
 
-	if(req_width && w != req_width)
+	if (req_width && w != req_width)
 	{
-		if(error)
+		if (error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image width doesn't match requested one";
-
-		//goto error_exit;
+		return false;
 	}
 
 	if (req_height && h != req_height)
 	{
-		if(error)
+		if (error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image height doesn't match requested one";
-
-		//goto error_exit;
+		return false;
 	}
 
+	//Some drivers will only accept 32bit images apparently, convert everything.
 	image->width = w;
 	image->height = h;
-	FIBITMAP* converted32bit = FreeImage_ConvertTo32Bits(freeimage_image);
-	FreeImage_FlipVertical(converted32bit);
 	image->component = 4;
+	loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
+	
+	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
+	FreeImage_FlipVertical(loaded_image.get());
+
 	RGBQUAD pixel;
 	for (unsigned x = 0; x < w; ++x)
 		for (unsigned y = 0; y < h; ++y)
 		{
-			FreeImage_GetPixelColor(converted32bit, y, x, &pixel);
+			FreeImage_GetPixelColor(loaded_image.get(), y, x, &pixel);
 			image->image.push_back(pixel.rgbRed);
 			image->image.push_back(pixel.rgbGreen);
 			image->image.push_back(pixel.rgbBlue);
@@ -100,14 +100,7 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 		}
 	image->image.shrink_to_fit();
 
-	FreeImage_Unload(converted32bit);
-	FreeImage_Unload(freeimage_image);
-	FreeImage_CloseMemory(image_stream);
 	return true;
-	error_exit:
-	FreeImage_Unload(freeimage_image);
-	FreeImage_CloseMemory(image_stream);
-	return false;
 }
 
 void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf)
