@@ -1,19 +1,19 @@
 #pragma once
 
 #include "resource_system.hpp"
-#include <FreeImage.h>
+#include "freeimage_raii.hpp"
 #include <GL/glew.h>
 
 class image
 {
-	FIBITMAP* bitmap = nullptr;
+	freeimage_image internal_image;
 
 	void rgbize_bitmap()
 	{
-		const auto blue_mask = FreeImage_GetBlueMask(bitmap);
-		const auto red_mask = FreeImage_GetRedMask(bitmap);
-		const auto bits_per_pixel = FreeImage_GetBPP(bitmap);
-		const auto bits = FreeImage_GetBits(bitmap);
+		const auto blue_mask = FreeImage_GetBlueMask(internal_image.get());
+		const auto red_mask = FreeImage_GetRedMask(internal_image.get());
+		const auto bits_per_pixel = FreeImage_GetBPP(internal_image.get());
+		const auto bits = FreeImage_GetBits(internal_image.get());
 		const auto w = get_width();
 		const auto h = get_height();
 		const auto px_count = w * h;
@@ -36,8 +36,7 @@ class image
 
 	void steal_guts(image& other)
 	{
-		bitmap = other.bitmap;
-		other.bitmap = nullptr;
+		internal_image = std::move(other.internal_image);
 	}
 
 public:
@@ -45,39 +44,24 @@ public:
 	{
 		auto image_data = resource_system::get_file(virtual_path);
 
-		const auto image_memory_stream = FreeImage_OpenMemory(image_data.data(), unsigned long(image_data.size()));
-		const auto image_type = FreeImage_GetFileTypeFromMemory(image_memory_stream);
-
+		auto image_memory = freeimage_memory(FreeImage_OpenMemory(image_data.data(), unsigned long(image_data.size())));
+		const auto image_type = FreeImage_GetFileTypeFromMemory(image_memory.get());
 		if (image_type == FIF_UNKNOWN)
-		{
-			//TODO RAII this please!
-			FreeImage_CloseMemory(image_memory_stream);
 			throw std::runtime_error("The data from " + virtual_path + " doesn't seem to be a readable image");
-		}
-		bitmap = FreeImage_LoadFromMemory(image_type, image_memory_stream);
-		FreeImage_CloseMemory(image_memory_stream);
+
+		internal_image = image_memory.load();
 		image_data.clear();
 
-		if(!bitmap)
-		{
-			//For the love of my sanity, TODO RAII this!
+		if(!internal_image.get())
 			throw std::runtime_error("Couldn't load bitmap from " + virtual_path);
-		}
 
-		auto old_bitmap = bitmap;
-		bitmap = FreeImage_ConvertTo32Bits(bitmap);
-		FreeImage_FlipVertical(bitmap);
-		FreeImage_Unload(old_bitmap);
+		internal_image = FreeImage_ConvertTo32Bits(internal_image.get());
+		FreeImage_FlipVertical(internal_image.get());
 
 		rgbize_bitmap();
 	}
 
-	~image()
-	{
-		if(bitmap)
-			FreeImage_Unload(bitmap);
-	}
-
+	~image() = default;
 	image(const image&&) = delete;
 	image& operator=(const image&&) = delete;
 	image(image&& other) noexcept
@@ -93,12 +77,12 @@ public:
 
 	int get_width() const
 	{
-		return FreeImage_GetWidth(bitmap);
+		return FreeImage_GetWidth(internal_image.get());
 	}
 
 	int get_height() const
 	{
-		return FreeImage_GetHeight(bitmap);
+		return FreeImage_GetHeight(internal_image.get());
 	}
 
 	enum class type { rgba, rgb };
@@ -117,13 +101,13 @@ public:
 
 	type get_type() const
 	{
-		if (FreeImage_GetBPP(bitmap) == 32)
+		if (FreeImage_GetBPP(internal_image.get()) == 32)
 			return type::rgba;
 		return type::rgb;
 	}
 
 	BYTE* get_binary() const
 	{
-		return FreeImage_GetBits(bitmap);
+		return FreeImage_GetBits(internal_image.get());
 	}
 };
