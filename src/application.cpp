@@ -58,11 +58,11 @@ void application::handle_event(const sdl::Event& e)
 			}
 		break;
 	case SDL_KEYUP:
-		if(!e.key.repeat)
-			switch(e.key.keysym.sym)
-			{
-			default:break;
-			}
+		//if(!e.key.repeat)
+		//	switch(e.key.keysym.sym)
+		//	{
+		//	default:break;
+		//	}
 		break;
 	}
 }
@@ -283,8 +283,8 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		ImGui::SliderFloat("y ortho", &yortho, -1, 1);
 		//ImGui::SliderFloat("depth", &f, -10, 10);
 		ImGui::SliderFloat("scale hud", &hud_scale, 0, 500);
-		ImGui::SliderFloat("x hud", &xhud, 0, size.x);
-		ImGui::SliderFloat("y hud", &yhud, 0, size.y);
+		ImGui::SliderFloat("x hud", &xhud, 0, float(size.x));
+		ImGui::SliderFloat("y hud", &yhud, 0, float(size.y));
 
 		draw_debug_ui();
 		ui.render();

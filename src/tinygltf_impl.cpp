@@ -89,8 +89,8 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 	FreeImage_FlipVertical(converted32bit);
 	image->component = 4;
 	RGBQUAD pixel;
-	for (int x = 0; x < w; ++x)
-		for (int y = 0; y < h; ++y)
+	for (unsigned x = 0; x < w; ++x)
+		for (unsigned y = 0; y < h; ++y)
 		{
 			FreeImage_GetPixelColor(converted32bit, y, x, &pixel);
 			image->image.push_back(pixel.rgbRed);

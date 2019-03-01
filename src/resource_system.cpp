@@ -7,8 +7,6 @@ resource_system::resource_system(char* arg0): pysics_fs(arg0)
 	" for " << arg0 << '\n'
 #endif
 	<< '\n';
-
-
 #ifdef VERBOSE
 	for (auto i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
 	{
@@ -35,7 +33,7 @@ std::vector<uint8_t> resource_system::get_file(const std::string& virtual_path)
 
 	const auto size = PHYSFS_fileLength(file);
 	std::vector<uint8_t> data(size);
-	PHYSFS_read(file, data.data(), 1, size);
+	PHYSFS_read(file, data.data(), 1, static_cast<PHYSFS_uint32>(size));
 	PHYSFS_close(file);
 
 	return data; //rvo ~o~

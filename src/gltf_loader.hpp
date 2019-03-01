@@ -35,7 +35,7 @@ public:
 		if(ext == "glb" || ext == "vrm")
 		{
 			const auto gltf_asset = resource_system::get_file(virtual_path);
-			return gltf.LoadBinaryFromMemory(&model, &error, &warning, gltf_asset.data(), gltf_asset.size());
+			return gltf.LoadBinaryFromMemory(&model, &error, &warning, gltf_asset.data(), unsigned(gltf_asset.size()));
 		}
 		if (ext == "gltf")
 		{
@@ -44,7 +44,7 @@ public:
 			gltf_asset_text.push_back(0);
 			const auto gltf_string = std::string((char*)gltf_asset_text.data());
 
-			return gltf.LoadASCIIFromString(&model, &error, &warning, gltf_string.c_str(), gltf_string.size(), "");
+			return gltf.LoadASCIIFromString(&model, &error, &warning, gltf_string.c_str(), unsigned(gltf_string.size()), "");
 		}
 
 		error = "File extension is not a glTF extension for " + virtual_path;

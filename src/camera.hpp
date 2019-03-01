@@ -45,7 +45,11 @@ public:
 		{
 		case perspective:
 			glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
-			projection = glm::perspective(glm::radians(fov), ratio, near_clip, far_clip);
+			projection = glm::perspective(
+				glm::radians(fov), 
+				ratio, 
+				near_clip, 
+				far_clip);
 			break;
 		case ortho:
 		{
@@ -54,14 +58,18 @@ public:
 			glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
 			float width = ratio / 2.f;
 			float height = 1 / 2.f;
-			projection = glm::ortho(-width, width, -height, height,
+			projection = glm::ortho(
+				-width, 
+				width, 
+				-height, 
+				height,
 				near_clip,
 				far_clip);
 		}
 		break;
 		case hud:
 			glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
-			//render geometry in screen space directly, with values between 0 and 1
+			//render geometry in screen space directly, with pixel values
 			//we intentionally flip back the Y axis here so (0, 0) is the top left corner of the screen
 			projection = glm::ortho(
 				float(viewport_x),
