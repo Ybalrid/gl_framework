@@ -236,7 +236,7 @@ public:
 			glBindTexture(GL_TEXTURE_2D, tex);
 			glTexImage2D(GL_TEXTURE_2D, 
 				0,
-				GL_RGBA,
+				GL_SRGB_ALPHA, //TODO toglle that only on color texture, not specular, normal and everything like that
 				color_image.width, 
 				color_image.height, 
 				0,

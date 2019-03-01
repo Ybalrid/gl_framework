@@ -8,19 +8,19 @@
 
 class shader
 {
-	GLuint program = 0;
-	GLint uniform_indices[10];
 
 public:
 
 	enum class uniform
 	{
-		mvp = 0,
-		model = 1,
-		normal = 2,
-		view = 3,
-		light_position_0 = 4,
+		mvp,
+		model,
+		normal,
+		view,
+		light_position_0,
 		camera_position,
+		gamma,
+		MAX_UNIFORM_LOCATION_COUNT
 	};
 
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
@@ -80,6 +80,7 @@ public:
 		uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
 		uniform_indices[int(uniform::light_position_0)] = glGetUniformLocation(program, "light_position_0");
 		uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
+		uniform_indices[int(uniform::gamma)] = glGetUniformLocation(program, "gamma");
 	}
 
 	~shader()
@@ -116,4 +117,14 @@ public:
 	{
 		glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
 	}
+
+	void set_uniform(uniform type, float v) const
+	{
+		glUniform1f(uniform_indices[int(type)], v);
+	}
+
+private:
+	GLuint program = 0;
+	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)];
+
 };

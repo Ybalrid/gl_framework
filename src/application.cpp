@@ -101,8 +101,9 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	auto root = sdl::Root(SDL_INIT_EVERYTHING);
 	sdl::Event event{};
 
-	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, true);
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, 16);
+	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, false); //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4); //OpenGL 4+
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 6); //OpenGL 4.6
@@ -116,7 +117,11 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	//create OpenGL context
 	auto context = window.create_context();
 	context.make_current();
+
 	glEnable(GL_MULTISAMPLE);
+
+	//We explicitely don't acitavate the SRGB frambuffer. All our fragment shader will apply gamma correction
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 
 
 
@@ -173,12 +178,12 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	renderable textured_plane(simple_shader, polutropon_logo_texture, plane, plane_indices,
 		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	//set opengl clear color
-	glClearColor(0.2f, 0.3f, 0.4f, 1);
+	glClearColor(0.5, 0.5, 0.5, 1);
 
 	gltf_loader gltf(simple_shader, polutropon_logo_texture);
 
 	camera cam;
-	//cam.fov = 360;
+	cam.fov = 45;
 	cam.xform.set_position({ 0,5, 5 });
 	cam.xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 
@@ -232,6 +237,9 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		ui.frame();
 
+		ImGui::SliderFloat("Gamma", &renderable::gamma, 1.1, 2.8);
+		ImGui::SliderFloat("Camera FoV?", &cam.fov, 20, 180);
+
 		//clear viewport
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		const auto size = window.size();
@@ -239,20 +247,20 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		float t_in_sec = (current_time) / 1000.f;
 
-		glm::vec3 light_position_0(5 * glm::sin(t_in_sec), 3, 5 * glm::cos(t_in_sec));
+		glm::vec3 light_position_0(8 * glm::sin(t_in_sec), 5, 8 * glm::cos(t_in_sec));
 
 		duck_renderable.set_light_0_position(light_position_0);
 		textured_plane.set_light_0_position(light_position_0);
 		duck.xform.set_scale(0.01f * transform::UNIT_SCALE);
 
-		duck.xform.set_orientation({ glm::radians(ceilf(float(current_time) / 1000.f)), transform::Y_AXIS });
+		duck.xform.set_orientation(glm::angleAxis(glm::radians((180*float(current_time) / 1000.f)), -transform::Y_AXIS));
 		duck.draw(cam);
 
 		//plane0.draw(cam.view_projection_matrix());
 		plane1.xform.set_position({ 2, 0, 0 });
+		plane1.xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
 		plane1.draw(cam);
 		plane2.draw(cam);
-
 
 
 		ImGui::Checkbox("2D ortho pass ?", &draw_ortho);

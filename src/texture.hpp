@@ -56,11 +56,11 @@ public:
 		bind(target);
 		glTexImage2D(target,
 			0,
-			img.get_gl_type(img.get_type()),
+			GL_SRGB_ALPHA,
 			img.get_width(),
 			img.get_height(),
 			0,
-			img.get_gl_type(img.get_type()),
+			GL_RGBA,
 			GL_UNSIGNED_BYTE,
 			img.get_binary());
 	}

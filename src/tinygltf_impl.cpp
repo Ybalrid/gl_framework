@@ -6,18 +6,18 @@
 #include "resource_system.hpp"
 #include "image.hpp"
 
-std::string expand_file_path(const std::string& filepath, void*)
+std::string tinygltf_expand_file_path_callback(const std::string& filepath, void*)
 {
 	//TODO do we need to do anything?
 	return filepath;
 }
 
-bool file_exist(const std::string& path, void*)
+bool tinygltf_file_exist_callback(const std::string& path, void*)
 {
 	return PHYSFS_exists(path.c_str()) != 0;
 }
 
-bool read_whole_file(std::vector<unsigned char>* bytes, std::string* err, const std::string& path, void*)
+bool tinygltf_read_whole_file_callback(std::vector<unsigned char>* bytes, std::string* err, const std::string& path, void*)
 {
 	try
 	{
@@ -32,8 +32,10 @@ bool read_whole_file(std::vector<unsigned char>* bytes, std::string* err, const 
 	return true;
 }
 
-bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* error, std::string*, int req_width, int req_height, const unsigned char* bytes, int size, void* context)
+bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image_idx, std::string* error, std::string*, int req_width, int req_height, const unsigned char* bytes, int size, void* context)
 {
+	(void)context; //We did not provide a ctx pointer
+
 	//FreeImage's API inst const correct. Need to cast const away to give the pointer
 	//Opening a memory stream in freeimage doesn't change the bytes given to it in our usage
 	//But you could write to the opened memory stream...
@@ -89,15 +91,15 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 	
 	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
 	FreeImage_FlipVertical(loaded_image.get());
-	auto bits = FreeImage_GetBits(loaded_image.get());
 
 	image->image.reserve(w*h * 4);
+	const auto bits = FreeImage_GetBits(loaded_image.get());
 	for (auto pixel = 0U; pixel < w*h; ++pixel)
 	{
-		image->image.push_back(bits[pixel * 4 + 2]);
-		image->image.push_back(bits[pixel * 4 + 1]);
-		image->image.push_back(bits[pixel * 4 + 0]);
-		image->image.push_back(bits[pixel * 4 + 3]);
+		image->image.push_back(bits[pixel * 4 + 2]); //R
+		image->image.push_back(bits[pixel * 4 + 1]); //G
+		image->image.push_back(bits[pixel * 4 + 0]); //B
+		image->image.push_back(bits[pixel * 4 + 3]); //A
 	}
 	image->image.shrink_to_fit();
 
@@ -106,17 +108,20 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 
 void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf)
 {
-	gltf.SetImageLoader(load_image_data, nullptr);
+	gltf.SetImageLoader(tinygltf_image_data_loader_callback, nullptr);
 }
 
 void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 {
 	tinygltf::FsCallbacks callbacks{};
 
-	callbacks.FileExists = file_exist;
-	callbacks.ReadWholeFile = read_whole_file;
-	callbacks.ExpandFilePath = expand_file_path;
+	callbacks.FileExists = tinygltf_file_exist_callback;
+	callbacks.ReadWholeFile = tinygltf_read_whole_file_callback;
+	callbacks.ExpandFilePath = tinygltf_expand_file_path_callback;
+
+	//We are not writing glTF files from this application
 	callbacks.WriteWholeFile = nullptr;
+	//We do not need a user context to perform filesystem I/O
 	callbacks.user_data = nullptr;
 
 	gltf.SetFsCallbacks(callbacks);
