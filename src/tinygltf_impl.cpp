@@ -83,21 +83,22 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 	image->width = w;
 	image->height = h;
 	image->component = 4;
-	loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
+
+	if(FreeImage_GetBPP(loaded_image.get()) != 32)
+		loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
 	
 	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
 	FreeImage_FlipVertical(loaded_image.get());
+	auto bits = FreeImage_GetBits(loaded_image.get());
 
-	RGBQUAD pixel;
-	for (unsigned x = 0; x < w; ++x)
-		for (unsigned y = 0; y < h; ++y)
-		{
-			FreeImage_GetPixelColor(loaded_image.get(), y, x, &pixel);
-			image->image.push_back(pixel.rgbRed);
-			image->image.push_back(pixel.rgbGreen);
-			image->image.push_back(pixel.rgbBlue);
-			image->image.push_back(0xFF);
-		}
+	image->image.reserve(w*h * 4);
+	for (auto pixel = 0U; pixel < w*h; ++pixel)
+	{
+		image->image.push_back(bits[pixel * 4 + 2]);
+		image->image.push_back(bits[pixel * 4 + 1]);
+		image->image.push_back(bits[pixel * 4 + 0]);
+		image->image.push_back(bits[pixel * 4 + 3]);
+	}
 	image->image.shrink_to_fit();
 
 	return true;
