@@ -127,5 +127,3 @@ private:
 	FIMEMORY* ptr = nullptr;
 };
 
-static_assert(sizeof(freeimage_memory) == sizeof(FIMEMORY*), "this wrapper should be as big as the pointer itself");
-

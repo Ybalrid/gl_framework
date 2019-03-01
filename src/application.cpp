@@ -1,4 +1,3 @@
-#pragma once
 #include "application.hpp"
 #include "image.hpp"
 #include "shader.hpp"

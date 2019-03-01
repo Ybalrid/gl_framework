@@ -60,7 +60,7 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 	{
 		if(error)
 		*error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
-		goto error_exit;
+		//goto error_exit;
 	}
 
 	const auto w = FreeImage_GetWidth(freeimage_image);
@@ -72,7 +72,7 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 		if(error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image width doesn't match requested one";
 
-		goto error_exit;
+		//goto error_exit;
 	}
 
 	if (req_height && h != req_height)
@@ -80,7 +80,7 @@ bool load_image_data(tinygltf::Image* image, const int image_idx, std::string* e
 		if(error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image height doesn't match requested one";
 
-		goto error_exit;
+		//goto error_exit;
 	}
 
 	image->width = w;

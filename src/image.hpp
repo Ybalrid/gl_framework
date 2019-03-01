@@ -7,7 +7,6 @@
 class image
 {
 	freeimage_image internal_image;
-
 	void rgbize_bitmap()
 	{
 		const auto blue_mask = FreeImage_GetBlueMask(internal_image.get());
@@ -44,7 +43,7 @@ public:
 	{
 		auto image_data = resource_system::get_file(virtual_path);
 
-		auto image_memory = freeimage_memory(FreeImage_OpenMemory(image_data.data(), unsigned long(image_data.size())));
+		freeimage_memory image_memory(FreeImage_OpenMemory(image_data.data(), (unsigned long)(image_data.size())));
 		const auto image_type = FreeImage_GetFileTypeFromMemory(image_memory.get());
 		if (image_type == FIF_UNKNOWN)
 			throw std::runtime_error("The data from " + virtual_path + " doesn't seem to be a readable image");
@@ -90,9 +89,9 @@ public:
 	{
 		switch(t)
 		{
-		case type::rgb: 
+		case type::rgb:
 			return GL_RGB;
-		case type::rgba: 
+		case type::rgba:
 			return GL_RGBA;
 		default:
 			throw std::runtime_error("cannot make sence of your type thing");
