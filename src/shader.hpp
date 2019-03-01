@@ -19,7 +19,8 @@ public:
 		model = 1,
 		normal = 2,
 		view = 3,
-		light_position_0 = 4
+		light_position_0 = 4,
+		camera_position,
 	};
 
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
@@ -78,7 +79,7 @@ public:
 		uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
 		uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
 		uniform_indices[int(uniform::light_position_0)] = glGetUniformLocation(program, "light_position_0");
-		
+		uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
 	}
 
 	~shader()

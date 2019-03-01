@@ -8,59 +8,26 @@
 struct transform
 {
 	///Get the model matrix. Model matrix is cached until transform get's dirty.
-	inline glm::mat4 get_model() const
-	{
-		if (!dirty) return model;
-
-		dirty = false;
-
-		glm::mat4 translation_matrix = glm::translate(glm::mat4(1.f), position);
-		glm::mat4 rotation_matrix = glm::mat4_cast(glm::normalize(orientation));
-		glm::mat4 scaling_matrix = glm::scale(glm::mat4(1.f), scale);
-
-		model = translation_matrix * rotation_matrix * scaling_matrix;
-		return model;
-	}
+	glm::mat4 get_model() const;
 
 	///Get the internal position
-	inline glm::vec3 get_position() const
-	{
-		return position;
-	}
+	glm::vec3 get_position() const;
 
 	///Get the internal scale
-	inline glm::vec3 get_scale() const
-	{
-		return scale;
-	}
+	glm::vec3 get_scale() const;
 
 	///Get the internal orientation. This quaternion has been normalized
-	inline glm::quat get_orientation() const
-	{
-		return orientation;
-	}
+	glm::quat get_orientation() const;
 
 	///Set the position. Set dirty flag.
-	inline void set_position(const glm::vec3& new_position)
-	{
-		position = new_position;
-		bool dirty = true;
-	}
+	void set_position(const glm::vec3& new_position);
 
 
 	///Set the scale. Set dirty flag
-	inline void set_scale(const glm::vec3& new_scale)
-	{
-		scale = new_scale;
-		bool dirty = true;
-	}
+	void set_scale(const glm::vec3& new_scale);
 
 	///Set the orientation. We will normalize this quaternion. Set dirty flag.
-	inline void set_orientation(const glm::quat& new_orientation)
-	{
-		orientation = glm::normalize(new_orientation);
-		bool dirty = true;
-	}
+	void set_orientation(const glm::quat& new_orientation);
 
 	///Positive X axis.
 	inline static const glm::vec3 X_AXIS{ 1.f,0.f,0.f };
@@ -79,9 +46,9 @@ struct transform
 private:
 	//This is the cached model matrix and a flag that signal if the model matrix is dirty
 	mutable bool dirty = true;
-	mutable glm::mat4 model{1.f};
+	mutable glm::mat4 model{ 1.f };
 
 	//The internally stored absolute position, scale and orientation
-	glm::vec3 position{ VEC_ZERO }, scale{UNIT_SCALE};
-	glm::quat orientation{IDENTITY_QUAT};
+	glm::vec3 position{ VEC_ZERO }, scale{ UNIT_SCALE };
+	glm::quat orientation{ IDENTITY_QUAT };
 };

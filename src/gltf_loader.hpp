@@ -53,6 +53,9 @@ public:
 
 	renderable load_mesh(const std::string& virtual_path, int index)
 	{
+		error.clear();
+		warning.clear();
+
 		//TODO create model cache
 		tinygltf::Model model;
 		if (!load_model(virtual_path, model))
@@ -65,20 +68,23 @@ public:
 
 	renderable load_mesh(const std::string& virtual_path, const std::string& name)
 	{
+		error.clear();
+		warning.clear();
+
 		//TODO create model cache
 		tinygltf::Model model;
 		if (!load_model(virtual_path, model))
-		{
 			std::cerr << error;
-		}
+
+		std::cerr << warning;
 
 		const auto iterator = std::find_if(std::cbegin(model.meshes), std::cend(model.meshes), 
 			[&](const tinygltf::Mesh& mesh){return name == mesh.name;});
 
 		if(iterator != std::cend(model.meshes))
-		{
 			return build_renderable(*iterator, model);
-		}
+
+		throw std::runtime_error("Coulnd't find " + name + " in " + virtual_path);
 	}
 
 	static GLenum mode(GLenum input)
@@ -113,7 +119,7 @@ public:
 		const auto texture_accessor = model.accessors[texture_accessor_index];
 		const auto normal_accessor = model.accessors[normal_accessor_index];
 
-		// fill the vertex buffer with xyzuv 
+		// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z]
 		vertex_buffer.resize(vertex_accessor.count * (c));
 
 		const auto vertex_buffer_view = model.bufferViews[vertex_accessor.bufferView];
@@ -130,9 +136,11 @@ public:
 		const auto normal_data_byte_stride = normal_accessor.ByteStride(normal_buffer_view);
 
 		assert(vertex_accessor.count == texture_accessor.count);
-		
+
+		//We have to deal with possibly interleaved buffers that have possibliy different data types in them.
 		for (auto i = 0; i < vertex_accessor.count; i++)
 		{	
+			//3 floats for vertex position
 			for(int j = 0; j < 3; ++j)	switch(vertex_accessor.componentType)
 			{
 			case TINYGLTF_COMPONENT_TYPE_FLOAT:
@@ -142,6 +150,8 @@ public:
 				vertex_buffer[i * c + j] = (float)((double*)(vertex_data_start_ptr + (i*vertex_data_byte_stride )))[j];
 				break;
 			}
+
+			//2 floats for vertex texture coordinates
 			for(int j = 3; j < 5; ++j) switch(texture_accessor.componentType)
 			{
 			case TINYGLTF_COMPONENT_TYPE_FLOAT:
@@ -151,6 +161,8 @@ public:
 				vertex_buffer[i * c + j] = (float)((double*)(texture_data_start_ptr+(i*texture_data_byte_stride)))[j-3];
 				
 			}
+
+			//3 float for vertex normal (in model space)
 			for(int j = 5; j < 8; ++j) switch(normal_accessor.componentType)
 			{
 			case TINYGLTF_COMPONENT_TYPE_FLOAT:

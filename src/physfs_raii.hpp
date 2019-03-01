@@ -1,5 +1,6 @@
 #pragma once
 #include "physfs.h"
+#include <iostream>
 
 struct physfs_raii
 {
@@ -9,6 +10,9 @@ struct physfs_raii
 	{
 		PHYSFS_init(argv0);
 		init = true;
+		PHYSFS_Version v;
+		PHYSFS_getLinkedVersion(&v);
+		std::cout << "Initialized Physics_FS version " << int(v.major) << '.' << int(v.minor) << '.' << int(v.patch) << '\n';
 	}
 
 	~physfs_raii()

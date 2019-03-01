@@ -2,8 +2,14 @@
 #include <iostream>
 resource_system::resource_system(char* arg0): pysics_fs(arg0)
 {
-#if 0
-	std::cout << "Initialized resource system for " << arg0 << '\n';
+	std::cout << "Initialized resource system"
+#ifdef VERBOSE
+	" for " << arg0 << '\n'
+#endif
+	<< '\n';
+
+
+#ifdef VERBOSE
 	for (auto i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
 	{
 		printf("Supported archive: [%s], which is [%s].\n",

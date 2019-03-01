@@ -8,6 +8,7 @@ in vec2 texture_coords;
 in vec3 normal_dir;
 in vec3 world_position;
 
+uniform vec3 camera_position;
 uniform mat4 view;
 uniform mat4 model;
 
@@ -68,8 +69,7 @@ void main()
 
 	//specular calculation
 	//TODO get the view position from uniform ( = camera's position)
-	vec3 view_pos = ExtractCameraPos(view * model);
-	vec3 view_dir = normalize(view_pos - world_position);
+	vec3 view_dir = normalize(camera_position - world_position);
 	vec3 reflect_dir = (reflect(-light_direction, normalized_normals));
 	float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 64);
 	float specular_strengh = 0.01;

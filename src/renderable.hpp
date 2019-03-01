@@ -108,14 +108,25 @@ public:
 	 
 	void draw() const
 	{
+		//We need to have a shader and a texture!
 		assert(shader_program);
 		assert(main_texture);
+
+		//Setup our shader
 		shader_program->use();
-		shader_program->set_uniform(shader::uniform::mvp, mvp);
-		shader_program->set_uniform(shader::uniform::model, model);
-		shader_program->set_uniform(shader::uniform::normal, normal);
+		shader_program->set_uniform(shader::uniform::mvp, mvp);			//projection * view * model
+		shader_program->set_uniform(shader::uniform::model, model);		//world space model matrix
+		shader_program->set_uniform(shader::uniform::normal, normal);	//3x3 matrix extracted from(transpose(inverse(model)))
+
+		//TODO this thing should be set once per shader per camera, not once per object. We are wasting OpenGL states changes here!
 		shader_program->set_uniform(shader::uniform::view, view);
+
+		//TODO multitextuing
 		main_texture->bind();
+
+		//TODO material system
+
+		//bind object buffers and issue draw call
 		glBindVertexArray(VAO);
 		glDrawElements(draw_mode, element_count, element_type, nullptr);
 	}
@@ -138,6 +149,13 @@ public:
 
 	void set_light_0_position(const glm::vec3& v) const
 	{
+		shader_program->use();
 		shader_program->set_uniform(shader::uniform::light_position_0, v);
+	}
+
+	void set_camera_position(const glm::vec3& v) const
+	{
+		shader_program->use();
+		shader_program->set_uniform(shader::uniform::camera_position, v);
 	}
 };
