@@ -1,16 +1,11 @@
 #include "gui.hpp"
 
-void dummy()
-{
-
-}
-
 gui::gui(sdl::Window& window, sdl::Window::GlContext& gl_context)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	(void)io;
+	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
 	ImGui_ImplSDL2_InitForOpenGL(window.ptr(), gl_context.ptr());
