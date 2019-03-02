@@ -1,0 +1,5 @@
+[configuration]
+multisampling = true
+samples = 16
+resolution = [1024, 768]
+fullscreen = false

@@ -21,9 +21,12 @@ gui::gui(sdl::Window& window, sdl::Window::GlContext& gl_context)
 
 gui::~gui()
 {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
+	if (w)
+	{
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
+	}
 }
 
 void gui::frame()

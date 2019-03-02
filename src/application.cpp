@@ -6,6 +6,7 @@
 #include "gui.hpp"
 #include "scene_object.hpp"
 #include "gltf_loader.hpp"
+#include <cpptoml.h>
 
 std::vector<std::string> application::resource_paks;
 
@@ -92,58 +93,92 @@ void application::update_timing()
 	frames++;
 }
 
-application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
+void application::set_opengl_attribute_configuration(const bool multisampling, const int samples, const bool srgb_framebuffer) const
 {
-	//init sdl
-	auto root = sdl::Root(SDL_INIT_EVERYTHING);
-	sdl::Event event{};
-
-	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, true);
-	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, 16);
-	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, false); //Fragment shaders will perform individual gamma correction
+	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
+	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);
+	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer); //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4); //OpenGL 4+
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 6); //OpenGL 4.6
+}
 
-	//create window
-	auto window = sdl::Window("application window",
-		{ 800, 600 }, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-
-	//create OpenGL context
-	auto context = window.create_context();
-	context.make_current();
-
-	glEnable(GL_MULTISAMPLE);
-
-	//We explicitely don't acitavate the SRGB frambuffer. All our fragment shader will apply gamma correction
-	//glEnable(GL_FRAMEBUFFER_SRGB);
-
+void application::initialize_glew() const
+{
 	if (glewInit() != GLEW_OK)
 	{
 		std::cerr << "cannot init glew\n";
 		abort();
 	}
 	std::cout << "Initialized GLEW " << glewGetString(GLEW_VERSION) << '\n';
+}
 
-	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param)
+void application::install_opengl_debug_callback() const
+{
+	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+	                          const GLchar* message, const void* user_param)
 	{
 		std::cerr << "-----\n";
-		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);
+		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' <<
+			std::string(message);
 		std::cerr << "-----\n";
 	}, nullptr);
+}
 
-	gui ui(window, context);
+void application::configure_and_create_window()
+{
+	//load config
+	auto configuration_data = resource_system::get_file("/config.toml");
+	configuration_data.push_back('\0');
+	std::string configuration_text(reinterpret_cast<const char*>(configuration_data.data()));
+	std::istringstream configuration_stream(configuration_text);
+	auto config_toml = cpptoml::parser(configuration_stream);
+	const auto loaded_config = config_toml.parse();
+	const auto configuration_table = loaded_config->get_table("configuration");
 
-	std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
-	//set vsync mode
-	activate_vsync();
-	sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
+	//extract config values
+	bool multisampling = configuration_table->get_as<bool>("multisampling").value_or(true);
+	const int samples = configuration_table->get_as<int>("samples").value_or(8);
+	const bool srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
 
+	//extract window config
+	set_opengl_attribute_configuration(multisampling, samples, srgb_framebuffer);
+	const bool fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
+	sdl::Vec2i window_size{};
+
+	auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
+	window_size.x = window_size_array->at(0);
+	window_size.y = window_size_array->at(1);
+
+	//create window
+	window = sdl::Window("application window",
+	                     window_size, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+}
+
+application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
+{
 	for (const auto pak : resource_paks)
 	{
 		std::cerr << "adding to resources " << pak << '\n';
 		resource_system::add_location(pak);
 	}
+
+		configure_and_create_window();
+
+
+	//create OpenGL context
+	context = window.create_context();
+	context.make_current();
+	std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
+	glEnable(GL_MULTISAMPLE);
+
+	initialize_glew();
+	install_opengl_debug_callback();
+	ui = gui(window, context);
+
+	//set vsync mode
+	activate_vsync();
+
 
 	texture polutropon_logo_texture;
 	{
@@ -154,10 +189,10 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	std::vector<float> plane = {
 		//	 x=		 y=		z=		u=	v=		normal
-			-0.9f,	0.0f,	 0.9f,		0,	1, 0,1,0,
-			 0.9f,	0.0f,	 0.9f,		1,	1, 0,1,0,
-			-0.9f,	0.0f,	-0.9f,		0,	0, 0,1,0,
-			 0.9f,	0.0f,	-0.9f,		1,	0, 0,1,0
+		-0.9f,	0.0f,	 0.9f,		0,	1,		0,1,0,
+		 0.9f,	0.0f,	 0.9f,		1,	1,		0,1,0,
+		-0.9f,	0.0f,	-0.9f,		0,	0,		0,1,0,
+		 0.9f,	0.0f,	-0.9f,		1,	0,		0,1,0
 	};
 
 	std::vector<unsigned int> plane_indices =
@@ -169,7 +204,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	shader unlit_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	renderable textured_plane(simple_shader, polutropon_logo_texture, plane, plane_indices,
-		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	                          { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	//set opengl clear color
 	glClearColor(0.5, 0.5, 0.5, 1);
 
@@ -195,19 +230,21 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	renderable hud_plane(unlit_shader, polutropon_logo_texture, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	scene_object hud(hud_plane);
 	hud.xform.set_position({ 100,0,100 });
-	scene_object plane0(textured_plane);
 	scene_object plane1(textured_plane);
 	scene_object plane2(textured_plane);
 	scene_object duck(duck_renderable);
 	scene_object ortho(hud_plane);
 	ortho.xform.set_scale(0.25f * transform::UNIT_SCALE);
-	float xortho = 0, yortho = 0, xhud = 400, yhud = 300;
+	float xortho = 0;
+	float yortho = 0; 
+	float xhud = 400;
+	float yhud = 300;
 	float f = 0;
-	float scale_ortho = ortho.xform.get_scale().x, hud_scale = 100;
+	float scale_ortho = ortho.xform.get_scale().x; 
+	float hud_scale = 100;
+	bool draw_ortho = false; 
+	bool draw_hud = false;
 
-	bool draw_ortho = false, draw_hud = false;
-	//view = glm::transpose(view);
-	//main loop
 	glEnable(GL_DEPTH_TEST);
 	while (running)
 	{
@@ -289,9 +326,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		draw_debug_ui();
 		ui.render();
-
 		//swap buffers
 		window.gl_swap();
 	}
-
 }
