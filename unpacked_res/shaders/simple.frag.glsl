@@ -1,11 +1,10 @@
 #version 330 core
-
 //where we write the color of the fragment
 out vec4 color_output;
 
 //Where we read interpolated coordinates
-in vec2 texture_coords;
-in vec3 normal_dir;
+in vec2 texture_coordinates;
+in vec3 normal_direction;
 in vec3 world_position;
 
 //cpu inputs
@@ -24,7 +23,7 @@ vec4 apply_gamma(vec4 color, float gamma)
 void main()
 {
 	//Sample the texture : 
-	vec4 textured_color = texture(in_texture, texture_coords);
+	vec4 textured_color = texture(in_texture, texture_coordinates);
 
 	//TODO read this from uniform!
 	vec3 light_color = vec3(1,1,1); //Warm-ish white
@@ -36,7 +35,7 @@ void main()
 	float specular_power = 32;
 
 	//compute additional vectors : 
-	vec3 normalized_normals = normalize(normal_dir);
+	vec3 normalized_normals = normalize(normal_direction);
 	vec3 light_direction = normalize(light_position_0 - world_position);
 	vec3 view_direction = normalize(camera_position - world_position);
 	vec3 reflect_direction = reflect(-light_direction, normalized_normals);

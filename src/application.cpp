@@ -2,10 +2,7 @@
 #include "image.hpp"
 #include "shader.hpp"
 #include "renderable.hpp"
-
-#include <glm/gtc/matrix_transform.hpp>
 #include "camera.hpp"
-
 #include "gui.hpp"
 #include "scene_object.hpp"
 #include "gltf_loader.hpp"
@@ -112,8 +109,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	auto window = sdl::Window("application window",
 		{ 800, 600 }, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
-
-
 	//create OpenGL context
 	auto context = window.create_context();
 	context.make_current();
@@ -122,8 +117,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	//We explicitely don't acitavate the SRGB frambuffer. All our fragment shader will apply gamma correction
 	//glEnable(GL_FRAMEBUFFER_SRGB);
-
-
 
 	if (glewInit() != GLEW_OK)
 	{
@@ -188,12 +181,12 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	cam.xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 
 	camera ortho_cam;
-	ortho_cam.set_projection_type(camera::projection_type::ortho);
+	ortho_cam.projection_type = camera::projection_mode::ortho;
 	ortho_cam.xform.set_position({ 0,5,0 });
 	ortho_cam.xform.set_orientation(glm::angleAxis(glm::radians(-90.f), transform::X_AXIS));
 
 	camera hud_cam;
-	hud_cam.set_projection_type(camera::projection_type::hud);
+	hud_cam.projection_type = camera::projection_mode::hud;
 	hud_cam.xform.set_position({ 0,5,0 });
 	hud_cam.xform.set_orientation(glm::angleAxis(glm::radians(-90.f), transform::X_AXIS));
 
@@ -236,32 +229,35 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		}
 
 		ui.frame();
-
 		ImGui::SliderFloat("Gamma", &renderable::gamma, 1.1, 2.8);
 		ImGui::SliderFloat("Camera FoV?", &cam.fov, 20, 180);
 
 		//clear viewport
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		const auto size = window.size();
 		cam.update_projection(size.x, size.y);
 
 		float t_in_sec = (current_time) / 1000.f;
-
 		glm::vec3 light_position_0(8 * glm::sin(t_in_sec), 5, 8 * glm::cos(t_in_sec));
+		
+		shader::set_frame_uniform(shader::uniform::light_position_0, light_position_0);
+		shader::set_frame_uniform(shader::uniform::gamma, renderable::gamma);
 
-		duck_renderable.set_light_0_position(light_position_0);
-		textured_plane.set_light_0_position(light_position_0);
+		//we are going to draw with the main camera first:
+		shader::set_frame_uniform(shader::uniform::camera_position, cam.xform.get_position());
+		shader::set_frame_uniform(shader::uniform::view, cam.get_view_matrix());
+		shader::set_frame_uniform(shader::uniform::projection, cam.get_projection_matrix());
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		duck.xform.set_scale(0.01f * transform::UNIT_SCALE);
-
 		duck.xform.set_orientation(glm::angleAxis(glm::radians((180*float(current_time) / 1000.f)), -transform::Y_AXIS));
 		duck.draw(cam);
 
-		//plane0.draw(cam.view_projection_matrix());
+		//plane0.draw(cam.get_view_projection_matrix());
 		plane1.xform.set_position({ 2, 0, 0 });
 		plane1.xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
 		plane1.draw(cam);
 		plane2.draw(cam);
-
 
 		ImGui::Checkbox("2D ortho pass ?", &draw_ortho);
 		if (draw_ortho)
@@ -273,7 +269,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			ortho.draw(ortho_cam);
 		}
 
-
 		ImGui::Checkbox("2D HUD pass?", &draw_hud);
 		if (draw_hud)
 		{
@@ -283,7 +278,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			hud.xform.set_scale(hud_scale * transform::UNIT_SCALE);
 			hud.draw(hud_cam);
 		}
-
 
 		ImGui::SliderFloat("scale ortho : ", &scale_ortho, 0, 2);
 		ImGui::SliderFloat("x ortho", &xortho, -1, 1);

@@ -1,130 +1,64 @@
 #pragma once
 
 #include <GL/glew.h>
-#include <vector>
-#include "resource_system.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 class shader
 {
 
 public:
 
+	///All settable uniforms in shaders
 	enum class uniform
 	{
 		mvp,
 		model,
 		normal,
 		view,
+		projection,
 		light_position_0,
 		camera_position,
 		gamma,
+		time,
+
+		// Add uniforms on top of this one, and do not forget to glGetUniformLocation 
+		// at the end of the constructor of the shader class
 		MAX_UNIFORM_LOCATION_COUNT
 	};
 
-	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
+	///Construct a shader object. Take the location in the resource package of the source code
+	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);
+	~shader();
+
+	///Set the given uniform for *all* currently existing shader objects
+	template<typename uniform_parameter>
+	static void set_frame_uniform(uniform type, uniform_parameter param)
 	{
-		//Load source files as C strings
-		auto vertex_source_data = resource_system::get_file(vertex_shader_virtual_path);
-		auto fragment_source_data = resource_system::get_file(fragment_shader_virtual_path);
-		vertex_source_data.push_back('\0');
-		fragment_source_data.push_back('\0');
-		const char* vertex_shader_cstr = reinterpret_cast<const char*>(vertex_source_data.data());
-		const char* fragment_shader_cstr = reinterpret_cast<const char*>(fragment_source_data.data());
-
-		//Compile shaders
-		const auto vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-		const auto fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-
-		glShaderSource(vertex_shader, 1, static_cast<const GLchar* const*>(&vertex_shader_cstr), nullptr);
-		glShaderSource(fragment_shader, 1, static_cast<const GLchar* const*>(&fragment_shader_cstr), nullptr);
-		glCompileShader(vertex_shader);
-		glCompileShader(fragment_shader);
-
-		//check shader compilation
-		GLint success = 0;
-		GLchar info_log[512];
-
-		glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-		if (!success)
+		for (auto a_shader : shader_list)
 		{
-			glGetShaderInfoLog(vertex_shader, sizeof info_log, nullptr, info_log);
-			throw std::runtime_error("Couldn't compile vertex shader " + std::string(info_log));
+			a_shader->use();
+			a_shader->set_uniform(type, param);
 		}
-		glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-		if (!success)
-		{
-			glGetShaderInfoLog(fragment_shader, sizeof info_log, nullptr, info_log);
-			throw std::runtime_error("Couldn't compile fragment shader " + std::string(info_log));
-		}
-
-		//link shaders into shader program
-		program = glCreateProgram();
-		glAttachShader(program, vertex_shader);
-		glAttachShader(program, fragment_shader);
-		glLinkProgram(program);
-		glGetProgramiv(program, GL_LINK_STATUS, &success);
-		if (!success)
-		{
-			glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
-			throw std::runtime_error("Couldn't link shader program " + std::string(info_log));
-		}
-
-		glDeleteShader(vertex_shader);
-		glDeleteShader(fragment_shader);
-
-		uniform_indices[int(uniform::mvp)] = glGetUniformLocation(program, "mvp");
-		uniform_indices[int(uniform::model)] = glGetUniformLocation(program, "model");
-		uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
-		uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
-		uniform_indices[int(uniform::light_position_0)] = glGetUniformLocation(program, "light_position_0");
-		uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
-		uniform_indices[int(uniform::gamma)] = glGetUniformLocation(program, "gamma");
-	}
-
-	~shader()
-	{
-		if(glIsProgram(program) == GL_TRUE)
-			glDeleteProgram(program);
+		use_0();
 	}
 
 	shader(const shader&) = delete;
 	shader& operator=(const shader&) = delete;
 
-	void use() const
-	{
-		glUseProgram(program);
-	}
+	void use() const;
+	static void use_0();
 
-	static void use_0()
-	{
-		glUseProgram(0);
-	}
-
-	//todo set uniforms
-	void set_uniform(uniform type, const glm::mat4& matrix) const
-	{
-		glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
-	}
-
-	void set_uniform(uniform type, const glm::mat3& matrix) const
-	{
-		glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
-	}
-
-	void set_uniform(uniform type, const glm::vec3& v) const
-	{
-		glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
-	}
-
-	void set_uniform(uniform type, float v) const
-	{
-		glUniform1f(uniform_indices[int(type)], v);
-	}
+	//One overload for every shader uniform available
+	void set_uniform(uniform type, const glm::mat4& matrix) const;
+	void set_uniform(uniform type, const glm::mat3& matrix) const;
+	void set_uniform(uniform type, const glm::vec3& v) const;
+	void set_uniform(uniform type, float v) const;
 
 private:
 	GLuint program = 0;
-	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)];
+	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)]{};
 
+	static std::vector<shader*> shader_list;
 };

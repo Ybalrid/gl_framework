@@ -39,6 +39,7 @@ public:
 	{
 		steal_guts(o);
 	}
+
 	texture& operator=(texture&& o) noexcept
 	{
 		steal_guts(o);
@@ -51,12 +52,12 @@ public:
 		glBindTexture(target, name);
 	}
 
-	void load_from(const image& img, GLenum target = GL_TEXTURE_2D)
+	void load_from(const image& img, bool is_sRGB = true, GLenum target = GL_TEXTURE_2D)
 	{
 		bind(target);
 		glTexImage2D(target,
 			0,
-			GL_SRGB_ALPHA,
+			is_sRGB ? GL_SRGB_ALPHA : GL_RGBA,
 			img.get_width(),
 			img.get_height(),
 			0,

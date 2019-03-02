@@ -1,7 +1,7 @@
 #version 330 core
 
 out vec4 color_output;
-in vec2 texture_coords;
+in vec2 texture_coordinates;
 uniform sampler2D in_texture;
 
 uniform float gamma;
@@ -14,5 +14,5 @@ vec4 apply_gamma(vec4 color, float gamma_value)
 //just return the color sampled from the texture without any shading
 void main()
 {
-	color_output = apply_gamma(texture(in_texture, texture_coords), gamma);
+	color_output = apply_gamma(texture(in_texture, texture_coordinates), gamma);
 }

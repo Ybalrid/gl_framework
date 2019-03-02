@@ -119,11 +119,6 @@ public:
 		shader_program->set_uniform(shader::uniform::model, model);		//world space model matrix
 		shader_program->set_uniform(shader::uniform::normal, normal);	//3x3 matrix extracted from(transpose(inverse(model)))
 
-		//TODO this thing should be set once per shader per camera, not once per object. We are wasting OpenGL states changes here!
-		shader_program->set_uniform(shader::uniform::view, view);
-		//TODO this setting is likely only updated once, or when user changes rendering settings;
-		shader_program->set_uniform(shader::uniform::gamma, gamma);
-
 		//TODO multitextuing
 		main_texture->bind();
 

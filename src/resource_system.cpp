@@ -33,7 +33,7 @@ std::vector<uint8_t> resource_system::get_file(const std::string& virtual_path)
 
 	const auto size = PHYSFS_fileLength(file);
 	std::vector<uint8_t> data(size);
-	PHYSFS_read(file, data.data(), 1, static_cast<PHYSFS_uint32>(size));
+	PHYSFS_readBytes(file, data.data(), size);
 	PHYSFS_close(file);
 
 	return data; //rvo ~o~
