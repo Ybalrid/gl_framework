@@ -18,12 +18,12 @@ resource_system::resource_system(char* arg0): pysics_fs(arg0)
 
 void resource_system::add_location(const std::string& real_path, bool last)
 {
-	PHYSFS_addToSearchPath(real_path.c_str(), last ? 1 : 0);
+	PHYSFS_mount(real_path.c_str(), nullptr, (last ? 1 : 0));
 }
 
 std::vector<uint8_t> resource_system::get_file(const std::string& virtual_path)
 {
-	if (!PHYSFS_exists(virtual_path.c_str())) 
+	if (!PHYSFS_exists(virtual_path.c_str()))
 		throw std::runtime_error("file "+ virtual_path +" doesn't exist");
 
 	const auto file = PHYSFS_openRead(virtual_path.c_str());
