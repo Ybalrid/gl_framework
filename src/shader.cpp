@@ -1,5 +1,6 @@
 #include "shader.hpp"
 #include "resource_system.hpp"
+#include <algorithm>
 
 std::vector<shader*> shader::shader_list{};
 
