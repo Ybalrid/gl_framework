@@ -25,6 +25,9 @@ public:
 		camera_position,
 		gamma,
 		time,
+		material_diffuse,
+		material_specular,
+		material_shininess,
 		main_directional_light,
 		point_light_0,
 		point_light_1,
@@ -56,6 +59,8 @@ public:
 	};
 
 	static constexpr const size_t NB_POINT_LIGHT{ 4 };
+	static constexpr const int material_diffuse_texture_slot = 0;
+	static constexpr const int material_specular_texture_slot = 1;
 
 
 	///Construct a shader object. Take the location in the resource package of the source code
@@ -85,6 +90,7 @@ public:
 	void set_uniform(uniform type, const glm::mat3& matrix) const;
 	void set_uniform(uniform type, const glm::vec3& v) const;
 	void set_uniform(uniform type, float v) const;
+	void set_uniform(uniform type, int i) const;
 	void set_uniform(uniform type, const directional_light& light) const;
 	void set_uniform(uniform type, const point_light& light) const;
 

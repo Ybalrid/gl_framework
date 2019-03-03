@@ -24,6 +24,7 @@ class gltf_loader
 public:
 	gltf_loader(shader& default_shader, texture& default_texture) : dshader{ default_shader }, dtexture{ default_texture }
 	{
+		gltf_textures.reserve(10);
 		//This register our custom ImageLoader with tinygltf
 		tinygltf_freeimage_setup(gltf);
 		tinygltf_resource_system_setup(gltf);
@@ -226,12 +227,12 @@ public:
 		if(mesh.primitives[0].material>=0)
 		{
 
+			texture* diffuse_texture = nullptr;
 			const auto material = model.materials[mesh.primitives[0].material];
 			const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 			const auto color_image = model.images[color_texture.source];
 
 			GLuint tex;
-			glActiveTexture(GL_TEXTURE0);
 			glGenTextures(1, &tex);
 			glBindTexture(GL_TEXTURE_2D, tex);
 			glTexImage2D(GL_TEXTURE_2D, 
@@ -246,10 +247,19 @@ public:
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 0);
 			gltf_textures.emplace_back(tex);
-			return { dshader, gltf_textures.back(), vertex, index,{true, true, true} , 8, 0, 3, 5, draw_mode };
+			diffuse_texture = &gltf_textures.back();
+			
+
+			renderable r{ dshader, vertex, index,{true, true, true} , 8, 0, 3, 5, draw_mode };
+			r.set_diffuse_texture(diffuse_texture);
+
+			return r;
 		}
 
-		return { dshader, dtexture, vertex, index, {true, true, true}, 8, 0, 3, 5, draw_mode };
+		renderable r{ dshader, vertex, index, {true, true, true}, 8, 0, 3, 5, draw_mode };
+		r.set_diffuse_texture(&dtexture);
+
+		return r;
 	}
 
 };

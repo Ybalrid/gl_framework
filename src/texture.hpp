@@ -86,15 +86,15 @@ public:
 		return *this;
 	}
 
-	void bind(GLenum target = GL_TEXTURE_2D) const
+	void bind(int index = 0, GLenum target = GL_TEXTURE_2D) const
 	{
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE0 + index);
 		glBindTexture(target, name);
 	}
 
 	void load_from(const image& img, bool is_sRGB = true, GLenum target = GL_TEXTURE_2D)
 	{
-		bind(target);
+		bind(0, target);
 		glTexImage2D(target,
 			0,
 			is_sRGB ? GL_SRGB_ALPHA : GL_RGBA,
@@ -112,7 +112,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
-	static void unbind(GLenum target = GL_TEXTURE_2D)
+	static void bind_0(GLenum target = GL_TEXTURE_2D)
 	{
 		glBindTexture(target, 0);
 	}

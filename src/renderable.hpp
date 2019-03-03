@@ -5,11 +5,13 @@
 
 #include "shader.hpp"
 #include "texture.hpp"
+#include "material.h"
 
 class renderable
 {
 	shader* shader_program = nullptr;
-	texture* main_texture = nullptr;
+	texture* diffuse_texture = nullptr;
+	texture* specular_texture = nullptr;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
 	GLenum draw_mode = GL_TRIANGLES, element_type = GL_UNSIGNED_INT;
@@ -18,6 +20,7 @@ class renderable
 	glm::mat4 mvp = glm::mat4(1.f), model = glm::mat4(1.f), view = glm::mat4(1.f);
 	glm::mat3 normal = glm::mat3(1.f);
 
+
 	static constexpr GLuint vertex_coord_layout = 0;
 	static constexpr GLuint texture_coord_layout = 1;
 	static constexpr GLuint normal_coord_layout = 2;
@@ -25,7 +28,7 @@ class renderable
 	void steal_guts(renderable& other)
 	{
 		shader_program = other.shader_program;
-		main_texture = other.main_texture;
+		diffuse_texture = other.diffuse_texture;
 		VAO = other.VAO;
 		VBO = other.VBO;
 		EBO = other.EBO;
@@ -37,6 +40,7 @@ class renderable
 	}
 
 public:
+	material mat;
 
 	struct configuration
 	{
@@ -46,7 +50,6 @@ public:
 	};
 
 	renderable(shader& program, 
-		texture& tex, 
 		const std::vector<float>& vertex_buffer, 
 		const std::vector<unsigned int>& index_buffer, 
 		configuration vertex_config, 
@@ -56,7 +59,7 @@ public:
 		size_t normal_coord_offset = 0, 
 		GLenum draw_operation = GL_TRIANGLES, 
 		GLenum buffer_usage = GL_STATIC_DRAW):
-		shader_program(&program), main_texture(&tex), draw_mode(draw_operation)
+		shader_program(&program), draw_mode(draw_operation)
 	{
 		glGenBuffers(1, &VBO);
 		glGenBuffers(1, &EBO);
@@ -84,6 +87,16 @@ public:
 		glBindVertexArray(0);
 		element_count = GLuint(index_buffer.size());
 	}
+
+	void set_diffuse_texture(texture* t)
+	{
+		diffuse_texture = t;
+	}
+
+	void set_specular_texture(texture* t)
+	{
+		specular_texture = t;
+	}
 	
 	~renderable()
 	{
@@ -110,7 +123,6 @@ public:
 	{
 		//We need to have a shader and a texture!
 		assert(shader_program);
-		assert(main_texture);
 
 		//Setup our shader
 		shader_program->use();
@@ -118,10 +130,31 @@ public:
 		shader_program->set_uniform(shader::uniform::model, model);		//world space model matrix
 		shader_program->set_uniform(shader::uniform::normal, normal);	//3x3 matrix extracted from(transpose(inverse(model)))
 
-		//TODO multitextuing
-		main_texture->bind();
+		shader_program->set_uniform(shader::uniform::material_shininess, mat.shininess);
 
-		//TODO material system
+		shader_program->set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
+		if (diffuse_texture)
+		{
+			diffuse_texture->bind(shader::material_diffuse_texture_slot);
+			shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE0);
+			texture::bind_0();
+			shader_program->set_uniform(shader::uniform::material_specular, -1);
+		}
+		if (specular_texture)
+		{
+			specular_texture->bind(shader::material_specular_texture_slot);
+			shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE1);
+			texture::bind_0();
+			shader_program->set_uniform(shader::uniform::material_specular, -1);
+		}
 
 		//bind object buffers and issue draw call
 		glBindVertexArray(VAO);

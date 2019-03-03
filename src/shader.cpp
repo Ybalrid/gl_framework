@@ -61,6 +61,10 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	uniform_indices[int(uniform::model)] = glGetUniformLocation(program, "model");
 	uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
 
+	uniform_indices[int(uniform::material_diffuse)] = glGetUniformLocation(program, "material.diffuse");
+	uniform_indices[int(uniform::material_specular)] = glGetUniformLocation(program, "material.specular");
+	uniform_indices[int(uniform::material_shininess)] = glGetUniformLocation(program, "material.shininess");
+
 	//Frame invariant:
 	uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
 	uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
@@ -88,6 +92,9 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 		point_light_list_uniform_locations[i].diffuse = glGetUniformLocation(program, (point_light_name + "diffuse").c_str());
 		point_light_list_uniform_locations[i].specular = glGetUniformLocation(program, (point_light_name + "specular").c_str());
 	}
+
+	set_uniform(uniform::material_diffuse, material_diffuse_texture_slot);
+	set_uniform(uniform::material_specular, material_specular_texture_slot);
 
 	shader_list.push_back(this);
 }
@@ -128,6 +135,11 @@ void shader::set_uniform(uniform type, const glm::vec3& v) const
 void shader::set_uniform(uniform type, float v) const
 {
 	glUniform1f(uniform_indices[int(type)], v);
+}
+
+void shader::set_uniform(uniform type, int i) const
+{
+	glUniform1i(uniform_indices[int(type)], i);
 }
 
 void shader::set_uniform(uniform type, const directional_light& light) const

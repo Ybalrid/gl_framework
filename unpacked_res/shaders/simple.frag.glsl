@@ -12,7 +12,14 @@ uniform vec3 camera_position;
 uniform mat4 view;
 uniform mat4 model;
 uniform float gamma;
-uniform sampler2D in_texture;
+
+struct material_def
+{
+	sampler2D diffuse;
+	sampler2D specular;
+	float shininess;
+};
+uniform material_def material;
 
 struct directional_light
 {
@@ -22,7 +29,6 @@ struct directional_light
 	vec3 diffuse;
 	vec3 specular;
 };
-
 uniform directional_light main_directional_light;
 
 struct point_light
@@ -73,9 +79,9 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 	
 	//calculate specular factor
 	vec3 refection_direction = reflect(-light_direction, frag_normal);
-	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), 32); //TODO material system
+	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), material.shininess);
 
-	vec3 diffuse_sample_color = texture(in_texture, texture_coordinates).rgb;
+	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb;
 	//TODO material system that permit to have a specular texture 
 	vec3 specular_sample_color = diffuse_sample_color;
 	
@@ -97,8 +103,7 @@ vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_
 	
 	//calculate specular factor
 	vec3 reflection_direction = reflect(-light_direction, frag_normal);
-	float specular_factor = pow(max(dot(frag_view_direction, reflection_direction), 0.0), 32); //TODO material system for the shinyness factor
-
+	float specular_factor = pow(max(dot(frag_view_direction, reflection_direction), 0.0), material.shininess);
 	//calculate attenuation
 	float light_frag_distance = length(light.position - frag_world_position);
 	float light_frag_distance_sq = light_frag_distance*light_frag_distance;
@@ -108,9 +113,8 @@ vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_
 		+ (light.quadratic * (light_frag_distance_sq))
 	);
 
-	vec3 diffuse_sample_color = texture(in_texture, texture_coordinates).rgb;
-	//TODO material system that permit to have a specular texture 
-	vec3 specular_sample_color = diffuse_sample_color;
+	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb;
+	vec3 specular_sample_color = texture(material.specular, texture_coordinates).rgb;
 
 	vec3 ambient_color = light.ambient * diffuse_sample_color;
 	vec3 diffuse_color = light.diffuse * diffuse_factor * diffuse_sample_color;
