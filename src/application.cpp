@@ -8,6 +8,8 @@
 #include "gltf_loader.hpp"
 #include <cpptoml.h>
 
+#include "light.hpp"
+
 std::vector<std::string> application::resource_paks;
 
 void application::activate_vsync()
@@ -187,12 +189,13 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		polutropon_logo_texture.generate_mipmaps();
 	}
 
-	std::vector<float> plane = {
-		//	 x=		 y=		z=		u=	v=		normal
-		-0.9f,	0.0f,	 0.9f,		0,	1,		0,1,0,
-		 0.9f,	0.0f,	 0.9f,		1,	1,		0,1,0,
-		-0.9f,	0.0f,	-0.9f,		0,	0,		0,1,0,
-		 0.9f,	0.0f,	-0.9f,		1,	0,		0,1,0
+	std::vector<float> plane =
+	{
+		//x=	y=		 z=			u=	v=		normal=
+		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,
+		 0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,
+		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,
+		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0
 	};
 
 	std::vector<unsigned int> plane_indices =
@@ -245,6 +248,23 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	bool draw_ortho = false; 
 	bool draw_hud = false;
 
+	directional_light sun;
+	sun.ambient = sun.diffuse = sun.specular = glm::vec3(0.10f);
+
+
+	point_light lights[4];
+	lights[0].position = glm::vec3(-4.f, 3.f, -4.f);
+	lights[1].position = glm::vec3(-4.f, -3.f, -4.f);
+	lights[2].position = glm::vec3(0.f, 2.f, 2.f);
+	lights[3].position = glm::vec3(2.f, 3.f, 1.f);
+
+	lights[0].diffuse = lights[0].ambient = lights[0].specular = glm::vec3(1.f, 0, 0) *0.5f;
+	lights[1].diffuse = lights[1].ambient = lights[1].specular = glm::vec3(0, 1.f, 0) *0.1f;
+	lights[2].diffuse = lights[2].ambient = lights[2].specular = glm::vec3(0, 0, 1.f) *0.8f;
+	lights[3].diffuse = lights[3].ambient = lights[3].specular = glm::vec3(1.f, 1.f, 1.f) *0.2f;
+
+
+
 	glEnable(GL_DEPTH_TEST);
 	while (running)
 	{
@@ -274,15 +294,19 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		cam.update_projection(size.x, size.y);
 
 		float t_in_sec = (current_time) / 1000.f;
-		glm::vec3 light_position_0(8 * glm::sin(t_in_sec), 5, 8 * glm::cos(t_in_sec));
 		
-		shader::set_frame_uniform(shader::uniform::light_position_0, light_position_0);
 		shader::set_frame_uniform(shader::uniform::gamma, renderable::gamma);
 
 		//we are going to draw with the main camera first:
 		shader::set_frame_uniform(shader::uniform::camera_position, cam.xform.get_position());
 		shader::set_frame_uniform(shader::uniform::view, cam.get_view_matrix());
 		shader::set_frame_uniform(shader::uniform::projection, cam.get_projection_matrix());
+
+		shader::set_frame_uniform(shader::uniform::main_directional_light, sun);
+		shader::set_frame_uniform(shader::uniform::point_light_0, lights[0]);
+		shader::set_frame_uniform(shader::uniform::point_light_1, lights[1]);
+		shader::set_frame_uniform(shader::uniform::point_light_2, lights[2]);
+		shader::set_frame_uniform(shader::uniform::point_light_3, lights[3]);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

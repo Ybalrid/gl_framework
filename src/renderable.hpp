@@ -145,12 +145,6 @@ public:
 		view = matrix;
 	}
 
-	void set_light_0_position(const glm::vec3& v) const
-	{
-		shader_program->use();
-		shader_program->set_uniform(shader::uniform::light_position_0, v);
-	}
-
 	void set_camera_position(const glm::vec3& v) const
 	{
 		shader_program->use();

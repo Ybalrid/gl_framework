@@ -61,12 +61,32 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
 
 	//Frame invariant:
-	uniform_indices[int(uniform::light_position_0)] = glGetUniformLocation(program, "light_position_0");
 	uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
 	uniform_indices[int(uniform::view)] = glGetUniformLocation(program, "view");
 	uniform_indices[int(uniform::projection)] = glGetUniformLocation(program, "projection");
 	uniform_indices[int(uniform::gamma)] = glGetUniformLocation(program, "gamma");
 	uniform_indices[int(uniform::time)] = glGetUniformLocation(program, "time");
+
+
+	//one directional lights
+	main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
+	main_directional_light_uniform_locations.ambient = glGetUniformLocation(program, "main_directional_light.ambient");
+	main_directional_light_uniform_locations.diffuse = glGetUniformLocation(program, "main_directional_light.diffuse");
+	main_directional_light_uniform_locations.specular = glGetUniformLocation(program, "main_directional_light.specular");
+
+	//A number of point lights
+	for (size_t i = 0; i < NB_POINT_LIGHT; ++i)
+	{
+		std::string point_light_name = "point_light_list[" + std::to_string(i) + "].";
+
+		point_light_list_uniform_locations[i].position = glGetUniformLocation(program, (point_light_name + "position").c_str());
+		point_light_list_uniform_locations[i].constant = glGetUniformLocation(program, (point_light_name + "constant").c_str());
+		point_light_list_uniform_locations[i].linear = glGetUniformLocation(program, (point_light_name + "linear").c_str());
+		point_light_list_uniform_locations[i].quadratic = glGetUniformLocation(program, (point_light_name + "quadratic").c_str());
+		point_light_list_uniform_locations[i].ambient = glGetUniformLocation(program, (point_light_name + "ambient").c_str());
+		point_light_list_uniform_locations[i].diffuse = glGetUniformLocation(program, (point_light_name + "diffuse").c_str());
+		point_light_list_uniform_locations[i].specular = glGetUniformLocation(program, (point_light_name + "specular").c_str());
+	}
 
 	shader_list.push_back(this);
 }
@@ -91,12 +111,12 @@ void shader::use_0()
 
 void shader::set_uniform(uniform type, const glm::mat4& matrix) const
 {
-	glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
+	glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::mat3& matrix) const
 {
-	glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, glm::value_ptr(matrix));
+	glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::vec3& v) const
@@ -107,4 +127,40 @@ void shader::set_uniform(uniform type, const glm::vec3& v) const
 void shader::set_uniform(uniform type, float v) const
 {
 	glUniform1f(uniform_indices[int(type)], v);
+}
+
+void shader::set_uniform(uniform type, const directional_light& light) const
+{
+	if (type != uniform::main_directional_light) return;
+
+	glUniform3f(main_directional_light_uniform_locations.direction, light.direction.x, light.direction.y, light.direction.z);
+	glUniform3f(main_directional_light_uniform_locations.ambient, light.ambient.r, light.ambient.g, light.ambient.b);
+	glUniform3f(main_directional_light_uniform_locations.diffuse, light.diffuse.r, light.diffuse.g, light.diffuse.b);
+	glUniform3f(main_directional_light_uniform_locations.specular, light.specular.r, light.specular.g, light.specular.b);
+}
+
+void shader::set_uniform(uniform type, const point_light& light) const
+{
+	const int index = [t=type]
+	{
+		switch(t)
+		{
+		default: return -1;
+		case uniform::point_light_0: return 0;
+		case uniform::point_light_1: return 1;
+		case uniform::point_light_2: return 2;
+		case uniform::point_light_3: return 3;
+		};
+	}();
+
+	if (index < 0) return;
+
+	const auto& point_light_location = point_light_list_uniform_locations[index];
+	glUniform3f(point_light_location.position, light.position.x, light.position.y, light.position.z);
+	glUniform1f(point_light_location.constant, light.constant);
+	glUniform1f(point_light_location.linear, light.linear);
+	glUniform1f(point_light_location.quadratic, light.quadratic);
+	glUniform3f(point_light_location.ambient, light.ambient.r, light.ambient.g, light.ambient.b);
+	glUniform3f(point_light_location.diffuse, light.diffuse.r, light.diffuse.g, light.diffuse.b);
+	glUniform3f(point_light_location.specular, light.specular.r, light.specular.g, light.specular.b);
 }

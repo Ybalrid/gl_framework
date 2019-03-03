@@ -13,51 +13,112 @@ uniform mat4 view;
 uniform mat4 model;
 uniform float gamma;
 uniform sampler2D in_texture;
-uniform vec3 light_position_0;
+
+struct directional_light
+{
+	vec3 direction;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
+uniform directional_light main_directional_light;
+
+struct point_light
+{
+	vec3 position;
+
+	float constant;
+	float linear;
+	float quadratic;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+#define NB_POINT_LIGHTS 4
+uniform point_light point_light_list[NB_POINT_LIGHTS];
+
 
 vec4 apply_gamma(vec4 color, float gamma)
 {
 	return vec4(pow(color.rgb, vec3(1.0/gamma)), color.a);
 }
 
+vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction);
+vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction);
+
 void main()
 {
-	//Sample the texture : 
-	vec4 textured_color = texture(in_texture, texture_coordinates);
-
-	//TODO read this from uniform!
-	vec3 light_color = vec3(1,1,1); //Warm-ish white
-	float ambient_factor = 0.3;
-	float constant = 1.0;
-	float linear = 0.09;
-	float quadratic = 0.032;
-	float specular_strengh = 0.2;
-	float specular_power = 32;
-
 	//compute additional vectors : 
 	vec3 normalized_normals = normalize(normal_direction);
-	vec3 light_direction = normalize(light_position_0 - world_position);
 	vec3 view_direction = normalize(camera_position - world_position);
-	vec3 reflect_direction = reflect(-light_direction, normalized_normals);
-	float light_distance = length(light_position_0 - world_position);
 
-	//compute ambiant, diffuse and specular factors, and distance attenuation
-	float diffuse_factor = max(dot(normalized_normals, light_direction), 0.0);
-	float specular_factor = pow(max(dot(view_direction, reflect_direction), 0.0), specular_power);
-	float attenuation = 1.0 / (constant + (linear * light_distance) + (quadratic * (light_distance * light_distance)));
+	//Accumulate each light contribution to shading
+	vec3 color_result =  calculate_directional_light(main_directional_light, normalized_normals, view_direction);
+	for(int i = 0; i < NB_POINT_LIGHTS; i++)
+		color_result += calculate_point_light(point_light_list[i], normalized_normals, world_position, view_direction);
+
+	//gamma correct the output:
+	color_output = apply_gamma(vec4(color_result, 1.0), gamma);
+}
+
+vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction)
+{
+	vec3 light_direction = normalize(-light.direction);
+
+	//calculate diffuse factor
+	float diffuse_factor = max(dot(frag_normal, light_direction), 0.0);
 	
-	//compute the color of the differnt kinds of light
-	vec4 ambiant_color = vec4(ambient_factor * light_color, 1);
-	vec4 diffuse_color = vec4(diffuse_factor * light_color, 1);
-	vec4 specular_color = vec4(specular_strengh * specular_factor * light_color, 1);
+	//calculate specular factor
+	vec3 refection_direction = reflect(-light_direction, frag_normal);
+	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), 32); //TODO material system
 
-	//compute the color from the current fragment's diffuse texture
-	vec4 textured_diffuse_color = textured_color * diffuse_color;
-	vec4 textured_ambiant_color = textured_color * ambiant_color;
-	vec4 textured_specular_color = textured_color * specular_color;
+	vec3 diffuse_sample_color = texture(in_texture, texture_coordinates).rgb;
+	//TODO material system that permit to have a specular texture 
+	vec3 specular_sample_color = diffuse_sample_color;
+	
+	
+	vec3 ambient_color = light.ambient * diffuse_sample_color;
+	vec3 diffuse_color = light.diffuse * diffuse_factor * diffuse_sample_color;
+	vec3 specular_color = light.specular * specular_factor * specular_sample_color;
 
-	//allumulate the result, and apply gammma correction
-	color_output = apply_gamma(textured_ambiant_color * attenuation  
-	+ textured_diffuse_color * attenuation 
-	+ specular_color * attenuation, gamma);
+	//Return this fragment shaded by this one light
+	return ambient_color + diffuse_color + specular_color;
+}
+
+vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction)
+{
+	vec3 light_direction = normalize(light.position - frag_world_position);
+
+	//calculate diffuse factor
+	float diffuse_factor = max(dot(frag_normal, light_direction), 0.0);
+	
+	//calculate specular factor
+	vec3 reflection_direction = reflect(-light_direction, frag_normal);
+	float specular_factor = pow(max(dot(frag_view_direction, reflection_direction), 0.0), 32); //TODO material system for the shinyness factor
+
+	//calculate attenuation
+	float light_frag_distance = length(light.position - frag_world_position);
+	float light_frag_distance_sq = light_frag_distance*light_frag_distance;
+	float attenuation = 1.0 / (
+		(light.constant)
+		+ (light.linear * (light_frag_distance))
+		+ (light.quadratic * (light_frag_distance_sq))
+	);
+
+	vec3 diffuse_sample_color = texture(in_texture, texture_coordinates).rgb;
+	//TODO material system that permit to have a specular texture 
+	vec3 specular_sample_color = diffuse_sample_color;
+
+	vec3 ambient_color = light.ambient * diffuse_sample_color;
+	vec3 diffuse_color = light.diffuse * diffuse_factor * diffuse_sample_color;
+	vec3 specular_color = light.specular * specular_factor * specular_sample_color;
+
+	ambient_color *= attenuation;
+	diffuse_color *= attenuation;
+	specular_color *= attenuation;
+
+	return ambient_color + diffuse_color + specular_color;
 }
