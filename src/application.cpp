@@ -132,14 +132,14 @@ void application::configure_and_create_window()
 	//load config
 	auto configuration_data = resource_system::get_file("/config.toml");
 	configuration_data.push_back('\0');
-	std::string configuration_text(reinterpret_cast<const char*>(configuration_data.data()));
+	const std::string configuration_text(reinterpret_cast<const char*>(configuration_data.data()));
 	std::istringstream configuration_stream(configuration_text);
 	auto config_toml = cpptoml::parser(configuration_stream);
 	const auto loaded_config = config_toml.parse();
 	const auto configuration_table = loaded_config->get_table("configuration");
 
 	//extract config values
-	bool multisampling = configuration_table->get_as<bool>("multisampling").value_or(true);
+	const bool multisampling = configuration_table->get_as<bool>("multisampling").value_or(true);
 	const int samples = configuration_table->get_as<int>("samples").value_or(8);
 	const bool srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
 
@@ -148,9 +148,9 @@ void application::configure_and_create_window()
 	const bool fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
 	sdl::Vec2i window_size{};
 
-	auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
-	window_size.x = window_size_array->at(0);
-	window_size.y = window_size_array->at(1);
+	const auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
+	window_size.x = int(window_size_array->at(0));
+	window_size.y = int(window_size_array->at(1));
 
 	//create window
 	window = sdl::Window("application window",
@@ -263,8 +263,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	lights[2].diffuse = lights[2].ambient = lights[2].specular = glm::vec3(0, 0, 1.f) *0.8f;
 	lights[3].diffuse = lights[3].ambient = lights[3].specular = glm::vec3(1.f, 1.f, 1.f) *0.2f;
 
-
-
 	glEnable(GL_DEPTH_TEST);
 	while (running)
 	{
@@ -286,7 +284,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		}
 
 		ui.frame();
-		ImGui::SliderFloat("Gamma", &renderable::gamma, 1.1, 2.8);
+		ImGui::SliderFloat("Gamma", &shader::gamma, 1.1, 2.8);
 		ImGui::SliderFloat("Camera FoV?", &cam.fov, 20, 180);
 
 		//clear viewport
@@ -295,7 +293,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		float t_in_sec = (current_time) / 1000.f;
 		
-		shader::set_frame_uniform(shader::uniform::gamma, renderable::gamma);
+		shader::set_frame_uniform(shader::uniform::gamma, shader::gamma);
 
 		//we are going to draw with the main camera first:
 		shader::set_frame_uniform(shader::uniform::camera_position, cam.xform.get_position());

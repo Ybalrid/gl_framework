@@ -12,6 +12,7 @@ class shader
 {
 
 public:
+	static float gamma;
 
 	///All settable uniforms in shaders
 	enum class uniform

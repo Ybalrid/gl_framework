@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include "image.hpp"
+#include <algorithm>
 
 class texture
 {
@@ -13,24 +14,63 @@ class texture
 
 	void steal_guts(texture& o)
 	{
+		for(size_t i = 0; i < texture_list.size(); ++i)
+		{
+			if (texture_list[i]->name == name)
+			{
+				texture_list.erase(texture_list.begin() + i);
+				break;
+			}
+		}
+
+		if(name)
+		{
+			glDeleteTextures(1, &name);
+		}
+
 		name = o.name;
 		o.name = 0;
+		for(size_t i = 0; i < texture_list.size(); ++i)
+		{
+			if (texture_list[i]->name == o.name)
+			{
+				texture_list[i] = this;
+				break;
+			}
+		}
 	}
+	static std::vector<texture*> texture_list;
 
 public:
+
 	texture()
 	{
 		gen();
+		texture_list.push_back(this);
 	}
 
 	explicit texture(GLuint id) : name(id)
 	{
+		const auto texture_iterator = std::find_if(texture_list.begin(), texture_list.end(), [=](texture* t_ptr)
+		{
+			return t_ptr->name == id;
+		});
+
+		if (texture_iterator != texture_list.end())
+		{
+			throw std::runtime_error("Texutre " + std::to_string(id) + " already exist!");
+		}
+
+		texture_list.push_back(this);
 	}
 
 	~texture()
 	{
 		if (name)
+		{
 			glDeleteTextures(1, &name);
+			texture_list.erase(std::find(texture_list.begin(), texture_list.end(), this));
+		}
 	}
 
 	texture(const texture&) = delete;

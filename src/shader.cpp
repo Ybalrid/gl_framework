@@ -3,6 +3,7 @@
 #include <algorithm>
 
 std::vector<shader*> shader::shader_list{};
+float shader::gamma = 2.2f;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
 {

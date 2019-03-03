@@ -4,7 +4,7 @@
 
 struct directional_light
 {
-	glm::vec3 direction{-0.33f, 0.33f, -0.33f};
+	glm::vec3 direction{1.f/3.f};
 
 	//color values:
 	glm::vec3 ambient{1.f};
@@ -14,7 +14,7 @@ struct directional_light
 
 struct point_light
 {
-	glm::vec3 position;
+	glm::vec3 position{0.f};
 
 	//attenuation parameters
 	float constant{1.f};

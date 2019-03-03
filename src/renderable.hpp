@@ -37,7 +37,6 @@ class renderable
 	}
 
 public:
-	static float gamma;
 
 	struct configuration
 	{
