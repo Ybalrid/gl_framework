@@ -8,10 +8,20 @@
 
 #include <GL/glew.h>
 
+#include <vector>
+#include <string>
+
 class gui
 {
 	SDL_Window* w = nullptr;
+
+	void console();
+	char console_input[256]={0};
+	std::vector<std::string> console_content{"Debuging console."};
+	bool scroll_console_to_bottom = false;
+
 public:
+	bool show_console = true;
 	gui() = default;
 	gui(sdl::Window& window, sdl::Window::GlContext& gl_context);
 	~gui();

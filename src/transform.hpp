@@ -22,12 +22,17 @@ struct transform
 	///Set the position. Set dirty flag.
 	void set_position(const glm::vec3& new_position);
 
-
 	///Set the scale. Set dirty flag
 	void set_scale(const glm::vec3& new_scale);
 
 	///Set the orientation. We will normalize this quaternion. Set dirty flag.
 	void set_orientation(const glm::quat& new_orientation);
+
+	void translate(const glm::vec3& v);
+	void scale(const glm::vec3& v);
+	void rotate(const glm::quat&);
+	void rotate(float angle, const glm::vec3& axis);
+
 
 	///Positive X axis.
 	inline static const glm::vec3 X_AXIS{ 1.f,0.f,0.f };
@@ -49,6 +54,6 @@ private:
 	mutable glm::mat4 model{ 1.f };
 
 	//The internally stored absolute position, scale and orientation
-	glm::vec3 position{ VEC_ZERO }, scale{ UNIT_SCALE };
-	glm::quat orientation{ IDENTITY_QUAT };
+	glm::vec3 current_position{ VEC_ZERO }, current_scale{ UNIT_SCALE };
+	glm::quat current_orientation{ IDENTITY_QUAT };
 };

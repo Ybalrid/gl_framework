@@ -20,7 +20,6 @@ class renderable
 	glm::mat4 mvp = glm::mat4(1.f), model = glm::mat4(1.f), view = glm::mat4(1.f);
 	glm::mat3 normal = glm::mat3(1.f);
 
-
 	static constexpr GLuint vertex_coord_layout = 0;
 	static constexpr GLuint texture_coord_layout = 1;
 	static constexpr GLuint normal_coord_layout = 2;
@@ -29,6 +28,7 @@ class renderable
 	{
 		shader_program = other.shader_program;
 		diffuse_texture = other.diffuse_texture;
+		specular_texture = other.specular_texture;
 		VAO = other.VAO;
 		VBO = other.VBO;
 		EBO = other.EBO;
@@ -36,6 +36,10 @@ class renderable
 		draw_mode = other.draw_mode;
 		element_type = other.element_type;
 		mvp = other.mvp;
+		model = other.model;
+		view = other.view;
+		normal = other.normal;
+		mat = other.mat;
 		other.VAO = other.VBO = other.EBO = 0;
 	}
 
@@ -129,32 +133,31 @@ public:
 		shader_program->set_uniform(shader::uniform::mvp, mvp);			//projection * view * model
 		shader_program->set_uniform(shader::uniform::model, model);		//world space model matrix
 		shader_program->set_uniform(shader::uniform::normal, normal);	//3x3 matrix extracted from(transpose(inverse(model)))
-
 		shader_program->set_uniform(shader::uniform::material_shininess, mat.shininess);
-
 		shader_program->set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
+		shader_program->set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
+		shader_program->set_uniform(shader::uniform::material_specular_color, mat.specular_color);
 		if (diffuse_texture)
 		{
 			diffuse_texture->bind(shader::material_diffuse_texture_slot);
-			shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 		}
 		else
 		{
 			glActiveTexture(GL_TEXTURE0);
 			texture::bind_0();
-			shader_program->set_uniform(shader::uniform::material_specular, -1);
 		}
+		shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+
 		if (specular_texture)
 		{
 			specular_texture->bind(shader::material_specular_texture_slot);
-			shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 		}
 		else
 		{
 			glActiveTexture(GL_TEXTURE1);
 			texture::bind_0();
-			shader_program->set_uniform(shader::uniform::material_specular, -1);
 		}
+		shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 
 		//bind object buffers and issue draw call
 		glBindVertexArray(VAO);

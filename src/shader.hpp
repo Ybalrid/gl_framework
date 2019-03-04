@@ -27,6 +27,8 @@ public:
 		time,
 		material_diffuse,
 		material_specular,
+		material_diffuse_color,
+		material_specular_color,
 		material_shininess,
 		main_directional_light,
 		point_light_0,

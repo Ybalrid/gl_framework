@@ -44,5 +44,10 @@ void script_system::update(float delta)
 	(void)delta;
 	auto& chai = pimpl->get();
 
-	chai.eval("ImGui_Text(\"Hello from ChaiScript!\");");
+	//chai.eval("ImGui_Text(\"Hello from ChaiScript!\");");
+}
+
+void script_system::eval_string(const std::string& input)
+{
+
 }

@@ -13,11 +13,15 @@ uniform mat4 view;
 uniform mat4 model;
 uniform float gamma;
 
+//Represent the object material
 struct material_def
 {
 	sampler2D diffuse;
 	sampler2D specular;
 	float shininess;
+
+	vec3 diffuse_color;
+	vec3 specular_color;
 };
 uniform material_def material;
 
@@ -81,9 +85,8 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 	vec3 refection_direction = reflect(-light_direction, frag_normal);
 	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), material.shininess);
 
-	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb;
-	//TODO material system that permit to have a specular texture 
-	vec3 specular_sample_color = diffuse_sample_color;
+	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb * material.diffuse_color;
+	vec3 specular_sample_color = texture(material.specular, texture_coordinates).rgb * material.specular_color;
 	
 	
 	vec3 ambient_color = light.ambient * diffuse_sample_color;
