@@ -177,6 +177,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	initialize_glew();
 	install_opengl_debug_callback();
 	ui = gui(window, context);
+	scripts.register_imgui_library();
 
 	//set vsync mode
 	activate_vsync();
@@ -342,6 +343,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		update_timing();
 		const auto delta = 0.001f * (float(current_time) - float(last_frame_time));
 		mousex = mousey = 0;
+
 		//event polling
 		while (event.poll())
 		{
@@ -359,8 +361,8 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 				mouse = false;
 				break;
 			case SDL_MOUSEMOTION:
-				mousex = event.motion.xrel;
-				mousey = event.motion.yrel;
+				mousex = (float)event.motion.xrel;
+				mousey = (float)event.motion.yrel;
 				break;
 
 			case SDL_KEYDOWN:
@@ -427,11 +429,11 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			cam.xform.set_orientation(q);
 		}
 
-
-
-
 		ui.frame();
-		ImGui::SliderFloat("Gamma", &shader::gamma, 1.1, 2.8);
+
+		scripts.update(delta);
+
+		ImGui::SliderFloat("Gamma", &shader::gamma, 1.1f, 2.8f);
 		ImGui::SliderFloat("Camera FoV?", &cam.fov, 20, 180);
 
 		//clear viewport

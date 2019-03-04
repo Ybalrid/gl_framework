@@ -13,6 +13,8 @@
 #include "gltf_loader.hpp"
 #include "freeimage_raii.hpp"
 #include "gui.hpp"
+#include "script_system.hpp"
+
 
 class application
 {
@@ -43,6 +45,8 @@ class application
 
 	gui ui;
 	bool running = true;
+
+	script_system scripts;
 public:
 
 	application(int argc, char** argv);
