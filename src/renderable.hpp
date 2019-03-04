@@ -53,7 +53,7 @@ public:
 		bool normal : 1;
 	};
 
-	renderable(shader& program, 
+	renderable(shader* program, 
 		const std::vector<float>& vertex_buffer, 
 		const std::vector<unsigned int>& index_buffer, 
 		configuration vertex_config, 
@@ -63,7 +63,7 @@ public:
 		size_t normal_coord_offset = 0, 
 		GLenum draw_operation = GL_TRIANGLES, 
 		GLenum buffer_usage = GL_STATIC_DRAW):
-		shader_program(&program), draw_mode(draw_operation)
+		shader_program(program), draw_mode(draw_operation)
 	{
 		glGenBuffers(1, &VBO);
 		glGenBuffers(1, &EBO);

@@ -30,7 +30,7 @@ struct transform
 
 	void translate(const glm::vec3& v);
 	void scale(const glm::vec3& v);
-	void rotate(const glm::quat&);
+	void rotate(const glm::quat& q);
 	void rotate(float angle, const glm::vec3& axis);
 
 

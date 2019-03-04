@@ -19,7 +19,6 @@ public:
 	glm::mat4 get_projection_matrix() const;
 	glm::mat4 get_view_projection_matrix() const;
 
-
 	//Call this with the viewport geometry
 	void update_projection(int viewport_w, int viewport_h, 
 		int viewport_x = 0, int viewport_y = 0);

@@ -16,18 +16,47 @@ class gltf_loader
 	std::string error;
 	std::string warning;
 
-	shader& dshader;
-	texture& dtexture;
+	shader* dshader = nullptr;
+	texture* dtexture = nullptr;
 
-	std::vector<texture> gltf_textures;
+	//TODO don't store that here.
+	std::vector<texture> gltf_textures{};
+
+	void steal_guts(gltf_loader& loader)
+	{
+		gltf = std::move(loader.gltf);
+		error = std::move(loader.error);
+		warning = std::move(loader.warning);
+
+		dshader = loader.dshader;
+		dtexture = loader.dtexture;
+
+		gltf_textures = std::move(loader.gltf_textures);
+	}
 
 public:
-	gltf_loader(shader& default_shader, texture& default_texture) : dshader{ default_shader }, dtexture{ default_texture }
+
+	gltf_loader() = default;
+
+	gltf_loader(shader& default_shader, texture& default_texture) : dshader{ &default_shader }, dtexture{ &default_texture }
 	{
+		std::cout << "Initialized glTF 2.0 loader using tinygltf\n";
 		gltf_textures.reserve(10);
 		//This register our custom ImageLoader with tinygltf
 		tinygltf_freeimage_setup(gltf);
 		tinygltf_resource_system_setup(gltf);
+	}
+
+	gltf_loader(const gltf_loader&) = delete;
+	gltf_loader& operator=(const gltf_loader&) = delete;
+	gltf_loader(gltf_loader&& other) noexcept
+	{
+		steal_guts(other);
+	}
+	gltf_loader& operator=(gltf_loader&& other) noexcept
+	{
+		steal_guts(other);
+		return *this;
 	}
 
 	bool load_model(const std::string& virtual_path, tinygltf::Model& model)
@@ -110,7 +139,6 @@ public:
 			return input;
 		}
 	}
-
 
 	std::vector<float> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
 	{
@@ -207,6 +235,26 @@ public:
 		return index_buffer;
 	}
 
+	GLuint load_to_gl_texture(const tinygltf::Image color_image, bool srgb = true)
+	{
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glTexImage2D(GL_TEXTURE_2D, 
+		             0,
+		             srgb ? GL_SRGB_ALPHA : GL_RGBA, //TODO toggle that only on color texture, not specular, normal and everything like that
+		             color_image.width, 
+		             color_image.height, 
+		             0,
+		             GL_RGBA, 
+		             GL_UNSIGNED_BYTE, 
+		             color_image.image.data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		return tex;
+	}
+
 	renderable build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
 	{
 		std::vector<float> vertex;
@@ -232,20 +280,9 @@ public:
 			const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 			const auto color_image = model.images[color_texture.source];
 
-			GLuint tex;
-			glGenTextures(1, &tex);
-			glBindTexture(GL_TEXTURE_2D, tex);
-			glTexImage2D(GL_TEXTURE_2D, 
-				0,
-				GL_SRGB_ALPHA, //TODO toggle that only on color texture, not specular, normal and everything like that
-				color_image.width, 
-				color_image.height, 
-				0,
-				GL_RGBA, 
-				GL_UNSIGNED_BYTE, 
-				color_image.image.data());
-			glGenerateMipmap(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, 0);
+			GLuint tex = load_to_gl_texture(color_image);
+
+
 			gltf_textures.emplace_back(tex);
 			diffuse_texture = &gltf_textures.back();
 			
@@ -257,7 +294,7 @@ public:
 		}
 
 		renderable r{ dshader, vertex, index, {true, true, true}, 8, 0, 3, 5, draw_mode };
-		r.set_diffuse_texture(&dtexture);
+		r.set_diffuse_texture(dtexture);
 
 		return r;
 	}

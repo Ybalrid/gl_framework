@@ -216,13 +216,13 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	shader unlit_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable textured_plane(simple_shader, plane, plane_indices,
+	renderable textured_plane(&simple_shader, plane, plane_indices,
 		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	textured_plane.set_diffuse_texture(&polutropon_logo_texture);
 	//set opengl clear color
 	glClearColor(0.5, 0.5, 0.5, 1);
 
-	gltf_loader gltf(simple_shader, polutropon_logo_texture);
+	 gltf = gltf_loader(simple_shader, polutropon_logo_texture);
 
 	camera cam;
 	cam.fov = 45;
@@ -241,7 +241,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 
-	renderable hud_plane(unlit_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	renderable hud_plane(&unlit_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	hud_plane.set_diffuse_texture(&polutropon_logo_texture);
 
 	//scene_object hud(hud_plane);
@@ -323,7 +323,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	};
 
 
-	renderable cube_renderable(simple_shader, cube_vertex, cube_index, { true, true, true }, 3 + 3 + 2, 0, 3, 5);
+	renderable cube_renderable(&simple_shader, cube_vertex, cube_index, { true, true, true }, 3 + 3 + 2, 0, 3, 5);
 
 	texture cube_diffuse, cube_specular;
 	{

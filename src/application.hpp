@@ -48,6 +48,8 @@ class application
 	bool running = true;
 
 	script_system scripts;
+
+	gltf_loader gltf;
 public:
 
 	application(int argc, char** argv);
