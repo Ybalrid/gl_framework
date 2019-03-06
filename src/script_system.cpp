@@ -6,9 +6,9 @@ struct script_system::impl
 	chaiscript::ChaiScript chai;
 	impl()
 	{
-		std::cout << "Initialized scripting system using ChaiScript " 
-			<< chaiscript::version_major << '.' 
-			<< chaiscript::version_minor << '.' 
+		std::cout << "Initialized scripting system using ChaiScript "
+			<< chaiscript::version_major << '.'
+			<< chaiscript::version_minor << '.'
 			<< chaiscript::version_patch << '\n';
 	}
 
@@ -18,25 +18,21 @@ struct script_system::impl
 	}
 };
 
-#include "ImGui__ChaiScript.h";
+#include "ImGui__ChaiScript.h"
 
-script_system::script_system() 
-{
-	pimpl = std::make_unique<impl>();
-
-
-}
-
-script_system::~script_system()
+script_system::script_system() : pimpl(new script_system::impl(), [](script_system::impl* ptr){delete ptr;})
 {
 }
+
+script_system::~script_system() = default;
+script_system::script_system(script_system&&) noexcept = default;
+script_system& script_system::operator=(script_system&&) noexcept = default;
 
 void script_system::register_imgui_library()
 {
 	auto& chai = pimpl->get();
 	auto ImGui_Module = ImGui_GetChaiScriptModule();
 	chai.add(ImGui_Module);
-
 }
 
 void script_system::update(float delta)
