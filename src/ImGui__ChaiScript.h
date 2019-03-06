@@ -121,7 +121,7 @@ bool Impl_InputText(const std::string& label, std::string& text, int max_size = 
     return ret;
 }
 
-bool Impl_InputTextMultine(const std::string& label, std::string& text, int max_size = 255, ImVec2& size = ImVec2(0,0), ImGuiInputTextFlags flags = 0)
+bool Impl_InputTextMultine(const std::string& label, std::string& text, int max_size = 255, const ImVec2& size = ImVec2(0,0), ImGuiInputTextFlags flags = 0)
 {
     char *buffer = new char[max_size]();
     text.copy(buffer, text.size() < max_size ? text.size() : max_size);
