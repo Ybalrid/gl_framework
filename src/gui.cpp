@@ -1,5 +1,10 @@
 #include "gui.hpp"
+#include <imgui.h>
+#include <examples/imgui_impl_sdl.h>
+#include <examples/imgui_impl_opengl3.h>
 
+#define CPP_SDL2_GL_WINDOW
+#include <cpp-sdl2/sdl.hpp>
 void gui::console()
 {
 	ImGui::SetNextWindowSize(ImVec2(500, 650), ImGuiCond_FirstUseEver);
@@ -36,7 +41,8 @@ void gui::console()
 			console_content.push_back("> " + std::string(console_input));
 
 			//do something with text here : 
-			
+			if(cis_ptr)
+				(*cis_ptr)(std::string(console_input));
 			//erase text
 			console_input[0] = 0;
 
@@ -51,7 +57,7 @@ void gui::console()
 	ImGui::End();
 }
 
-gui::gui(sdl::Window& window, sdl::Window::GlContext& gl_context)
+gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -59,10 +65,10 @@ gui::gui(sdl::Window& window, sdl::Window::GlContext& gl_context)
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
-	ImGui_ImplSDL2_InitForOpenGL(window.ptr(), gl_context.ptr());
+	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
-	w = window.ptr();
+	w = window;
 }
 
 gui::~gui()
@@ -94,4 +100,14 @@ void gui::render()
 void gui::handle_event(sdl::Event e)
 {
 	ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<SDL_Event*>(&e));
+}
+
+void gui::push_to_console(const std::string &text)
+{
+	console_content.push_back(text);
+}
+
+void gui::set_console_input_consumer(console_input_consumer *cis)
+{
+	cis_ptr = cis;
 }

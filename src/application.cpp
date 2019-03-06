@@ -6,6 +6,7 @@
 #include "gui.hpp"
 #include "scene_object.hpp"
 #include "gltf_loader.hpp"
+#include "imgui.h"
 #include <cpptoml.h>
 
 #include "light.hpp"
@@ -191,8 +192,9 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	initialize_glew();
 	install_opengl_debug_callback();
-	ui = gui(window, context);
-	scripts.register_imgui_library();
+	ui = gui(window.ptr(), context.ptr());
+	scripts.register_imgui_library(&ui);
+	ui.set_console_input_consumer(&scripts);
 
 	//set vsync mode
 	activate_vsync();
@@ -353,6 +355,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			{
 			case SDL_QUIT:
 				running = false;
+				break;
 			case SDL_MOUSEBUTTONDOWN:
 				if (ImGui::GetIO().WantCaptureMouse) break;
 				mouse = true;
@@ -453,7 +456,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		shader::set_frame_uniform(shader::uniform::point_light_2, lights[2]);
 		shader::set_frame_uniform(shader::uniform::point_light_3, lights[3]);
 
-		glClearColor(0.1, 0.3, 0.5, 1);
+		glClearColor(0.1f, 0.3f, 0.5f, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		const auto size = window.size();

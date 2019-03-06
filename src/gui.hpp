@@ -1,15 +1,24 @@
 #pragma once
-#include <imgui.h>
-#include <examples/imgui_impl_sdl.h>
-#include <examples/imgui_impl_opengl3.h>
 
-#define CPP_SDL2_GL_WINDOW
-#include <cpp-sdl2/sdl.hpp>
 
 #include <GL/glew.h>
 
 #include <vector>
 #include <string>
+
+namespace sdl
+{
+	struct Window;
+	union Event;
+}
+
+struct SDL_Window;
+typedef void* SDL_GLContext;
+struct console_input_consumer
+{
+	virtual ~console_input_consumer() = default;
+	virtual bool operator()(const std::string& str) = 0;
+};
 
 class gui
 {
@@ -19,15 +28,19 @@ class gui
 	char console_input[256]={0};
 	std::vector<std::string> console_content{"Debuging console."};
 	bool scroll_console_to_bottom = false;
-
+	console_input_consumer* cis_ptr = nullptr;
 public:
+
 	bool show_console = true;
 	gui() = default;
-	gui(sdl::Window& window, sdl::Window::GlContext& gl_context);
+	gui(SDL_Window* window, SDL_GLContext gl_context);
 	~gui();
 	void frame();
 	void render();
 	void handle_event(sdl::Event e);
+
+	void set_console_input_consumer(console_input_consumer* cis);
+	void push_to_console(const std::string& str);
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;
