@@ -24,6 +24,7 @@ find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(FreeImage REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 
 add_executable(test_project_exe ${sources})
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
@@ -35,7 +36,7 @@ target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_p
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
 target_compile_definitions(test_project_exe PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLEW)
 target_include_directories(test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
-target_link_libraries(test_project_exe PRIVATE physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES})
+target_link_libraries(test_project_exe PRIVATE Threads::Threads ${CMAKE_DL_LIBS} physfs-static SDL2::SDL2 SDL2::SDL2main GLEW::GLEW OpenGL::GL ${FREEIMAGE_LIBRARIES})
 
 add_custom_target(copy_resources_to_build_dir ALL COMMAND
 #add_custom_command(TARGET test_project_exe POST_BUILD
