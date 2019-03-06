@@ -1,5 +1,5 @@
 #include "script_system.hpp"
-#include "chaiscript/chaiscript.hpp"
+#include <chaiscript/chaiscript.hpp>
 
 struct script_system::impl
 {

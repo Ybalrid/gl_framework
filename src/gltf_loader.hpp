@@ -17,19 +17,17 @@ class gltf_loader
 	std::string warning;
 
 	shader* dshader = nullptr;
-	texture* dtexture = nullptr;
 
 	//TODO don't store that here.
 	std::vector<texture> gltf_textures{};
 
 	void steal_guts(gltf_loader& loader)
 	{
-		gltf = std::move(loader.gltf);
+		gltf = loader.gltf;
 		error = std::move(loader.error);
 		warning = std::move(loader.warning);
 
 		dshader = loader.dshader;
-		dtexture = loader.dtexture;
 
 		gltf_textures = std::move(loader.gltf_textures);
 	}
@@ -37,8 +35,9 @@ class gltf_loader
 public:
 
 	gltf_loader() = default;
+	~gltf_loader() = default;
 
-	gltf_loader(shader& default_shader, texture& default_texture) : dshader{ &default_shader }, dtexture{ &default_texture }
+	gltf_loader(shader& default_shader) : dshader{ &default_shader }
 	{
 		std::cout << "Initialized glTF 2.0 loader using tinygltf\n";
 		gltf_textures.reserve(10);
@@ -72,7 +71,7 @@ public:
 			const auto base_dir = virtual_path.substr(0, virtual_path.find_last_of("\\/"));
 			auto gltf_asset_text = resource_system::get_file(virtual_path);
 			gltf_asset_text.push_back(0);
-			const auto gltf_string = std::string((char*)gltf_asset_text.data());
+			const auto gltf_string = std::string(reinterpret_cast<char*>(gltf_asset_text.data()));
 
 			return gltf.LoadASCIIFromString(&model, &error, &warning, gltf_string.c_str(), unsigned(gltf_string.size()), "");
 		}
@@ -114,9 +113,10 @@ public:
 		if(iterator != std::cend(model.meshes))
 			return build_renderable(*iterator, model);
 
-		throw std::runtime_error("Coulnd't find " + name + " in " + virtual_path);
+		throw std::runtime_error("Couldn't find " + name + " in " + virtual_path);
 	}
 
+	//this is a bit unnecessary for OpenGL as theses identifier are the same
 	static GLenum mode(GLenum input)
 	{
 		switch(input)
@@ -140,7 +140,7 @@ public:
 		}
 	}
 
-	std::vector<float> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
+	static std::vector<float> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
 	{
 		const auto c = 3 /*position*/ + 2/*texture_coords*/ + 3/*normal*/;
 		std::vector<float> vertex_buffer;
@@ -151,6 +151,7 @@ public:
 		// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z]
 		vertex_buffer.resize(vertex_accessor.count * (c));
 
+		//Get the requred pointers, strides, and sizes from the accessors's buffers
 		const auto vertex_buffer_view = model.bufferViews[vertex_accessor.bufferView];
 		const auto vertex_buffer_buffer = model.buffers[vertex_buffer_view.buffer];
 		const auto vertex_data_start_ptr = vertex_buffer_buffer.data.data() + (vertex_buffer_view.byteOffset + vertex_accessor.byteOffset);
@@ -178,6 +179,7 @@ public:
 			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 				vertex_buffer[i * c + j] = (float)((double*)(vertex_data_start_ptr + (i*vertex_data_byte_stride )))[j];
 				break;
+			default: throw std::runtime_error("unsuported vertex format");
 			}
 
 			//2 floats for vertex texture coordinates
@@ -188,6 +190,7 @@ public:
 				break;
 			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 				vertex_buffer[i * c + j] = (float)((double*)(texture_data_start_ptr+(i*texture_data_byte_stride)))[j-3];
+			default: throw std::runtime_error("unsuported vertex format");
 				
 			}
 
@@ -199,6 +202,7 @@ public:
 				break;
 			case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 				vertex_buffer[i * c + j] = (float)((double*)(normal_data_start_ptr+(i*normal_data_byte_stride)))[j-5];
+			default: throw std::runtime_error("unsuported vertex format");
 				
 			}
 		}
@@ -206,7 +210,7 @@ public:
 		return vertex_buffer;
 	}
 
-	std::vector<unsigned int> get_indices(const tinygltf::Model& model, int indices_accessor)
+	static std::vector<unsigned int> get_indices(const tinygltf::Model& model, int indices_accessor)
 	{
 		std::vector<unsigned int> index_buffer;
 
@@ -235,14 +239,14 @@ public:
 		return index_buffer;
 	}
 
-	GLuint load_to_gl_texture(const tinygltf::Image color_image, bool srgb = true)
+	GLuint load_to_gl_texture(const tinygltf::Image& color_image, bool srgb = true)
 	{
 		GLuint tex;
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glTexImage2D(GL_TEXTURE_2D, 
 		             0,
-		             srgb ? GL_SRGB_ALPHA : GL_RGBA, //TODO toggle that only on color texture, not specular, normal and everything like that
+		             srgb ? GL_SRGB_ALPHA : GL_RGBA,
 		             color_image.width, 
 		             color_image.height, 
 		             0,
@@ -294,7 +298,6 @@ public:
 		}
 
 		renderable r{ dshader, vertex, index, {true, true, true}, 8, 0, 3, 5, draw_mode };
-		r.set_diffuse_texture(dtexture);
 
 		return r;
 	}

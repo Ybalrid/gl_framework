@@ -26,17 +26,17 @@ void application::activate_vsync()
 		{
 			sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::vsync);
 		}
-		catch (const sdl::Exception& e)
+		catch (const sdl::Exception& ee)
 		{
-			std::cerr << e.what() << '\n';
+			std::cerr << ee.what() << '\n';
 			std::cerr << "Cannot set vsync for this driver.\n";
 			try
 			{
 				sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
 			}
-			catch (const sdl::Exception& e)
+			catch (const sdl::Exception& eee)
 			{
-				std::cerr << e.what() << '\n';
+				std::cerr << eee.what() << '\n';
 			}
 		}
 	}
@@ -80,7 +80,6 @@ void application::draw_debug_ui()
 		ImGui::Text("FPS: %d", fps);
 		ImGui::Checkbox("Show demo window ?", &show_demo_window);
 
-
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 		ImGui::End();
@@ -93,8 +92,9 @@ void application::update_timing()
 	//calculate frame timing
 	last_frame_time = current_time;
 	current_time = SDL_GetTicks();
+	current_time_in_sec = float(current_time) *.001f;
 	last_frame_delta = current_time - last_frame_time;
-	last_frame_delta_sec = 0.001f * float(last_frame_delta);
+	last_frame_delta_sec = float(last_frame_delta) *.001f;
 
 	//take care of the FPS counter
 	if (current_time - last_second_time >= 1000)
@@ -168,21 +168,26 @@ void application::configure_and_create_window()
 		window_size, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
-application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
+void application::create_opengl_context()
 {
-	for (const auto pak : resource_paks)
-	{
-		std::cerr << "adding to resources " << pak << '\n';
-		resource_system::add_location(pak);
-	}
-
-	configure_and_create_window();
-
 	//create OpenGL context
 	context = window.create_context();
 	context.make_current();
 	std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
 	glEnable(GL_MULTISAMPLE);
+}
+
+application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
+{
+	for (const auto& pak : resource_paks)
+	{
+		std::cerr << "Adding to resources " << pak << '\n';
+		resource_system::add_location(pak);
+	}
+
+	configure_and_create_window();
+
+	create_opengl_context();
 
 	initialize_glew();
 	install_opengl_debug_callback();
@@ -205,7 +210,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,
 		 0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,
 		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,
-		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0
+		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,
 	};
 
 	std::vector<unsigned int> plane_indices =
@@ -220,46 +225,19 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	textured_plane.set_diffuse_texture(&polutropon_logo_texture);
 	//set opengl clear color
-	glClearColor(0.5, 0.5, 0.5, 1);
 
-	 gltf = gltf_loader(simple_shader, polutropon_logo_texture);
+	gltf = gltf_loader(simple_shader);
 
 	camera cam;
 	cam.fov = 45;
 	cam.xform.set_position({ 0,5, 5 });
 	cam.xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 
-	//camera ortho_cam;
-	//ortho_cam.projection_type = camera::projection_mode::ortho;
-	//ortho_cam.xform.set_position({ 0,5,0 });
-	//ortho_cam.xform.set_orientation(glm::angleAxis(glm::radians(-90.f), transform::X_AXIS));
-
-	//camera hud_cam;
-	//hud_cam.projection_type = camera::projection_mode::hud;
-	//hud_cam.xform.set_position({ 0,5,0 });
-	//hud_cam.xform.set_orientation(glm::angleAxis(glm::radians(-90.f), transform::X_AXIS));
-
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 
-	renderable hud_plane(&unlit_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
-	hud_plane.set_diffuse_texture(&polutropon_logo_texture);
-
-	//scene_object hud(hud_plane);
-	//hud.xform.set_position({ 100,0,100 });
 	scene_object plane1(textured_plane);
 	scene_object plane2(textured_plane);
 	scene_object duck(duck_renderable);
-/*	scene_object ortho(hud_plane);
-	ortho.xform.set_scale(0.25f * transform::UNIT_SCALE);
-	float xortho = 0;
-	float yortho = 0;
-	float xhud = 400;
-	float yhud = 300;
-	float f = 0;
-	float scale_ortho = ortho.xform.get_scale().x;
-	float hud_scale = 100;
-	bool draw_ortho = false;
-	bool draw_hud = false*/;
 
 	directional_light sun;
 	sun.diffuse = sun.specular = glm::vec3(1);
@@ -282,48 +260,58 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	std::vector<float> cube_vertex =
 	{
-		-.5f, -.5f, .5f,	0,0,	0,0,1,
-		 .5f,  -.5f, .5f,	1,0,	0,0,1,
-		 .5f,  .5f, .5f,	1,1,	0,0,1,
-		-.5f,  .5f,  .5f,	0,1 ,	0,0,1,
+		-.5f, -.5f,  .5f,	0, 0,	 0, 0, 1,
+		 .5f, -.5f,  .5f,	1, 0,	 0, 0, 1,
+		 .5f,  .5f,  .5f,	1, 1,	 0, 0, 1,
+		-.5f,  .5f,  .5f,	0, 1,	 0, 0, 1,
 
-		-.5f, .5f, -.5f,	0,0,	0,1,0,
-		 .5f,  .5f, -.5f,	1,0,	0,1,0,
-		 .5f,  .5f, .5f,	1,1,	0,1,0,
-		-.5f,  .5f,  .5f,	0,1 ,	0,1,0,
+		-.5f,  .5f, -.5f,	0, 0,	 0, 1, 0,
+		 .5f,  .5f, -.5f,	1, 0,	 0, 1, 0,
+		 .5f,  .5f,  .5f,	1, 1,	 0, 1, 0,
+		-.5f,  .5f,  .5f,	0, 1,	 0, 1, 0,
 
-		-.5f, -.5f, -.5f,	0,0,	0,-1,0,
-		 .5f,  -.5f, -.5f,	1,0,	0,-1,0,
-		 .5f,  -.5f, .5f,	1,1,	0,-1,0,
-		-.5f,  -.5f,  .5f,	0,1 ,	0,-1,0,
+		-.5f, -.5f, -.5f,	0, 0,	 0,-1, 0,
+		 .5f, -.5f, -.5f,	1, 0,	 0,-1, 0,
+		 .5f, -.5f,  .5f,	1, 1,	 0,-1, 0,
+		-.5f, -.5f,  .5f,	0, 1,	 0,-1, 0,
 
-		-.5f, -.5f, -.5f,	0,0,	0,0,-1,
-		 .5f,  -.5f, -.5f,	1,0,	0,0,-1,
-		 .5f,  .5f, -.5f,	1,1,	0,0,-1,
-		-.5f,  .5f,  -.5f,	0,1 ,	0,0,-1,
+		-.5f, -.5f, -.5f,	0, 0,	 0, 0,-1,
+		 .5f, -.5f, -.5f,	1, 0,	 0, 0,-1,
+		 .5f,  .5f, -.5f,	1, 1,	 0, 0,-1,
+		-.5f,  .5f, -.5f,	0, 1,	 0, 0,-1,
 
-		-.5f, .5f, -.5f,	0,0,	-1,0,0,
-		-.5f,  .5f, .5f,	1,0,	-1,0,0,
-		-.5f,  -.5f, .5f,	1,1,	-1,0,0,
-		-.5f,  -.5f,  -.5f,	0,1 ,	-1,0,0,
+		-.5f,  .5f, -.5f,	0, 0,	-1, 0, 0,
+		-.5f,  .5f,  .5f,	1, 0,	-1, 0, 0,
+		-.5f, -.5f,  .5f,	1, 1,	-1, 0, 0,
+		-.5f, -.5f, -.5f,	0, 1,	-1, 0, 0,
 
-		.5f, .5f, -.5f,	0,0,	1,0,0,
-		.5f,  .5f, .5f,	1,0,	1,0,0,
-		.5f,  -.5f, .5f,	1,1,	1,0,0,
-		.5f,  -.5f,  -.5f,	0,1 ,	1,0,0,
+		 .5f,  .5f, -.5f,	0, 0,	 1, 0, 0,
+		 .5f,  .5f,  .5f,	1, 0,	 1, 0, 0,
+		 .5f, -.5f,  .5f,	1, 1,	 1, 0, 0,
+		 .5f, -.5f, -.5f,	0, 1,	 1, 0, 0,
 	};
 
-	std::vector<unsigned int> cube_index = {
-		0,1,2,2,3,0,
-		4,5,6,6,7,4,
-		8,9,10,10,11,8,
-		12,13,14,14,15,12,
-		16,17,18,18,19,16,
-		20,21,22,22,23,20,
+	std::vector<unsigned int> cube_index =
+	{
+		0,  1,  2,  2,  3,  0,
+		4,  5,  6,  6,  7,  4,
+		8,  9,  10, 10, 11, 8,
+		12, 13, 14, 14, 15, 12,
+		16, 17, 18, 18, 19, 16,
+		20, 21, 22, 22, 23, 20,
 	};
 
 
-	renderable cube_renderable(&simple_shader, cube_vertex, cube_index, { true, true, true }, 3 + 3 + 2, 0, 3, 5);
+	renderable cube_renderable(&simple_shader, 
+		cube_vertex, 
+		cube_index, 
+		{ true, 
+			true, 
+			true }, 
+		3 + 3 + 2, 
+		0, 
+		3, 
+		5);
 
 	texture cube_diffuse, cube_specular;
 	{
@@ -343,14 +331,16 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	cube_renderable.mat.shininess = 128;
 
 	bool up = false, down = false, left = false, right = false, mouse = false;
-	float mousex, mousey;
+	float mousex = 0, mousey = 0;
 
+	//TODO refactor renderloop
 	while (running)
 	{
 		update_timing();
-		mousex = mousey = 0;
 
+		//TODO move this thing to somewhere else
 		//event polling
+		mousex = mousey = 0;
 		while (event.poll())
 		{
 			//For ImGui
@@ -426,6 +416,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			}
 		}
 
+		//TODO build real input system for this
 		if (up)
 			cam.xform.set_position(cam.xform.get_position() + cam.xform.get_orientation() * last_frame_delta_sec * (glm::vec3(0, 0, -3)));
 		if (down)
@@ -434,7 +425,6 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			cam.xform.set_position(cam.xform.get_position() + cam.xform.get_orientation() * last_frame_delta_sec * (glm::vec3(-3, 0, 0)));
 		if (right)
 			cam.xform.set_position(cam.xform.get_position() + cam.xform.get_orientation() * last_frame_delta_sec * (glm::vec3(3, 0, 0)));
-
 		if (mouse)
 		{
 			auto q = cam.xform.get_orientation();
@@ -444,75 +434,38 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		}
 
 		ui.frame();
-
 		scripts.update(last_frame_delta_sec);
 
-		//ImGui::SliderFloat("Gamma", &shader::gamma, 1.1f, 2.8f);
-		//ImGui::SliderFloat("Camera FoV?", &cam.fov, 20, 180);
-
-		//clear viewport
-		const auto size = window.size();
-		cam.update_projection(size.x, size.y);
-
-		float t_in_sec = (current_time) / 1000.f;
+		//TOOD add this to 
+		duck.xform.set_scale(0.01f * transform::UNIT_SCALE);
+		duck.xform.set_orientation(glm::angleAxis(glm::radians((180 * current_time_in_sec)), -transform::Y_AXIS));
+		plane1.xform.set_position({ 2, 0, 0 });
+		plane1.xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
+		cube0.xform.set_orientation(duck.xform.get_orientation());
 
 		shader::set_frame_uniform(shader::uniform::gamma, shader::gamma);
-
-		//we are going to draw with the main camera first:
 		shader::set_frame_uniform(shader::uniform::camera_position, cam.xform.get_position());
 		shader::set_frame_uniform(shader::uniform::view, cam.get_view_matrix());
 		shader::set_frame_uniform(shader::uniform::projection, cam.get_projection_matrix());
-
 		shader::set_frame_uniform(shader::uniform::main_directional_light, sun);
 		shader::set_frame_uniform(shader::uniform::point_light_0, lights[0]);
 		shader::set_frame_uniform(shader::uniform::point_light_1, lights[1]);
 		shader::set_frame_uniform(shader::uniform::point_light_2, lights[2]);
 		shader::set_frame_uniform(shader::uniform::point_light_3, lights[3]);
 
+		glClearColor(0.1, 0.3, 0.5, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		duck.xform.set_scale(0.01f * transform::UNIT_SCALE);
-		duck.xform.set_orientation(glm::angleAxis(glm::radians((180 * float(current_time) / 1000.f)), -transform::Y_AXIS));
+		const auto size = window.size();
+		cam.update_projection(size.x, size.y);
 		duck.draw(cam);
-
-		//plane0.draw(cam.get_view_projection_matrix());
-		plane1.xform.set_position({ 2, 0, 0 });
-		plane1.xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
 		plane1.draw(cam);
 		plane2.draw(cam);
-		cube0.xform.set_orientation(duck.xform.get_orientation());
 		cube0.draw(cam);
-
-		//ImGui::Checkbox("2D ortho pass ?", &draw_ortho);
-		//if (draw_ortho)
-		//{
-		//	ortho.xform.set_scale(scale_ortho * transform::UNIT_SCALE);
-		//	ortho.xform.set_position({ xortho,0,yortho });
-		//	glClear(GL_DEPTH_BUFFER_BIT);
-		//	ortho_cam.update_projection(size.x, size.y);
-		//	ortho.draw(ortho_cam);
-		//}
-
-		//ImGui::Checkbox("2D HUD pass?", &draw_hud);
-		//if (draw_hud)
-		//{
-		//	glClear(GL_DEPTH_BUFFER_BIT);
-		//	hud_cam.update_projection(size.x, size.y);
-		//	hud.xform.set_position({ xhud, f, yhud });
-		//	hud.xform.set_scale(hud_scale * transform::UNIT_SCALE);
-		//	hud.draw(hud_cam);
-		//}
-
-		//ImGui::SliderFloat("scale ortho : ", &scale_ortho, 0, 2);
-		//ImGui::SliderFloat("x ortho", &xortho, -1, 1);
-		//ImGui::SliderFloat("y ortho", &yortho, -1, 1);
-		////ImGui::SliderFloat("depth", &f, -10, 10);
-		//ImGui::SliderFloat("scale hud", &hud_scale, 0, 500);
-		//ImGui::SliderFloat("x hud", &xhud, 0, float(size.x));
-		//ImGui::SliderFloat("y hud", &yhud, 0, float(size.y));
 
 		draw_debug_ui();
 		ui.render();
+		
 		//swap buffers
 		window.gl_swap();
 	}

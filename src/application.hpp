@@ -26,6 +26,7 @@ class application
 	void initialize_glew() const;
 	void install_opengl_debug_callback() const;
 	void configure_and_create_window();
+	void create_opengl_context();
 
 	freeimage free_img;
 	resource_system resources;
@@ -36,6 +37,7 @@ class application
 	uint32_t last_second_time = 0;
 	uint32_t last_frame_delta = 0;
 	float last_frame_delta_sec = 0;
+	float current_time_in_sec = 0;
 	int frames = 0;
 	int fps = 0;
 
