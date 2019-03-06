@@ -27,7 +27,7 @@ find_package(OpenGL REQUIRED)
 
 add_executable(test_project_exe ${sources})
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
-target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/chaiscript/include/")
+target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/glm/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
