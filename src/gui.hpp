@@ -41,6 +41,8 @@ public:
 
 	void set_console_input_consumer(console_input_consumer* cis);
 	void push_to_console(const std::string& str);
+	void clear_console();
+
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;

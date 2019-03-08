@@ -107,6 +107,11 @@ void gui::push_to_console(const std::string &text)
 	console_content.push_back(text);
 }
 
+void gui::clear_console()
+{
+	console_content.clear();
+}
+
 void gui::set_console_input_consumer(console_input_consumer *cis)
 {
 	cis_ptr = cis;

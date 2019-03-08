@@ -80,7 +80,7 @@ bool Impl_DragInt2(const std::string& label, const std::vector<Boxed_Value>& ite
     if (items.size() == 2)
     {
         int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<int*>(items[1]) };
-        bool ret = DragInt2(label.c_str(), v, v_speed, v_min, v_max, display_format.c_str());
+        bool ret = DragInt2(label.c_str(), v, float(v_speed), v_min, v_max, display_format.c_str());
         for (int i = 0; i < items.size(); i++) *boxed_cast<int*>(items[i]) = v[i];
         return ret;
     }
@@ -92,7 +92,7 @@ bool Impl_DragInt3(const std::string& label, const std::vector<Boxed_Value>& ite
     if (items.size() == 3)
     {
         int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<int*>(items[1]), *boxed_cast<int*>(items[2]) };
-        bool ret = DragInt3(label.c_str(), v, v_speed, v_min, v_max, display_format.c_str());
+        bool ret = DragInt3(label.c_str(), v, float(v_speed), v_min, v_max, display_format.c_str());
         for (int i = 0; i < items.size(); i++) *boxed_cast<int*>(items[i]) = v[i];
         return ret;
     }

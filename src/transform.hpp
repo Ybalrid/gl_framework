@@ -7,6 +7,7 @@
 
 struct transform
 {
+	transform() = default;
 	///Get the model matrix. Model matrix is cached until transform get's dirty.
 	glm::mat4 get_model() const;
 

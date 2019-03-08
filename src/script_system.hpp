@@ -26,7 +26,7 @@ public:
 		catch (const std::exception& e)
 		{
 			std::cerr << e.what();
-			if(gui_ptr) gui_ptr->push_to_console(e.what());
+			gui_ptr->push_to_console(e.what());
 			return false;
 		}
 		return true;
@@ -40,4 +40,6 @@ private:
 	bool imgui_registered = false;
 
 	gui* gui_ptr = nullptr;
+
+	void install_additional_api();
 };
