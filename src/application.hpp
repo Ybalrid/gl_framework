@@ -16,6 +16,10 @@
 #include "script_system.hpp"
 
 
+#include "node.hpp"
+#include "scene.hpp"
+
+
 class application
 {
 	void activate_vsync();
@@ -50,8 +54,10 @@ class application
 	bool running = true;
 
 	script_system scripts;
-
 	gltf_loader gltf;
+
+	scene s;
+
 public:
 
 	application(int argc, char** argv);

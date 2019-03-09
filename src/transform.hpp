@@ -29,11 +29,17 @@ struct transform
 	///Set the orientation. We will normalize this quaternion. Set dirty flag.
 	void set_orientation(const glm::quat& new_orientation);
 
+	///Translate this transform
 	void translate(const glm::vec3& v);
-	void scale(const glm::vec3& v);
-	void rotate(const glm::quat& q);
-	void rotate(float angle, const glm::vec3& axis);
 
+	///Scale this transform
+	void scale(const glm::vec3& v);
+
+	///Rotate this transform by this quaternion
+	void rotate(const glm::quat& q);
+
+	///Rotate this transform by `angle` radians around `axis`
+	void rotate(float angle, const glm::vec3& axis);
 
 	///Positive X axis.
 	inline static const glm::vec3 X_AXIS{ 1.f,0.f,0.f };
