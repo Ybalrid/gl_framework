@@ -58,8 +58,13 @@ class application
 
 	scene s;
 
-public:
+	static scene* main_scene;
 
+public:
+	static scene* get_main_scene()
+	{
+		return main_scene;
+	}
 	application(int argc, char** argv);
 	static std::vector<std::string> resource_paks;
 };

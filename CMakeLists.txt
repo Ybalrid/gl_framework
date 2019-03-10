@@ -34,7 +34,7 @@ target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_p
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
 target_include_directories(test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
-target_compile_definitions(test_project_exe PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLEW)
+target_compile_definitions(test_project_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 target_include_directories(test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 target_link_libraries(test_project_exe PRIVATE 
 	Threads::Threads

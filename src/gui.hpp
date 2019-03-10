@@ -8,7 +8,7 @@
 
 namespace sdl
 {
-	struct Window;
+	class Window;
 	union Event;
 }
 
@@ -25,10 +25,13 @@ class gui
 	SDL_Window* w = nullptr;
 
 	void console();
-	char console_input[256]={0};
+	char console_input[2048]={0};
 	std::vector<std::string> console_content{"Debuging console."};
+	std::vector<std::string> console_history{};
 	bool scroll_console_to_bottom = false;
 	console_input_consumer* cis_ptr = nullptr;
+	int history_counter = 0;
+
 public:
 
 	bool show_console = true;

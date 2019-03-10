@@ -28,21 +28,45 @@ void gui::console()
 		if(ImGui::InputText("Input", console_input, IM_ARRAYSIZE(console_input), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory, 
 			[](ImGuiInputTextCallbackData* data) -> int
 		{
+			gui* ui = static_cast<gui*>(data->UserData);
 			switch(data->EventFlag)
 			{
 			case ImGuiInputTextFlags_CallbackHistory:
-				//TODO handle command history;
+				const char* text = nullptr;
+				if (data->EventKey == ImGuiKey_UpArrow)
+				{
+					if (!ui->console_history.empty())
+						text = ui->console_history[ui->console_history.size() - 1 - std::max<int>(0,  std::min<int>(ui->console_history.size() - 1, ui->history_counter++))].c_str();
+					ui->history_counter = std::min<int>(ui->console_history.size() - 1, ui->history_counter);
+				}
+				else if (data->EventKey == ImGuiKey_DownArrow)
+				{
+					if (!ui->console_history.empty())
+						text = ui->console_history[ui->console_history.size() - 1 - std::min<int>(ui->console_history.size() - 1, std::max<int>(0,ui->history_counter--))].c_str();
+					ui->history_counter = std::max<int>(0, ui->history_counter);
+				}
+
+				if (text)
+				{
+					data->DeleteChars(0, data->BufTextLen);
+					data->InsertChars(0, text);
+				}
+
 				break;
+
 			}
 
 			return 0;
 		}, this))
 		{
 			console_content.push_back("> " + std::string(console_input));
+			console_history.emplace_back(console_input);
+			history_counter = 0;
 
 			//do something with text here : 
 			if(cis_ptr)
 				(*cis_ptr)(std::string(console_input));
+
 			//erase text
 			console_input[0] = 0;
 

@@ -91,6 +91,10 @@ void script_system::eval_string(const std::string& input)
 
 //include and bind the rest of this engine API to ChaiScript
 #include "transform.hpp"
+#include "application.hpp"
+#include "scene.hpp"
+#include "node.hpp"
+
 void script_system::install_additional_api()
 {
 	auto& chai = pimpl->get();
@@ -121,8 +125,20 @@ void script_system::install_additional_api()
 			+  "scale       (" + to_string(s.x) + ", " + to_string(s.y) + ", " + to_string(s.z) + ")";
 	}), "to_string");
 
-	//TODO scene_object intergration
+	chai.add(user_type<scene>(), "scene");
+	chai.add(fun([](scene* s) -> node*
+	{
+		return (s->scene_root.get());
+	}), "scene_root");
+
+	chai.add(user_type<node>(), "node");
+	chai.add(fun(&node::get_id), "get_id");
+	chai.add(fun(&node::get_child_count), "get_child_count");
+	chai.add(fun(&node::get_child), "get_child");
+	chai.add(fun(&node::get_parent), "get_parent");
+	chai.add(fun([](node* n) { return (&n->local_xform); }), "local_xform");
+	chai.add(fun(&application::get_main_scene), "get_main_scene");
+	chai.add(fun(&scene::find_node), "find_node");
 	//TODO light integration
-	//TODO scene graph integration
 	//TODO physicsfs exploration?
 }

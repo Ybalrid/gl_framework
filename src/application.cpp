@@ -12,6 +12,7 @@
 #include "light.hpp"
 
 std::vector<std::string> application::resource_paks;
+scene* application::main_scene = nullptr;
 
 void application::activate_vsync()
 {
@@ -179,6 +180,7 @@ void application::create_opengl_context()
 
 application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
 {
+	main_scene = &s;
 	for (const auto& pak : resource_paks)
 	{
 		std::cerr << "Adding to resources " << pak << '\n';
@@ -351,6 +353,10 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 	bool up = false, down = false, left = false, right = false, mouse = false;
 	float mousex = 0, mousey = 0;
+
+
+	auto* node_ = s.find_node(1);
+
 
 	//TODO refactor renderloop
 	while (running)
