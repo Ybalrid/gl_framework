@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include "gui.hpp"
+
 class script_system : public console_input_consumer
 {
 public:

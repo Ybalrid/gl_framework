@@ -43,23 +43,12 @@ public:
 	void handle_event(sdl::Event e);
 
 	void set_console_input_consumer(console_input_consumer* cis);
-	void push_to_console(const std::string& str);
+	void push_to_console(const std::string& text);
 	void clear_console();
-
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;
-	gui(gui&& o) noexcept
-	{
-		w = o.w;
-		o.w = nullptr;
-	}
-
-	gui& operator=(gui&& o) noexcept
-	{
-		w = o.w;
-		o.w = nullptr;
-		return *this;
-	}
+	gui(gui&& o) noexcept;
+	gui& operator=(gui&& o) noexcept;
 };
 

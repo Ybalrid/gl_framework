@@ -10,10 +10,11 @@
 #include "light.hpp"
 
 #include <iostream>
+#include <type_traits>
 
 //fw declare deleter
 class node;
-void destroy_node(node* n);
+static void destroy_node(node* n);
 
 //declare node unique ptr with custom deleter
 using node_ptr = std::unique_ptr < node, decltype(&destroy_node)> ;
@@ -28,7 +29,9 @@ public:
 		//list of things a node can be:
 		scene_object, 
 		camera, 
-		light>;
+		light,
+		point_light
+	>;
 
 	using child_list = std::vector<node_ptr>;
 	node() : ID{ counter++ }{}
@@ -45,68 +48,17 @@ private:
 
 public:
 
-	glm::mat4 get_world_matrix() const
-	{
-		return world_space_model;
-	}
-
-	void update_world_matrix()
-	{
-		if (parent)
-		{
-			world_space_model = parent->world_space_model * local_xform.get_model();
-		}
-		else
-		{
-			world_space_model = local_xform.get_model();
-		}
-
-		for (auto& child : children)
-			child->update_world_matrix();
-	}
-
-	size_t get_id() const
-	{
-		return ID;
-	}
-
-	size_t get_child_count() const
-	{
-		return children.size();
-	}
-
-	node* get_child(size_t index)
-	{
-		return children.at(index).get();
-	}
-
-	node* get_parent() const
-	{
-		return parent;
-	}
-
+	glm::mat4 get_world_matrix() const;
+	void update_world_matrix();
+	size_t get_id() const;
+	size_t get_child_count() const;
+	node* get_child(size_t index);
+	node* get_parent() const;
 	//this will move the pointer INTO the child array
-	node* push_child(node_ptr&& child)
-	{
-		children.emplace_back(std::move(child));
-		node* new_child = children.back().get();
-		new_child->parent = this;
-		return new_child;
-	}
+	node* push_child(node_ptr&& child);
+	node_ptr&& remove_child(size_t index);
+	void clean_child_list();
 
-	node_ptr&& remove_child(size_t index)
-	{
-		return std::move(children.at(index));
-	}
-
-	void clean_child_list()
-	{
-		children.erase(std::remove(std::begin(children),
-			std::end(children),
-			nullptr),
-			std::end(children));
-	}
-	
 	template <typename T>
 	T* get_if_is() const
 	{
@@ -126,9 +78,10 @@ public:
 	}
 
 	template<typename T>
-	void assign(T&& object)
+	T* assign(T&& object)
 	{
 		content.emplace<T>(std::move(object));
+		return get_if_is<T>();
 	}
 
 	template<typename T>
@@ -138,17 +91,6 @@ public:
 	}
 };
 
-//the famous deleter that has to be given to all the node_ptr objects
-static void destroy_node(node* n)
-{
-	std::cout << "Destroying scene node " << n->get_id() << '\n';
-	delete n;
-}
 
 //node factory function
-inline node_ptr create_node()
-{
-	auto n = node_ptr(new node, destroy_node);
-	std::cout << "Creating scene node   " << n->get_id() << '\n';
-	return n;
-}
+node_ptr create_node();

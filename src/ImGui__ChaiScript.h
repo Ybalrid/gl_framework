@@ -104,7 +104,7 @@ bool Impl_DragInt4(const std::string& label, const std::vector<Boxed_Value>& ite
     if (items.size() == 4)
     {
         int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<int*>(items[1]), *boxed_cast<int*>(items[2]), *boxed_cast<int*>(items[3]) };
-        bool ret = DragInt4(label.c_str(), v, v_speed, v_min, v_max, display_format.c_str());
+        bool ret = DragInt4(label.c_str(), v, float(v_speed), v_min, v_max, display_format.c_str());
         for (int i = 0; i < items.size(); i++) *boxed_cast<int*>(items[i]) = v[i];
         return ret;
     }
@@ -243,9 +243,9 @@ bool Impl_SliderInt2(const std::string& label, const std::vector<Boxed_Value>& i
 {
     if (items.size() == 2)
     {
-        int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<float*>(items[1]) };
+        int v[] = { *boxed_cast<int*>(items[0]), (int)*boxed_cast<float*>(items[1]) };
         bool ret = SliderInt2(label.c_str(), v, v_min, v_max, display_format.c_str());
-        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = v[i];
+        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = (float)v[i];
         return ret;
     }
     return false;
@@ -255,9 +255,9 @@ bool Impl_SliderInt3(const std::string& label, const std::vector<Boxed_Value>& i
 {
     if (items.size() == 3)
     {
-        int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<float*>(items[1]), *boxed_cast<float*>(items[2]) };
+        int v[] = { *boxed_cast<int*>(items[0]), (int)*boxed_cast<float*>(items[1]), (int)*boxed_cast<float*>(items[2]) };
         bool ret = SliderInt3(label.c_str(), v, v_min, v_max, display_format.c_str());
-        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = v[i];
+        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = (float)v[i];
         return ret;
     }
     return false;
@@ -267,9 +267,9 @@ bool Impl_SliderInt4(const std::string& label, const std::vector<Boxed_Value>& i
 {
     if (items.size() == 4)
     {
-        int v[] = { *boxed_cast<int*>(items[0]), *boxed_cast<float*>(items[1]), *boxed_cast<float*>(items[2]), *boxed_cast<float*>(items[3]) };
+        int v[] = { *boxed_cast<int*>(items[0]), (int)*boxed_cast<float*>(items[1]), (int)*boxed_cast<float*>(items[2]), (int)*boxed_cast<float*>(items[3]) };
         bool ret = SliderInt4(label.c_str(), v, v_min, v_max, display_format.c_str());
-        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = v[i];
+        for (int i = 0; i < items.size(); i++) *boxed_cast<float*>(items[i]) = (float)v[i];
         return ret;
     }
     return false;
@@ -687,10 +687,10 @@ ModulePtr ImGui_GetChaiScriptModule()
     mImGui->add(fun([](const std::string& label, float& v_current_min, float& v_current_max, float v_speed, float v_min) -> bool { return DragFloatRange2(label.c_str(), (float*)&v_current_min, (float*)&v_current_max, v_speed, v_min); }), "ImGui_DragFloatRange2");
     mImGui->add(fun([](const std::string& label, float& v_current_min, float& v_current_max, float v_speed) -> bool { return DragFloatRange2(label.c_str(), (float*)&v_current_min, (float*)&v_current_max, v_speed); }), "ImGui_DragFloatRange2");
     mImGui->add(fun([](const std::string& label, float& v_current_min, float& v_current_max) -> bool { return DragFloatRange2(label.c_str(), (float*)&v_current_min, (float*)&v_current_max); }), "ImGui_DragFloatRange2");
-    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min, int v_max, const std::string& display_format) -> bool { return DragInt(label.c_str(), (int*)&v, v_speed, v_min, v_max, display_format.c_str()); }), "ImGui_DragInt");
-    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min, int v_max) -> bool { return DragInt(label.c_str(), (int*)&v, v_speed, v_min, v_max); }), "ImGui_DragInt");
-    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min) -> bool { return DragInt(label.c_str(), (int*)&v, v_speed, v_min); }), "ImGui_DragInt");
-    mImGui->add(fun([](const std::string& label, int& v, int v_speed) -> bool { return DragInt(label.c_str(), (int*)&v, v_speed); }), "ImGui_DragInt");
+    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min, int v_max, const std::string& display_format) -> bool { return DragInt(label.c_str(), (int*)&v, float(v_speed), v_min, v_max, display_format.c_str()); }), "ImGui_DragInt");
+    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min, int v_max) -> bool { return DragInt(label.c_str(), (int*)&v, float(v_speed), v_min, v_max); }), "ImGui_DragInt");
+    mImGui->add(fun([](const std::string& label, int& v, int v_speed, int v_min) -> bool { return DragInt(label.c_str(), (int*)&v, float(v_speed), v_min); }), "ImGui_DragInt");
+    mImGui->add(fun([](const std::string& label, int& v, int v_speed) -> bool { return DragInt(label.c_str(), (int*)&v, float(v_speed)); }), "ImGui_DragInt");
     mImGui->add(fun([](const std::string& label, int& v) -> bool { return DragInt(label.c_str(), (int*)&v); }), "ImGui_DragInt");
     mImGui->add(fun([](const std::string& label, const std::vector<Boxed_Value>& v, int v_speed, int v_min, int v_max, const std::string& display_format) -> bool { return Impl_DragInt2(label, v, v_speed, v_min, v_max, display_format); }), "ImGui_DragInt2");
     mImGui->add(fun([](const std::string& label, const std::vector<Boxed_Value>& v, int v_speed, int v_min, int v_max) -> bool { return Impl_DragInt2(label, v, v_speed, v_min, v_max); }), "ImGui_DragInt2");

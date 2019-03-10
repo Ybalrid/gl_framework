@@ -261,102 +261,33 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	sun.ambient = glm::vec3(0);
 	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
 
-	point_light lights[4];
-	lights[0].position = glm::vec3(-4.f, 3.f, -4.f);
-	lights[1].position = glm::vec3(-4.f, -3.f, -4.f);
-	lights[2].position = glm::vec3(-1.5f, 3.f, 1.75f);
 
-	lights[0].diffuse = lights[0].ambient = lights[0].specular = glm::vec3(1.f, 0, 0) *0.025f;
-	lights[1].diffuse = lights[1].ambient = lights[1].specular = glm::vec3(0, 1.f, 0) *0.05f;
-	lights[2].diffuse = lights[2].ambient = lights[2].specular = glm::vec3(0, 0, 1.f) *0.4f;
-	lights[3].diffuse = lights[3].ambient = lights[3].specular = glm::vec3(1.f);
-	lights[3].position = glm::vec3(-0.f, 4.f, 3.5f);
+	std::array<node*, 4> lights{nullptr, nullptr, nullptr, nullptr};
+	std::array<point_light*, 4> p_lights{ nullptr, nullptr, nullptr, nullptr };
+
+	lights[0] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
+	lights[1] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
+	lights[2] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
+	lights[3] = s.scene_root->push_child(create_node());/*->assign(point_light()); */
+
+	for(size_t i = 0; i < 4; ++i)
+	{
+		auto* l = lights[i];
+		auto* pl = l->assign(point_light());
+		pl->ambient = glm::vec3(0.1f);
+		pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
+		p_lights[i] = (pl);
+	}
+	
+	lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
+	lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
+	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
+	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
 	glEnable(GL_DEPTH_TEST);
 
-	//std::vector<float> cube_vertex =
-	//{
-	//	-.5f, -.5f,  .5f,	0, 0,	 0, 0, 1,
-	//	 .5f, -.5f,  .5f,	1, 0,	 0, 0, 1,
-	//	 .5f,  .5f,  .5f,	1, 1,	 0, 0, 1,
-	//	-.5f,  .5f,  .5f,	0, 1,	 0, 0, 1,
-
-	//	-.5f,  .5f, -.5f,	0, 0,	 0, 1, 0,
-	//	 .5f,  .5f, -.5f,	1, 0,	 0, 1, 0,
-	//	 .5f,  .5f,  .5f,	1, 1,	 0, 1, 0,
-	//	-.5f,  .5f,  .5f,	0, 1,	 0, 1, 0,
-
-	//	-.5f, -.5f, -.5f,	0, 0,	 0,-1, 0,
-	//	 .5f, -.5f, -.5f,	1, 0,	 0,-1, 0,
-	//	 .5f, -.5f,  .5f,	1, 1,	 0,-1, 0,
-	//	-.5f, -.5f,  .5f,	0, 1,	 0,-1, 0,
-
-	//	-.5f, -.5f, -.5f,	0, 0,	 0, 0,-1,
-	//	 .5f, -.5f, -.5f,	1, 0,	 0, 0,-1,
-	//	 .5f,  .5f, -.5f,	1, 1,	 0, 0,-1,
-	//	-.5f,  .5f, -.5f,	0, 1,	 0, 0,-1,
-
-	//	-.5f,  .5f, -.5f,	0, 0,	-1, 0, 0,
-	//	-.5f,  .5f,  .5f,	1, 0,	-1, 0, 0,
-	//	-.5f, -.5f,  .5f,	1, 1,	-1, 0, 0,
-	//	-.5f, -.5f, -.5f,	0, 1,	-1, 0, 0,
-
-	//	 .5f,  .5f, -.5f,	0, 0,	 1, 0, 0,
-	//	 .5f,  .5f,  .5f,	1, 0,	 1, 0, 0,
-	//	 .5f, -.5f,  .5f,	1, 1,	 1, 0, 0,
-	//	 .5f, -.5f, -.5f,	0, 1,	 1, 0, 0,
-	//};
-
-	//std::vector<unsigned int> cube_index =
-	//{
-	//	0,  1,  2,  2,  3,  0,
-	//	4,  5,  6,  6,  7,  4,
-	//	8,  9,  10, 10, 11, 8,
-	//	12, 13, 14, 14, 15, 12,
-	//	16, 17, 18, 18, 19, 16,
-	//	20, 21, 22, 22, 23, 20,
-	//};
-
-
-	//renderable cube_renderable(&simple_shader, 
-	//	cube_vertex, 
-	//	cube_index, 
-	//	{ true, 
-	//		true, 
-	//		true }, 
-	//	3 + 3 + 2, 
-	//	0, 
-	//	3, 
-	//	5);
-
-	//texture cube_diffuse, cube_specular;
-	//{
-	//	image cube_diffuse_image("/textures/container2.png");
-	//	image cube_specular_image("/textures/container2_specular.png");
-	//	cube_diffuse.load_from(cube_diffuse_image);
-	//	cube_specular.load_from(cube_specular_image);
-	//	cube_diffuse.generate_mipmaps();
-	//	cube_specular.generate_mipmaps();
-	//}
-
-	//cube_renderable.set_diffuse_texture(&cube_diffuse);
-	//cube_renderable.set_specular_texture(&cube_specular);
-	//{
-	//	scene_object cube0(cube_renderable);
-	//	//cube0.xform.set_position({ -1.5f, 1.f, 2.f });
-	//	cube_renderable.mat.shininess = 128;
-	//	node* child = s.scene_root->push_child(create_node());
-	//	child->local_xform.translate(glm::vec3(0, 1, 0));
-	//	child->push_child(create_node())->local_xform.translate(glm::vec3(-1, 0, 1));
-	//	//s.scene_root->get_child(0)->get_child(0)->assign(std::move(cube0));
-	//}
-
 	bool up = false, down = false, left = false, right = false, mouse = false;
 	float mousex = 0, mousey = 0;
-
-
-	auto* node_ = s.find_node(1);
-
 
 	//TODO refactor renderloop
 	while (running)
@@ -477,10 +408,10 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		shader::set_frame_uniform(shader::uniform::view, cam->get_view_matrix());
 		shader::set_frame_uniform(shader::uniform::projection, cam->get_projection_matrix());
 		shader::set_frame_uniform(shader::uniform::main_directional_light, sun);
-		shader::set_frame_uniform(shader::uniform::point_light_0, lights[0]);
-		shader::set_frame_uniform(shader::uniform::point_light_1, lights[1]);
-		shader::set_frame_uniform(shader::uniform::point_light_2, lights[2]);
-		shader::set_frame_uniform(shader::uniform::point_light_3, lights[3]);
+		shader::set_frame_uniform(shader::uniform::point_light_0, *p_lights[0]);
+		shader::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
+		shader::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
+		shader::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
 
 		glClearColor(0.1f, 0.3f, 0.5f, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

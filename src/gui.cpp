@@ -141,6 +141,19 @@ void gui::clear_console()
 	console_content.clear();
 }
 
+gui::gui(gui&& o) noexcept
+{
+	w   = o.w;
+	o.w = nullptr;
+}
+
+gui& gui::operator=(gui&& o) noexcept
+{
+	w   = o.w;
+	o.w = nullptr;
+	return *this;
+}
+
 void gui::set_console_input_consumer(console_input_consumer *cis)
 {
 	cis_ptr = cis;
