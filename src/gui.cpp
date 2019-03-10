@@ -32,17 +32,19 @@ void gui::console()
 			switch(data->EventFlag)
 			{
 			case ImGuiInputTextFlags_CallbackHistory:
+			{
 				const char* text = nullptr;
+				const size_t console_history_max = !ui->console_history.empty() ? ui->console_history.size() - 1 : 0;
 				if (data->EventKey == ImGuiKey_UpArrow)
 				{
 					if (!ui->console_history.empty())
-						text = ui->console_history[ui->console_history.size() - 1 - std::max<int>(0,  std::min<int>(ui->console_history.size() - 1, ui->history_counter++))].c_str();
-					ui->history_counter = std::min<int>(ui->console_history.size() - 1, ui->history_counter);
+						text = ui->console_history[console_history_max - std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++))].c_str();
+					ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
 				}
 				else if (data->EventKey == ImGuiKey_DownArrow)
 				{
 					if (!ui->console_history.empty())
-						text = ui->console_history[ui->console_history.size() - 1 - std::min<int>(ui->console_history.size() - 1, std::max<int>(0,ui->history_counter--))].c_str();
+						text = ui->console_history[console_history_max - std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--))].c_str();
 					ui->history_counter = std::max<int>(0, ui->history_counter);
 				}
 
@@ -51,7 +53,10 @@ void gui::console()
 					data->DeleteChars(0, data->BufTextLen);
 					data->InsertChars(0, text);
 				}
+			}
+				break;
 
+			default:
 				break;
 
 			}
