@@ -5,6 +5,8 @@
 
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
+#include <iostream>
+
 void gui::console()
 {
 	ImGui::SetNextWindowSize(ImVec2(500, 650), ImGuiCond_FirstUseEver);
@@ -98,6 +100,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 	ImGui_ImplOpenGL3_Init("#version 330");
 
 	w = window;
+	std::cout << "Initialized ImGui " << IMGUI_VERSION << " based gui system\n";
 }
 
 gui::~gui()
@@ -107,6 +110,8 @@ gui::~gui()
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplSDL2_Shutdown();
 		ImGui::DestroyContext();
+
+		std::cout << "Deinitialized gui system\n";
 	}
 }
 

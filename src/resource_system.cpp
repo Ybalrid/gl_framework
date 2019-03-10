@@ -2,7 +2,7 @@
 #include <iostream>
 resource_system::resource_system(char* arg0): pysics_fs(arg0)
 {
-	std::cout << "Initialized resource system"
+	std::cout << "Initialized Resource system"
 #ifdef VERBOSE
 	" for " << arg0 << '\n'
 #endif
@@ -14,6 +14,11 @@ resource_system::resource_system(char* arg0): pysics_fs(arg0)
 			(*i)->extension, (*i)->description);
 	}
 #endif
+}
+
+resource_system::~resource_system()
+{
+	std::cout << "Deinitialized Resource system\n";
 }
 
 void resource_system::add_location(const std::string& real_path, bool last)

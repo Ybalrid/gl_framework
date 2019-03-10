@@ -8,6 +8,14 @@ void gltf_loader::steal_guts(gltf_loader& loader)
 	warning		  = std::move(loader.warning);
 	dshader		  = loader.dshader;
 	gltf_textures = std::move(loader.gltf_textures);
+
+	moved_from = true;
+}
+
+gltf_loader::~gltf_loader()
+{
+	if(!moved_from)
+		std::cout << "Deinitialized glTF loader\n";
 }
 
 gltf_loader::gltf_loader(shader& default_shader) :

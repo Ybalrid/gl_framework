@@ -21,10 +21,12 @@ class gltf_loader
 
 	void steal_guts(gltf_loader& loader);
 
+	bool moved_from = false;
+
 public:
 
 	gltf_loader() = default;
-	~gltf_loader() = default;
+	~gltf_loader();
 
 	gltf_loader(shader& default_shader);
 	gltf_loader(const gltf_loader&) = delete;

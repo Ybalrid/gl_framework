@@ -4,14 +4,14 @@
 freeimage::freeimage()
 {
 	FreeImage_Initialise();
-#ifndef HIDE_BANNER
-	std::cout << FreeImage_GetCopyrightMessage() << '\n';
-#endif
+
+	std::cout << "Initialized FreeImage " << FreeImage_GetVersion() << "\n";
 }
 
 freeimage::~freeimage()
 {
 	FreeImage_DeInitialise();
+	std::cout << "Deinitialized FreeImage\n";
 }
 
 freeimage_image::freeimage_image(FIBITMAP* naked): ptr(naked)

@@ -20,7 +20,7 @@ void application::activate_vsync()
 	{
 		sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::adaptive_vsync);
 	}
-	catch (const sdl::Exception& e)
+	catch(const sdl::Exception& e)
 	{
 		std::cerr << e.what() << '\n';
 		std::cerr << "Using standard vsync instead of adaptive vsync\n";
@@ -28,7 +28,7 @@ void application::activate_vsync()
 		{
 			sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::vsync);
 		}
-		catch (const sdl::Exception& ee)
+		catch(const sdl::Exception& ee)
 		{
 			std::cerr << ee.what() << '\n';
 			std::cerr << "Cannot set vsync for this driver.\n";
@@ -36,7 +36,7 @@ void application::activate_vsync()
 			{
 				sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
 			}
-			catch (const sdl::Exception& eee)
+			catch(const sdl::Exception& eee)
 			{
 				std::cerr << eee.what() << '\n';
 			}
@@ -46,27 +46,27 @@ void application::activate_vsync()
 
 void application::handle_event(const sdl::Event& e)
 {
-	switch (e.type)
+	switch(e.type)
 	{
-	case SDL_KEYDOWN:
-		if (ImGui::GetIO().WantCaptureKeyboard) break;
-		if (!e.key.repeat)
-			switch (e.key.keysym.sym)
-			{
-			case SDLK_TAB:
-				debug_ui = !debug_ui;
-				break;
-			default:break;
-			}
-		break;
-	case SDL_KEYUP:
-		if (ImGui::GetIO().WantCaptureKeyboard) break;
-		//if(!e.key.repeat)
-		//	switch(e.key.keysym.sym)
-		//	{
-		//	default:break;
-		//	}
-		break;
+		case SDL_KEYDOWN:
+			if(ImGui::GetIO().WantCaptureKeyboard) break;
+			if(!e.key.repeat)
+				switch(e.key.keysym.sym)
+				{
+					case SDLK_TAB:
+						debug_ui = !debug_ui;
+						break;
+					default: break;
+				}
+			break;
+		case SDL_KEYUP:
+			if(ImGui::GetIO().WantCaptureKeyboard) break;
+			//if(!e.key.repeat)
+			//	switch(e.key.keysym.sym)
+			//	{
+			//	default:break;
+			//	}
+			break;
 	}
 }
 
@@ -74,15 +74,14 @@ void application::draw_debug_ui()
 {
 	static bool show_demo_window = false;
 
-
-	if (debug_ui)
+	if(debug_ui)
 	{
 		ImGui::Begin("Debug Window", &debug_ui);
 		ImGui::Text("Debug information");
 		ImGui::Text("FPS: %d", fps);
 		ImGui::Checkbox("Show demo window ?", &show_demo_window);
 
-		if (show_demo_window)
+		if(show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 		ImGui::End();
 	}
@@ -91,17 +90,17 @@ void application::draw_debug_ui()
 void application::update_timing()
 {
 	//calculate frame timing
-	last_frame_time = current_time;
-	current_time = SDL_GetTicks();
-	current_time_in_sec = float(current_time) *.001f;
-	last_frame_delta = current_time - last_frame_time;
-	last_frame_delta_sec = float(last_frame_delta) *.001f;
+	last_frame_time		 = current_time;
+	current_time		 = SDL_GetTicks();
+	current_time_in_sec  = float(current_time) * .001f;
+	last_frame_delta	 = current_time - last_frame_time;
+	last_frame_delta_sec = float(last_frame_delta) * .001f;
 
 	//take care of the FPS counter
-	if (current_time - last_second_time >= 1000)
+	if(current_time - last_second_time >= 1000)
 	{
-		fps = frames;
-		frames = 0;
+		fps				 = frames;
+		frames			 = 0;
 		last_second_time = current_time;
 	}
 	frames++;
@@ -111,15 +110,15 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 {
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);
-	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer); //Fragment shaders will perform individual gamma correction
+	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer);		 //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
-	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4); //OpenGL 4+
-	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 6); //OpenGL 4.6
+	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);							 //OpenGL 4+
+	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);							 //OpenGL 4.6
 }
 
 void application::initialize_glew() const
 {
-	if (glewInit() != GLEW_OK)
+	if(glewInit() != GLEW_OK)
 	{
 		std::cerr << "cannot init glew\n";
 		abort();
@@ -129,14 +128,12 @@ void application::initialize_glew() const
 
 void application::install_opengl_debug_callback() const
 {
-	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-		const GLchar* message, const void* user_param)
-	{
+	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param) {
 		std::cerr << "-----\n";
-		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' <<
-			std::string(message);
+		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);
 		std::cerr << "-----\n";
-	}, nullptr);
+	},
+						   nullptr);
 }
 
 void application::configure_and_create_window()
@@ -146,13 +143,13 @@ void application::configure_and_create_window()
 	configuration_data.push_back('\0');
 	const std::string configuration_text(reinterpret_cast<const char*>(configuration_data.data()));
 	std::istringstream configuration_stream(configuration_text);
-	auto config_toml = cpptoml::parser(configuration_stream);
-	const auto loaded_config = config_toml.parse();
+	auto config_toml			   = cpptoml::parser(configuration_stream);
+	const auto loaded_config	   = config_toml.parse();
 	const auto configuration_table = loaded_config->get_table("configuration");
 
 	//extract config values
-	const bool multisampling = configuration_table->get_as<bool>("multisampling").value_or(true);
-	const int samples = configuration_table->get_as<int>("samples").value_or(8);
+	const bool multisampling	= configuration_table->get_as<bool>("multisampling").value_or(true);
+	const int samples			= configuration_table->get_as<int>("samples").value_or(8);
 	const bool srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
 
 	//extract window config
@@ -161,12 +158,13 @@ void application::configure_and_create_window()
 	sdl::Vec2i window_size{};
 
 	const auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
-	window_size.x = int(window_size_array->at(0));
-	window_size.y = int(window_size_array->at(1));
+	window_size.x				 = int(window_size_array->at(0));
+	window_size.y				 = int(window_size_array->at(1));
 
 	//create window
 	window = sdl::Window("application window",
-		window_size, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+						 window_size,
+						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -183,24 +181,33 @@ scene* application::get_main_scene()
 	return main_scene;
 }
 
-application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
+void application::initialize_modern_opengl()
+{
+	initialize_glew();
+	install_opengl_debug_callback();
+}
+
+void application::initialize_gui()
+{
+	ui = gui(window.ptr(), context.ptr());
+	scripts.register_imgui_library(&ui);
+	ui.set_console_input_consumer(&scripts);
+}
+
+application::application(int argc, char** argv) :
+ resources(argc > 0 ? argv[0] : nullptr)
 {
 	main_scene = &s;
-	for (const auto& pak : resource_paks)
+	for(const auto& pak : resource_paks)
 	{
 		std::cerr << "Adding to resources " << pak << '\n';
 		resource_system::add_location(pak);
 	}
 
 	configure_and_create_window();
-
 	create_opengl_context();
-
-	initialize_glew();
-	install_opengl_debug_callback();
-	ui = gui(window.ptr(), context.ptr());
-	scripts.register_imgui_library(&ui);
-	ui.set_console_input_consumer(&scripts);
+	initialize_modern_opengl();
+	initialize_gui();
 
 	texture polutropon_logo_texture;
 	{
@@ -209,6 +216,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		polutropon_logo_texture.generate_mipmaps();
 	}
 
+	// clang-format off
 	std::vector<float> plane =
 	{
 		//x=	y=		 z=			u=	v=		normal=
@@ -223,32 +231,32 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		0, 1, 2, //triangle 0
 		1, 3, 2  //triangle 1
 	};
+	// clang-format on
 
 	shader unlit_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable textured_plane(&simple_shader, plane, plane_indices,
-		{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	renderable textured_plane(&simple_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	textured_plane.set_diffuse_texture(&polutropon_logo_texture);
 	//set opengl clear color
 
 	gltf = gltf_loader(simple_shader);
 
-	camera* cam = nullptr;
+	camera* cam   = nullptr;
 	auto cam_node = s.scene_root->push_child(create_node());
 	{
 		camera cam_obj;
 		cam_obj.fov = 45;
-		cam_node->local_xform.set_position({ 0,5, 5 });
+		cam_node->local_xform.set_position({ 0, 5, 5 });
 		cam_node->local_xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 		cam_node->assign(std::move(cam_obj));
 		cam = cam_node->get_if_is<camera>();
 		assert(cam);
 	}
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
-	auto plane0 = s.scene_root->push_child(create_node());
-	auto plane1 = s.scene_root->push_child(create_node());
-	auto duck_root = s.scene_root->push_child(create_node());
-	auto duck = duck_root->push_child(create_node());
+	auto plane0			 = s.scene_root->push_child(create_node());
+	auto plane1			 = s.scene_root->push_child(create_node());
+	auto duck_root		 = s.scene_root->push_child(create_node());
+	auto duck			 = duck_root->push_child(create_node());
 	duck->assign(scene_object(duck_renderable));
 	duck->local_xform.set_scale(0.01f * transform::UNIT_SCALE);
 	plane0->assign(scene_object(textured_plane));
@@ -263,27 +271,26 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	directional_light sun;
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
-	sun.ambient = glm::vec3(0);
+	sun.ambient   = glm::vec3(0);
 	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
 
-
-	std::array<node*, 4> lights{nullptr, nullptr, nullptr, nullptr};
+	std::array<node*, 4> lights{ nullptr, nullptr, nullptr, nullptr };
 	std::array<point_light*, 4> p_lights{ nullptr, nullptr, nullptr, nullptr };
 
-	lights[0] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
-	lights[1] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
-	lights[2] = s.scene_root->push_child(create_node());/*->assign(point_light());*/
-	lights[3] = s.scene_root->push_child(create_node());/*->assign(point_light()); */
+	lights[0] = s.scene_root->push_child(create_node());
+	lights[1] = s.scene_root->push_child(create_node());
+	lights[2] = s.scene_root->push_child(create_node());
+	lights[3] = s.scene_root->push_child(create_node());
 
 	for(size_t i = 0; i < 4; ++i)
 	{
-		auto* l = lights[i];
-		auto* pl = l->assign(point_light());
+		auto* l		= lights[i];
+		auto* pl	= l->assign(point_light());
 		pl->ambient = glm::vec3(0.1f);
 		pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
-		p_lights[i] = (pl);
+		p_lights[i]				   = (pl);
 	}
-	
+
 	lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
 	lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
@@ -295,14 +302,14 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 	float mousex = 0, mousey = 0;
 
 	//TODO refactor renderloop
-	while (running)
+	while(running)
 	{
 		update_timing();
 
 		//TODO move this thing to somewhere else
 		//event polling
 		mousex = mousey = 0;
-		while (event.poll())
+		while(event.poll())
 		{
 			//For ImGui
 			ui.handle_event(event);
@@ -310,99 +317,110 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 			handle_event(event);
 
 			//Maybe move this thing too... xD
-			switch (event.type)
+			switch(event.type)
 			{
-			case SDL_QUIT:
-				running = false;
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (ImGui::GetIO().WantCaptureMouse) break;
-				mouse = true;
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if (ImGui::GetIO().WantCaptureMouse) break;
-				mouse = false;
-				break;
-			case SDL_MOUSEMOTION:
-				if (ImGui::GetIO().WantCaptureMouse) break;
-				mousex = (float)event.motion.xrel;
-				mousey = (float)event.motion.yrel;
-				break;
+				case SDL_QUIT:
+					running = false;
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					if(ImGui::GetIO().WantCaptureMouse) break;
+					mouse = true;
+					break;
+				case SDL_MOUSEBUTTONUP:
+					if(ImGui::GetIO().WantCaptureMouse) break;
+					mouse = false;
+					break;
+				case SDL_MOUSEMOTION:
+					if(ImGui::GetIO().WantCaptureMouse) break;
+					mousex = (float)event.motion.xrel;
+					mousey = (float)event.motion.yrel;
+					break;
 
-			case SDL_KEYDOWN:
-				if (ImGui::GetIO().WantCaptureKeyboard) break;
-				if (event.key.repeat) break;
-				switch (event.key.keysym.sym)
-				{
-				case SDLK_w:
-				case SDLK_z:
-					up = true;
+				case SDL_KEYDOWN:
+					if(ImGui::GetIO().WantCaptureKeyboard) break;
+					if(event.key.repeat) break;
+					switch(event.key.keysym.sym)
+					{
+						case SDLK_w:
+						case SDLK_z:
+							up = true;
+							break;
+						case SDLK_s:
+							down = true;
+							break;
+						case SDLK_q:
+						case SDLK_a:
+							left = true;
+							break;
+						case SDLK_d:
+							right = true;
+							break;
+						default: break;
+					}
 					break;
-				case SDLK_s:
-					down = true;
+				case SDL_KEYUP:
+					if(ImGui::GetIO().WantCaptureKeyboard) break;
+					if(event.key.repeat) break;
+					switch(event.key.keysym.sym)
+					{
+						case SDLK_w:
+						case SDLK_z:
+							up = false;
+							break;
+						case SDLK_s:
+							down = false;
+							break;
+						case SDLK_q:
+						case SDLK_a:
+							left = false;
+							break;
+						case SDLK_d:
+							right = false;
+							break;
+						default: break;
+					}
 					break;
-				case SDLK_q:
-				case SDLK_a:
-					left = true;
+				default:
 					break;
-				case SDLK_d:
-					right = true;
-					break;
-				default:break;
-				}
-				break;
-			case SDL_KEYUP:
-				if (ImGui::GetIO().WantCaptureKeyboard) break;
-				if (event.key.repeat) break;
-				switch (event.key.keysym.sym)
-				{
-				case SDLK_w:
-				case SDLK_z:
-					up = false;
-					break;
-				case SDLK_s:
-					down = false;
-					break;
-				case SDLK_q:
-				case SDLK_a:
-					left = false;
-					break;
-				case SDLK_d:
-					right = false;
-					break;
-				default:break;
-				}
-				break;
-			default:
-				break;
 			}
 		}
 
 		//TODO build real input system for this
-		if (up)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position() + cam_node->local_xform.get_orientation() * last_frame_delta_sec * (glm::vec3(0, 0, -3)));
-		if (down)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position() + cam_node->local_xform.get_orientation() * last_frame_delta_sec * (glm::vec3(0, 0, 3)));
-		if (left)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position() + cam_node->local_xform.get_orientation() * last_frame_delta_sec * (glm::vec3(-3, 0, 0)));
-		if (right)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position() + cam_node->local_xform.get_orientation() * last_frame_delta_sec * (glm::vec3(3, 0, 0)));
-		if (mouse)
+		if(up)
+			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+											   + cam_node->local_xform.get_orientation()
+												   * last_frame_delta_sec
+												   * (glm::vec3(0, 0, -0.3f)));
+		if(down)
+			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+											   + cam_node->local_xform.get_orientation()
+												   * last_frame_delta_sec
+												   * (glm::vec3(0, 0, 0.3f)));
+		if(left)
+			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+											   + cam_node->local_xform.get_orientation()
+												   * last_frame_delta_sec
+												   * (glm::vec3(-0.3f, 0, 0)));
+		if(right)
+			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+											   + cam_node->local_xform.get_orientation()
+												   * last_frame_delta_sec
+												   * (glm::vec3(0.3f, 0, 0)));
+		if(mouse)
 		{
 			auto q = cam_node->local_xform.get_orientation();
-			q = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
-			q = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
+			q	  = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
+			q	  = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
 			cam_node->local_xform.set_orientation(q);
 		}
 
 		ui.frame();
 		scripts.update(last_frame_delta_sec);
 
-		//TOOD add this to 
+		//TOOD add this to
 		duck_root->local_xform.set_orientation(glm::angleAxis(glm::radians((180 * current_time_in_sec)), -transform::Y_AXIS));
 		plane1->local_xform.set_position({ 2, 0, 0 });
 		plane1->local_xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
-
 
 		s.scene_root->update_world_matrix();
 
@@ -424,13 +442,10 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 		const auto size = window.size();
 		cam->update_projection(size.x, size.y);
 
-
-		s.run_on_whole_graph([=](node* current_node)
-		{
-			current_node->visit([=](auto&& node_attached_object)
-			{
+		s.run_on_whole_graph([=](node* current_node) {
+			current_node->visit([=](auto&& node_attached_object) {
 				using T = std::decay_t<decltype(node_attached_object)>;
-				if constexpr (std::is_same_v<T, scene_object>)
+				if constexpr(std::is_same_v<T, scene_object>)
 				{
 					node_attached_object.draw(*cam, current_node->get_world_matrix());
 				}
@@ -439,7 +454,7 @@ application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] :
 
 		draw_debug_ui();
 		ui.render();
-		
+
 		//swap buffers
 		window.gl_swap();
 	}

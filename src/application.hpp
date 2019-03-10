@@ -15,10 +15,8 @@
 #include "gui.hpp"
 #include "script_system.hpp"
 
-
 #include "node.hpp"
 #include "scene.hpp"
-
 
 class application
 {
@@ -35,17 +33,17 @@ class application
 	freeimage free_img;
 	resource_system resources;
 
-	bool debug_ui = false;
-	uint32_t current_time = 0;
-	uint32_t last_frame_time = 0;
-	uint32_t last_second_time = 0;
-	uint32_t last_frame_delta = 0;
+	bool debug_ui			   = false;
+	uint32_t current_time	  = 0;
+	uint32_t last_frame_time   = 0;
+	uint32_t last_second_time  = 0;
+	uint32_t last_frame_delta  = 0;
 	float last_frame_delta_sec = 0;
-	float current_time_in_sec = 0;
-	int frames = 0;
-	int fps = 0;
+	float current_time_in_sec  = 0;
+	int frames				   = 0;
+	int fps					   = 0;
 
-	sdl::Root root{SDL_INIT_EVERYTHING};
+	sdl::Root root{ SDL_INIT_EVERYTHING };
 	sdl::Window window;
 	sdl::Window::GlContext context;
 	sdl::Event event{};
@@ -57,11 +55,12 @@ class application
 	gltf_loader gltf;
 
 	scene s;
-
 	static scene* main_scene;
 
 public:
 	static scene* get_main_scene();
+	void initialize_modern_opengl();
+	void initialize_gui();
 	application(int argc, char** argv);
 	static std::vector<std::string> resource_paks;
 };

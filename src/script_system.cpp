@@ -18,6 +18,11 @@ struct script_system::impl
 				  << chaiscript::version_patch << '\n';
 	}
 
+	~impl()
+	{
+		std::cout << "Deinitialized scripting system\n";
+	}
+
 	//Get ref
 	chaiscript::ChaiScript& get()
 	{
@@ -38,7 +43,7 @@ script_system::script_system() :
 	install_additional_api();
 }
 
-script_system::~script_system()						   = default;
+script_system::~script_system() = default;
 script_system::script_system(script_system&&) noexcept = default;
 script_system& script_system::operator=(script_system&&) noexcept = default;
 
