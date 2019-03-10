@@ -178,6 +178,11 @@ void application::create_opengl_context()
 	glEnable(GL_MULTISAMPLE);
 }
 
+scene* application::get_main_scene()
+{
+	return main_scene;
+}
+
 application::application(int argc, char** argv) : resources(argc > 0 ? argv[0] : nullptr)
 {
 	main_scene = &s;
