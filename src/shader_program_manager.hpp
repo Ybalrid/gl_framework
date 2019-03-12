@@ -18,6 +18,11 @@ public:
 	shader_program_manager();
 	~shader_program_manager();
 
+	shader_program_manager(const shader_program_manager&) = delete;
+	shader_program_manager(shader_program_manager&&) = delete;
+	shader_program_manager& operator=(const shader_program_manager&) = delete;
+	shader_program_manager& operator=(shader_program_manager&&) = delete;
+
 	static shader& get_from_handle(shader_handle h);
 	static void get_rid_of(shader_handle h);
 
