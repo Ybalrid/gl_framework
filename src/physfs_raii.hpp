@@ -1,6 +1,4 @@
 #pragma once
-#include "physfs.h"
-#include <iostream>
 
 struct physfs_raii
 {

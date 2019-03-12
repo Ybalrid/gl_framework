@@ -26,5 +26,5 @@ struct scene
 	}
 
 	node* find_node(size_t id);
-	node* find_node_in_childs(node* node, size_t id) const;
+	node* find_node_in_children(node* node, size_t id) const;
 };

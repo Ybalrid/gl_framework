@@ -1,4 +1,6 @@
 #include "physfs_raii.hpp"
+#include "physfs.h"
+#include <iostream>
 
 physfs_raii::physfs_raii(char* argv0)
 {

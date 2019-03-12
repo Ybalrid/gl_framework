@@ -1,5 +1,7 @@
 #include "resource_system.hpp"
 #include <iostream>
+#include <physfs.h>
+
 resource_system::resource_system(char* arg0): pysics_fs(arg0)
 {
 	std::cout << "Initialized Resource system"

@@ -5,6 +5,7 @@
 #include "FreeImage.h"
 #include "resource_system.hpp"
 #include "image.hpp"
+#include <physfs.h>
 
 std::string tinygltf_expand_file_path_callback(const std::string& filepath, void*)
 {

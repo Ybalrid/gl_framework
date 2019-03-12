@@ -54,7 +54,7 @@ public:
 	size_t get_child_count() const;
 	node* get_child(size_t index);
 	node* get_parent() const;
-	//this will move the pointer INTO the child array
+	//this will move the unique pointer INTO the child array
 	node* push_child(node_ptr&& child);
 	node_ptr&& remove_child(size_t index);
 	void clean_child_list();
@@ -90,7 +90,6 @@ public:
 		std::visit(visitor, content);
 	}
 };
-
 
 //node factory function
 node_ptr create_node();

@@ -1,5 +1,6 @@
 #include "gltf_loader.hpp"
 #include "resource_system.hpp"
+#include <iostream>
 
 void gltf_loader::steal_guts(gltf_loader& loader)
 {

@@ -447,6 +447,7 @@ application::application(int argc, char** argv) :
 				using T = std::decay_t<decltype(node_attached_object)>;
 				if constexpr(std::is_same_v<T, scene_object>)
 				{
+					//TODO instead of drawing, accumulate a buffer of thing that passes a frustrum culling test
 					node_attached_object.draw(*cam, current_node->get_world_matrix());
 				}
 			});
