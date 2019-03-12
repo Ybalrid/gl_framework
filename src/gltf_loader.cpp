@@ -10,7 +10,7 @@ void gltf_loader::steal_guts(gltf_loader& loader)
 	dshader		  = loader.dshader;
 	gltf_textures = std::move(loader.gltf_textures);
 
-	moved_from = true;
+	loader.moved_from = true;
 }
 
 gltf_loader::~gltf_loader()
