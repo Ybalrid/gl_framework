@@ -67,22 +67,18 @@ public:
 
 	///Construct a shader object. Take the location in the resource package of the source code
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);
+
+	///Construct an invalid and unallocated shader object
+	shader();
 	~shader();
 
-	///Set the given uniform for *all* currently existing shader objects
-	template<typename uniform_parameter>
-	static void set_frame_uniform(uniform type, uniform_parameter param)
-	{
-		for (auto a_shader : shader_list)
-		{
-			a_shader->use();
-			a_shader->set_uniform(type, param);
-		}
-		use_0();
-	}
+	bool valid() const;
+
 
 	shader(const shader&) = delete;
 	shader& operator=(const shader&) = delete;
+	shader(shader&& s) noexcept;
+	shader& operator=(shader&& s) noexcept;
 
 	void use() const;
 	static void use_0();
@@ -97,10 +93,12 @@ public:
 	void set_uniform(uniform type, const point_light& light) const;
 
 private:
+
+	void steal_guts(shader& s);
+
 	GLuint program = 0;
 	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)]{};
 	directional_light_uniform_locations main_directional_light_uniform_locations;
 	point_light_uniform_locations point_light_list_uniform_locations[NB_POINT_LIGHT];
 
-	static std::vector<shader*> shader_list;
 };

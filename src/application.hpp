@@ -17,6 +17,7 @@
 
 #include "node.hpp"
 #include "scene.hpp"
+#include "shader_program_manager.hpp"
 
 class application
 {
@@ -56,6 +57,8 @@ class application
 
 	scene s;
 	static scene* main_scene;
+
+	shader_program_manager shader_manager;
 
 public:
 	static scene* get_main_scene();

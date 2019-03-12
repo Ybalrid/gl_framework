@@ -19,8 +19,8 @@ gltf_loader::~gltf_loader()
 		std::cout << "Deinitialized glTF loader\n";
 }
 
-gltf_loader::gltf_loader(shader& default_shader) :
- dshader{ &default_shader }
+gltf_loader::gltf_loader(shader_handle default_shader) :
+ dshader{ default_shader }
 {
 	std::cout << "Initialized glTF 2.0 loader using tinygltf\n";
 	gltf_textures.reserve(10);

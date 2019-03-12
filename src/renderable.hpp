@@ -6,10 +6,11 @@
 #include "shader.hpp"
 #include "texture.hpp"
 #include "material.h"
+#include "shader_program_manager.hpp"
 
 class renderable
 {
-	shader* shader_program = nullptr;
+	shader_handle shader_program = ~0;
 	texture* diffuse_texture = nullptr;
 	texture* specular_texture = nullptr;
 
@@ -36,7 +37,7 @@ public:
 		bool normal : 1;
 	};
 
-	renderable(shader* program,
+	renderable(shader_handle program,
 	           const std::vector<float>& vertex_buffer,
 	           const std::vector<unsigned int>& index_buffer,
 	           configuration vertex_config,
@@ -60,5 +61,4 @@ public:
 	void set_mvp_matrix(const glm::mat4& matrix);
 	void set_model_matrix(const glm::mat4& matrix);
 	void set_view_matrix(const glm::mat4& matrix);
-	void set_camera_position(const glm::vec3& v) const;
 };

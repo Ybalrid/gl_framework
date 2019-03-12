@@ -233,9 +233,9 @@ application::application(int argc, char** argv) :
 	};
 	// clang-format on
 
-	shader unlit_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
-	shader simple_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable textured_plane(&simple_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	shader_handle unlit_shader =shader_program_manager::construct_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+	shader_handle simple_shader = shader_program_manager::construct_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+	renderable textured_plane(simple_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	textured_plane.set_diffuse_texture(&polutropon_logo_texture);
 	//set opengl clear color
 
@@ -426,15 +426,15 @@ application::application(int argc, char** argv) :
 
 		//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
 		cam->set_world_matrix(cam_node->get_world_matrix());
-		shader::set_frame_uniform(shader::uniform::gamma, shader::gamma);
-		shader::set_frame_uniform(shader::uniform::camera_position, cam_node->local_xform.get_position());
-		shader::set_frame_uniform(shader::uniform::view, cam->get_view_matrix());
-		shader::set_frame_uniform(shader::uniform::projection, cam->get_projection_matrix());
-		shader::set_frame_uniform(shader::uniform::main_directional_light, sun);
-		shader::set_frame_uniform(shader::uniform::point_light_0, *p_lights[0]);
-		shader::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
-		shader::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
-		shader::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
+		shader_program_manager::set_frame_uniform(shader::uniform::gamma, shader::gamma);
+		shader_program_manager::set_frame_uniform(shader::uniform::camera_position, cam_node->local_xform.get_position());
+		shader_program_manager::set_frame_uniform(shader::uniform::view, cam->get_view_matrix());
+		shader_program_manager::set_frame_uniform(shader::uniform::projection, cam->get_projection_matrix());
+		shader_program_manager::set_frame_uniform(shader::uniform::main_directional_light, sun);
+		shader_program_manager::set_frame_uniform(shader::uniform::point_light_0, *p_lights[0]);
+		shader_program_manager::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
+		shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
+		shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
 
 		glClearColor(0.1f, 0.3f, 0.5f, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

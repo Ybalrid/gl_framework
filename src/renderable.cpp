@@ -19,7 +19,7 @@ void renderable::steal_guts(renderable& other)
 	other.VAO        = other.VBO = other.EBO = 0;
 }
 
-renderable::renderable(shader* program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage):
+renderable::renderable(shader_handle program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage):
 	shader_program(program),
 	draw_mode(draw_operation)
 {
@@ -80,22 +80,24 @@ void renderable::draw() const
 	//We need to have a shader and a texture!
 	assert(shader_program);
 
+	auto& shader_object = shader_program_manager::get_from_handle(shader_program);
+
 	//Setup our shader
-	shader_program->use();
-	shader_program->set_uniform(shader::uniform::mvp, mvp);       //projection * view * model
-	shader_program->set_uniform(shader::uniform::model, model);   //world space model matrix
-	shader_program->set_uniform(shader::uniform::normal, normal); //3x3 matrix extracted from(transpose(inverse(model)))
-	shader_program->set_uniform(shader::uniform::material_shininess, mat.shininess);
-	shader_program->set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
-	shader_program->set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
-	shader_program->set_uniform(shader::uniform::material_specular_color, mat.specular_color);
+	shader_object.use();
+	shader_object.set_uniform(shader::uniform::mvp, mvp);       //projection * view * model
+	shader_object.set_uniform(shader::uniform::model, model);   //world space model matrix
+	shader_object.set_uniform(shader::uniform::normal, normal); //3x3 matrix extracted from(transpose(inverse(model)))
+	shader_object.set_uniform(shader::uniform::material_shininess, mat.shininess);
+	shader_object.set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
+	shader_object.set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
+	shader_object.set_uniform(shader::uniform::material_specular_color, mat.specular_color);
 	if(diffuse_texture) {
 		diffuse_texture->bind(shader::material_diffuse_texture_slot);
 	} else {
 		glActiveTexture(GL_TEXTURE0);
 		texture::bind_0();
 	}
-	shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+	shader_object.set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 
 	if(specular_texture) {
 		specular_texture->bind(shader::material_specular_texture_slot);
@@ -103,7 +105,7 @@ void renderable::draw() const
 		glActiveTexture(GL_TEXTURE1);
 		texture::bind_0();
 	}
-	shader_program->set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+	shader_object.set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 
 	//bind object buffers and issue draw call
 	glBindVertexArray(VAO);
@@ -124,10 +126,4 @@ void renderable::set_model_matrix(const glm::mat4& matrix)
 void renderable::set_view_matrix(const glm::mat4& matrix)
 {
 	view = matrix;
-}
-
-void renderable::set_camera_position(const glm::vec3& v) const
-{
-	shader_program->use();
-	shader_program->set_uniform(shader::uniform::camera_position, v);
 }

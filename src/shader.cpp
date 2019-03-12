@@ -2,7 +2,6 @@
 #include "resource_system.hpp"
 #include <algorithm>
 
-std::vector<shader*> shader::shader_list{};
 float shader::gamma = 2.2f;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
@@ -98,15 +97,33 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	set_uniform(uniform::material_diffuse, material_diffuse_texture_slot);
 	set_uniform(uniform::material_specular, material_specular_texture_slot);
 
-	shader_list.push_back(this);
+}
+
+shader::shader()
+{
+
 }
 
 shader::~shader()
 {
 	if (glIsProgram(program) == GL_TRUE)
 		glDeleteProgram(program);
+}
 
-	shader_list.erase(std::find(shader_list.begin(), shader_list.end(), this));
+bool shader::valid() const
+{
+	return program != 0;
+}
+
+shader::shader(shader&& s) noexcept
+{
+	steal_guts(s);
+}
+
+shader& shader::operator=(shader&& s) noexcept
+{
+	steal_guts(s);
+	return *this;
 }
 
 void shader::use() const
@@ -119,33 +136,41 @@ void shader::use_0()
 	glUseProgram(0);
 }
 
+//Avoid to set uniform on invalid opengl shader programs
+#define shader_valid_check if(!program) return
 void shader::set_uniform(uniform type, const glm::mat4& matrix) const
 {
+	shader_valid_check;
 	glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::mat3& matrix) const
 {
+	shader_valid_check;
 	glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::vec3& v) const
 {
+	shader_valid_check;
 	glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
 }
 
 void shader::set_uniform(uniform type, float v) const
 {
+	shader_valid_check;
 	glUniform1f(uniform_indices[int(type)], v);
 }
 
 void shader::set_uniform(uniform type, int i) const
 {
+	shader_valid_check;
 	glUniform1i(uniform_indices[int(type)], i);
 }
 
 void shader::set_uniform(uniform type, const directional_light& light) const
 {
+	shader_valid_check;
 	if (type != uniform::main_directional_light) return;
 
 	glUniform3f(main_directional_light_uniform_locations.direction, light.direction.x, light.direction.y, light.direction.z);
@@ -156,6 +181,7 @@ void shader::set_uniform(uniform type, const directional_light& light) const
 
 void shader::set_uniform(uniform type, const point_light& light) const
 {
+	shader_valid_check;
 	const int index = [t=type]
 	{
 		switch(t)
@@ -178,4 +204,14 @@ void shader::set_uniform(uniform type, const point_light& light) const
 	glUniform3f(point_light_location.ambient, light.ambient.r, light.ambient.g, light.ambient.b);
 	glUniform3f(point_light_location.diffuse, light.diffuse.r, light.diffuse.g, light.diffuse.b);
 	glUniform3f(point_light_location.specular, light.specular.r, light.specular.g, light.specular.b);
+}
+
+void shader::steal_guts(shader& s)
+{
+	program = s.program;
+
+	std::copy(std::begin(s.uniform_indices), std::end(s.uniform_indices), std::begin(uniform_indices));
+	std::copy(std::begin(s.point_light_list_uniform_locations), std::end(s.point_light_list_uniform_locations), std::begin(point_light_list_uniform_locations));
+	main_directional_light_uniform_locations = s.main_directional_light_uniform_locations;
+	s.program                                = 0; //this will invalidate the "moved from" program
 }

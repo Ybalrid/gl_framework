@@ -14,7 +14,7 @@ class gltf_loader
 	std::string error;
 	std::string warning;
 
-	shader* dshader = nullptr;
+	shader_handle dshader = ~0;
 
 	//TODO don't store that here.
 	std::vector<texture> gltf_textures{};
@@ -28,7 +28,7 @@ public:
 	gltf_loader() = default;
 	~gltf_loader();
 
-	gltf_loader(shader& default_shader);
+	gltf_loader(shader_handle default_shader);
 	gltf_loader(const gltf_loader&) = delete;
 	gltf_loader& operator=(const gltf_loader&) = delete;
 	gltf_loader(gltf_loader&& other) noexcept;
