@@ -2,7 +2,6 @@
 
 #include <GL/glew.h>
 #include "image.hpp"
-#include <algorithm>
 
 class texture
 {

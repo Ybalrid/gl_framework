@@ -47,12 +47,12 @@ renderable::renderable(shader_handle program, const std::vector<float>& vertex_b
 	element_count = GLuint(index_buffer.size());
 }
 
-void renderable::set_diffuse_texture(texture* t)
+void renderable::set_diffuse_texture(texture_handle t)
 {
 	diffuse_texture = t;
 }
 
-void renderable::set_specular_texture(texture* t)
+void renderable::set_specular_texture(texture_handle t)
 {
 	specular_texture = t;
 }
@@ -91,17 +91,23 @@ void renderable::draw() const
 	shader_object.set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
 	shader_object.set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
 	shader_object.set_uniform(shader::uniform::material_specular_color, mat.specular_color);
-	if(diffuse_texture) {
-		diffuse_texture->bind(shader::material_diffuse_texture_slot);
-	} else {
+	if(diffuse_texture != texture_manager::invalid_texture) 
+	{
+		texture_manager::get_from_handle(diffuse_texture).bind(shader::material_diffuse_texture_slot);
+	}
+	else 
+	{
 		glActiveTexture(GL_TEXTURE0);
 		texture::bind_0();
 	}
 	shader_object.set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
 
-	if(specular_texture) {
-		specular_texture->bind(shader::material_specular_texture_slot);
-	} else {
+	if(specular_texture != texture_manager::invalid_texture) 
+	{
+		texture_manager::get_from_handle(specular_texture).bind(shader::material_specular_texture_slot);
+	}
+	else 
+	{
 		glActiveTexture(GL_TEXTURE1);
 		texture::bind_0();
 	}

@@ -7,12 +7,13 @@
 #include "texture.hpp"
 #include "material.h"
 #include "shader_program_manager.hpp"
+#include "texture_manager.hpp"
 
 class renderable
 {
-	shader_handle shader_program = ~0;
-	texture* diffuse_texture = nullptr;
-	texture* specular_texture = nullptr;
+	shader_handle shader_program = shader_program_manager::invalid_shader;
+	texture_handle diffuse_texture = texture_manager::invalid_texture;
+	texture_handle specular_texture = texture_manager::invalid_texture;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
 	GLenum draw_mode = GL_TRIANGLES, element_type = GL_UNSIGNED_INT;
@@ -48,8 +49,8 @@ public:
 	           GLenum draw_operation       = GL_TRIANGLES,
 	           GLenum buffer_usage         = GL_STATIC_DRAW);
 
-	void set_diffuse_texture(texture* t);
-	void set_specular_texture(texture* t);
+	void set_diffuse_texture(texture_handle t);
+	void set_specular_texture(texture_handle t);
 
 	~renderable();
 	renderable(const renderable&) = delete;

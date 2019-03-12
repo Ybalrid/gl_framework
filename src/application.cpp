@@ -209,11 +209,12 @@ application::application(int argc, char** argv) :
 	initialize_modern_opengl();
 	initialize_gui();
 
-	texture polutropon_logo_texture;
+	texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
 		auto img = image("/polutropon.png");
-		polutropon_logo_texture.load_from(img);
-		polutropon_logo_texture.generate_mipmaps();
+		auto& polutropon_logo_texture_object = texture_manager::get_from_handle(polutropon_logo_texture);
+		polutropon_logo_texture_object.load_from(img);
+		polutropon_logo_texture_object.generate_mipmaps();
 	}
 
 	// clang-format off
@@ -233,10 +234,10 @@ application::application(int argc, char** argv) :
 	};
 	// clang-format on
 
-	shader_handle unlit_shader =shader_program_manager::construct_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
-	shader_handle simple_shader = shader_program_manager::construct_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+	shader_handle unlit_shader =shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+	shader_handle simple_shader = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	renderable textured_plane(simple_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
-	textured_plane.set_diffuse_texture(&polutropon_logo_texture);
+	textured_plane.set_diffuse_texture(polutropon_logo_texture);
 	//set opengl clear color
 
 	gltf = gltf_loader(simple_shader);

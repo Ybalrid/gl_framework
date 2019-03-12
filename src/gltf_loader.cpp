@@ -8,7 +8,6 @@ void gltf_loader::steal_guts(gltf_loader& loader)
 	error		  = std::move(loader.error);
 	warning		  = std::move(loader.warning);
 	dshader		  = loader.dshader;
-	gltf_textures = std::move(loader.gltf_textures);
 
 	loader.moved_from = true;
 }
@@ -23,7 +22,6 @@ gltf_loader::gltf_loader(shader_handle default_shader) :
  dshader{ default_shader }
 {
 	std::cout << "Initialized glTF 2.0 loader using tinygltf\n";
-	gltf_textures.reserve(10);
 	//This register our custom ImageLoader with tinygltf
 	tinygltf_freeimage_setup(gltf);
 	tinygltf_resource_system_setup(gltf);
@@ -251,15 +249,14 @@ renderable gltf_loader::build_renderable(const tinygltf::Mesh& mesh, const tinyg
 	if(mesh.primitives[0].material >= 0)
 	{
 
-		texture* diffuse_texture = nullptr;
 		const auto material		 = model.materials[mesh.primitives[0].material];
 		const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 		const auto color_image   = model.images[color_texture.source];
 
 		GLuint tex = load_to_gl_texture(color_image);
 
-		gltf_textures.emplace_back(tex);
-		diffuse_texture = &gltf_textures.back();
+
+		auto diffuse_texture = texture_manager::create_texture(tex);
 
 		renderable r{ dshader,
 					  vertex,

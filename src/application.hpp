@@ -59,6 +59,7 @@ class application
 	static scene* main_scene;
 
 	shader_program_manager shader_manager;
+	texture_manager texture_mgr;
 
 public:
 	static scene* get_main_scene();

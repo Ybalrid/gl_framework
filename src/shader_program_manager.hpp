@@ -27,7 +27,7 @@ public:
 	static void get_rid_of(shader_handle h);
 
 	template<typename ... ConstructorArgs>
-	static shader_handle construct_shader(ConstructorArgs ... args)
+	static shader_handle create_shader(ConstructorArgs ... args)
 	{
 		//no "unallocated" shader in the shaders array
 		if (manager->unallocated_shaders.empty())

@@ -16,9 +16,6 @@ class gltf_loader
 
 	shader_handle dshader = ~0;
 
-	//TODO don't store that here.
-	std::vector<texture> gltf_textures{};
-
 	void steal_guts(gltf_loader& loader);
 
 	bool moved_from = false;
