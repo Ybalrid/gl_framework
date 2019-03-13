@@ -3,6 +3,7 @@
 #include "resource_system.hpp"
 #include "freeimage_raii.hpp"
 #include <GL/glew.h>
+#include <stdexcept>
 
 class image
 {

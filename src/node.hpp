@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <type_traits>
+#include <memory>
 
 //fw declare deleter
 class node;

@@ -1,7 +1,7 @@
 #include "shader.hpp"
 #include "resource_system.hpp"
 #include <algorithm>
-
+#include <stdexcept>
 float shader::gamma = 2.2f;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
