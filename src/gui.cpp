@@ -43,21 +43,25 @@ void gui::console()
 								{
 									case ImGuiInputTextFlags_CallbackHistory:
 									{
-										const char* text				 = nullptr;
-										const size_t console_history_max = !ui->console_history.empty() ? ui->console_history.size() - 1 : 0;
+										const char* text			   = nullptr;
+										const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
+
 										if(data->EventKey == ImGuiKey_UpArrow)
 										{
 											if(!ui->console_history.empty())
 												text = ui->console_history
-														   [console_history_max - std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++))]
+														   [console_history_max
+															- std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++))]
 															   .c_str();
 											ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
 										}
+
 										else if(data->EventKey == ImGuiKey_DownArrow)
 										{
 											if(!ui->console_history.empty())
 												text = ui->console_history
-														   [console_history_max - std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--))]
+														   [console_history_max
+															- std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--))]
 															   .c_str();
 											ui->history_counter = std::max<int>(0, ui->history_counter);
 										}

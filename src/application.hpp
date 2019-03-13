@@ -3,12 +3,10 @@
 #include <GL/glew.h>
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
-#include <iostream>
 
 #include <vector>
 #include <string>
 #include "resource_system.hpp"
-#include "scene_object.hpp"
 #include "gltf_loader.hpp"
 #include "freeimage_raii.hpp"
 #include "gui.hpp"

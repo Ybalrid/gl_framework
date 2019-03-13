@@ -244,23 +244,24 @@ void application::run_events()
 			case SDL_KEYDOWN:
 				if(ImGui::GetIO().WantCaptureKeyboard) break;
 				if(event.key.repeat) break;
-				switch(event.key.keysym.sym)
+				switch(event.key.keysym.scancode)
 				{
-					case SDLK_TAB:
+					case SDL_SCANCODE_GRAVE:
+						ui.show_console = !ui.show_console;
+						break;
+					case SDL_SCANCODE_TAB:
 						debug_ui = !debug_ui;
 						break;
-					case SDLK_w:
-					case SDLK_z:
+					case SDL_SCANCODE_W:
 						up = true;
 						break;
-					case SDLK_s:
+					case SDL_SCANCODE_S:
 						down = true;
 						break;
-					case SDLK_q:
-					case SDLK_a:
+					case SDL_SCANCODE_A:
 						left = true;
 						break;
-					case SDLK_d:
+					case SDL_SCANCODE_D:
 						right = true;
 						break;
 					default: break;
@@ -269,20 +270,18 @@ void application::run_events()
 			case SDL_KEYUP:
 				if(ImGui::GetIO().WantCaptureKeyboard) break;
 				if(event.key.repeat) break;
-				switch(event.key.keysym.sym)
+				switch(event.key.keysym.scancode)
 				{
-					case SDLK_w:
-					case SDLK_z:
+					case SDL_SCANCODE_W:
 						up = false;
 						break;
-					case SDLK_s:
+					case SDL_SCANCODE_S:
 						down = false;
 						break;
-					case SDLK_q:
-					case SDLK_a:
+					case SDL_SCANCODE_A:
 						left = false;
 						break;
-					case SDLK_d:
+					case SDL_SCANCODE_D:
 						right = false;
 						break;
 					default: break;

@@ -32,7 +32,7 @@ class gui
 	int history_counter				= 0;
 
 public:
-	bool show_console = true;
+	bool show_console = false;
 	gui()			  = default;
 	gui(SDL_Window* window, SDL_GLContext gl_context);
 	~gui();
