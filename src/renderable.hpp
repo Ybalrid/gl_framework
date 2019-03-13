@@ -38,6 +38,8 @@ public:
 		bool normal : 1;
 	};
 
+	renderable() = default;
+
 	renderable(shader_handle program,
 	           const std::vector<float>& vertex_buffer,
 	           const std::vector<unsigned int>& index_buffer,

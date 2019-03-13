@@ -4,10 +4,10 @@
 
 void gltf_loader::steal_guts(gltf_loader& loader)
 {
-	gltf		  = loader.gltf;
-	error		  = std::move(loader.error);
-	warning		  = std::move(loader.warning);
-	dshader		  = loader.dshader;
+	gltf	= loader.gltf;
+	error   = std::move(loader.error);
+	warning = std::move(loader.warning);
+	dshader = loader.dshader;
 
 	loader.moved_from = true;
 }
@@ -60,7 +60,7 @@ bool gltf_loader::load_model(const std::string& virtual_path, tinygltf::Model& m
 	return false;
 }
 
-renderable gltf_loader::load_mesh(const std::string& virtual_path, int index)
+renderable_handle gltf_loader::load_mesh(const std::string& virtual_path, int index)
 {
 	error.clear();
 	warning.clear();
@@ -75,7 +75,7 @@ renderable gltf_loader::load_mesh(const std::string& virtual_path, int index)
 	return build_renderable(model.meshes[index], model);
 }
 
-renderable gltf_loader::load_mesh(const std::string& virtual_path, const std::string& name)
+renderable_handle gltf_loader::load_mesh(const std::string& virtual_path, const std::string& name)
 {
 	error.clear();
 	warning.clear();
@@ -229,7 +229,7 @@ GLuint gltf_loader::load_to_gl_texture(const tinygltf::Image& color_image, bool 
 	return tex;
 }
 
-renderable gltf_loader::build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
+renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
 {
 	std::vector<float> vertex;
 	std::vector<unsigned int> index;
@@ -252,36 +252,28 @@ renderable gltf_loader::build_renderable(const tinygltf::Mesh& mesh, const tinyg
 		const auto material		 = model.materials[mesh.primitives[0].material];
 		const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 		const auto color_image   = model.images[color_texture.source];
-
 		GLuint tex = load_to_gl_texture(color_image);
-
-
 		auto diffuse_texture = texture_manager::create_texture(tex);
-
-		renderable r{ dshader,
-					  vertex,
-					  index,
-					  { true, true, true },
-					  8,
-					  0,
-					  3,
-					  5,
-					  draw_mode };
-
-		r.set_diffuse_texture(diffuse_texture);
-
+		renderable_handle r = renderable_manager::create_renderable(dshader,
+																	vertex,
+																	index,
+																	renderable::configuration{ true, true, true },
+																	8,
+																	0,
+																	3,
+																	5,
+																	draw_mode);
+		renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture);
 		return r;
 	}
 
-	renderable r{ dshader,
-				  vertex,
-				  index,
-				  { true, true, true },
-				  8,
-				  0,
-				  3,
-				  5,
-				  draw_mode };
-
-	return r;
+	return renderable_manager::create_renderable(dshader,
+												 vertex,
+												 index,
+												 renderable::configuration{ true, true, true },
+												 8,
+												 0,
+												 3,
+												 5,
+												 draw_mode);
 }

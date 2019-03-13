@@ -44,31 +44,6 @@ void application::activate_vsync()
 	}
 }
 
-void application::handle_event(const sdl::Event& e)
-{
-	switch(e.type)
-	{
-		case SDL_KEYDOWN:
-			if(ImGui::GetIO().WantCaptureKeyboard) break;
-			if(!e.key.repeat)
-				switch(e.key.keysym.sym)
-				{
-					case SDLK_TAB:
-						debug_ui = !debug_ui;
-						break;
-					default: break;
-				}
-			break;
-		case SDL_KEYUP:
-			if(ImGui::GetIO().WantCaptureKeyboard) break;
-			//if(!e.key.repeat)
-			//	switch(e.key.keysym.sym)
-			//	{
-			//	default:break;
-			//	}
-			break;
-	}
-}
 
 void application::draw_debug_ui()
 {
@@ -194,6 +169,178 @@ void application::initialize_gui()
 	ui.set_console_input_consumer(&scripts);
 }
 
+void application::render_frame()
+{
+	ui.frame();
+	scripts.update(last_frame_delta_sec);
+
+	s.scene_root->update_world_matrix();
+
+	//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
+	main_camera->set_world_matrix(cam_node->get_world_matrix());
+	shader_program_manager::set_frame_uniform(shader::uniform::gamma, shader::gamma);
+	shader_program_manager::set_frame_uniform(shader::uniform::camera_position, cam_node->local_xform.get_position());
+	shader_program_manager::set_frame_uniform(shader::uniform::view, main_camera->get_view_matrix());
+	shader_program_manager::set_frame_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
+	shader_program_manager::set_frame_uniform(shader::uniform::main_directional_light, sun);
+	shader_program_manager::set_frame_uniform(shader::uniform::point_light_0, *p_lights[0]);
+	shader_program_manager::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
+	shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
+	shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
+
+	glClearColor(0.1f, 0.3f, 0.5f, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	const auto size = window.size();
+	main_camera->update_projection(size.x, size.y);
+
+	glEnable(GL_DEPTH_TEST);
+	s.run_on_whole_graph([=](node* current_node) {
+		current_node->visit([=](auto&& node_attached_object) {
+			using T = std::decay_t<decltype(node_attached_object)>;
+			if constexpr(std::is_same_v<T, scene_object>)
+			{
+				//TODO instead of drawing, accumulate a buffer of thing that passes a frustrum culling test
+				node_attached_object.draw(*main_camera, current_node->get_world_matrix());
+			}
+		});
+	});
+
+	draw_debug_ui();
+	ui.render();
+
+	//swap buffers
+	window.gl_swap();
+}
+
+void application::run_events()
+{
+	//TODO move this thing to somewhere else
+	//event polling
+	mousex = mousey = 0;
+	while(event.poll())
+	{
+		//For ImGui
+		ui.handle_event(event);
+		//Maybe move this thing too... xD
+		switch(event.type)
+		{
+			case SDL_QUIT:
+				running = false;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if(ImGui::GetIO().WantCaptureMouse) break;
+				mouse = true;
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if(ImGui::GetIO().WantCaptureMouse) break;
+				mouse = false;
+				break;
+			case SDL_MOUSEMOTION:
+				if(ImGui::GetIO().WantCaptureMouse) break;
+				mousex = (float)event.motion.xrel;
+				mousey = (float)event.motion.yrel;
+				break;
+
+			case SDL_KEYDOWN:
+				if(ImGui::GetIO().WantCaptureKeyboard) break;
+				if(event.key.repeat) break;
+				switch(event.key.keysym.sym)
+				{
+					case SDLK_TAB:
+						debug_ui = !debug_ui;
+						break;
+					case SDLK_w:
+					case SDLK_z:
+						up = true;
+						break;
+					case SDLK_s:
+						down = true;
+						break;
+					case SDLK_q:
+					case SDLK_a:
+						left = true;
+						break;
+					case SDLK_d:
+						right = true;
+						break;
+					default: break;
+				}
+				break;
+			case SDL_KEYUP:
+				if(ImGui::GetIO().WantCaptureKeyboard) break;
+				if(event.key.repeat) break;
+				switch(event.key.keysym.sym)
+				{
+					case SDLK_w:
+					case SDLK_z:
+						up = false;
+						break;
+					case SDLK_s:
+						down = false;
+						break;
+					case SDLK_q:
+					case SDLK_a:
+						left = false;
+						break;
+					case SDLK_d:
+						right = false;
+						break;
+					default: break;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	//TODO build real input system for this
+	if(up)
+		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+			+ cam_node->local_xform.get_orientation()
+			* last_frame_delta_sec
+			* (glm::vec3(0, 0, -0.3f)));
+	if(down)
+		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+			+ cam_node->local_xform.get_orientation()
+			* last_frame_delta_sec
+			* (glm::vec3(0, 0, 0.3f)));
+	if(left)
+		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+			+ cam_node->local_xform.get_orientation()
+			* last_frame_delta_sec
+			* (glm::vec3(-0.3f, 0, 0)));
+	if(right)
+		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
+			+ cam_node->local_xform.get_orientation()
+			* last_frame_delta_sec
+			* (glm::vec3(0.3f, 0, 0)));
+	if(mouse)
+	{
+		auto q = cam_node->local_xform.get_orientation();
+		q      = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
+		q      = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
+		cam_node->local_xform.set_orientation(q);
+	}
+}
+
+void application::run()
+{
+	//TODO refactor renderloop
+	while(running)
+	{
+		update_timing();
+		run_events();
+
+		//TOOD maybe script this thing?
+		//duck_root->local_xform.set_orientation(glm::angleAxis(glm::radians((180 * current_time_in_sec)), -transform::Y_AXIS));
+		//plane1->local_xform.set_position({ 2, 0, 0 });
+		//plane1->local_xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
+
+		render_frame();
+	}
+}
+
 application::application(int argc, char** argv) :
  resources(argc > 0 ? argv[0] : nullptr)
 {
@@ -211,7 +358,7 @@ application::application(int argc, char** argv) :
 
 	texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
-		auto img = image("/polutropon.png");
+		auto img							 = image("/polutropon.png");
 		auto& polutropon_logo_texture_object = texture_manager::get_from_handle(polutropon_logo_texture);
 		polutropon_logo_texture_object.load_from(img);
 		polutropon_logo_texture_object.generate_mipmaps();
@@ -234,16 +381,16 @@ application::application(int argc, char** argv) :
 	};
 	// clang-format on
 
-	shader_handle unlit_shader =shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+	shader_handle unlit_shader  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader_handle simple_shader = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable textured_plane(simple_shader, plane, plane_indices, { true, true, true }, 3 + 2 + 3, 0, 3, 5);
-	textured_plane.set_diffuse_texture(polutropon_logo_texture);
+	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 	//set opengl clear color
 
 	gltf = gltf_loader(simple_shader);
 
-	camera* cam   = nullptr;
-	auto cam_node = s.scene_root->push_child(create_node());
+	camera* cam = nullptr;
+	cam_node	= s.scene_root->push_child(create_node());
 	{
 		camera cam_obj;
 		cam_obj.fov = 45;
@@ -253,6 +400,9 @@ application::application(int argc, char** argv) :
 		cam = cam_node->get_if_is<camera>();
 		assert(cam);
 	}
+
+	main_camera = cam;
+
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 	auto plane0			 = s.scene_root->push_child(create_node());
 	auto plane1			 = s.scene_root->push_child(create_node());
@@ -269,14 +419,12 @@ application::application(int argc, char** argv) :
 	other_plane->local_xform.scale(0.9f * transform::UNIT_SCALE);
 	other_plane->assign(scene_object(textured_plane));
 
-	directional_light sun;
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
 	sun.ambient   = glm::vec3(0);
 	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
 
 	std::array<node*, 4> lights{ nullptr, nullptr, nullptr, nullptr };
-	std::array<point_light*, 4> p_lights{ nullptr, nullptr, nullptr, nullptr };
 
 	lights[0] = s.scene_root->push_child(create_node());
 	lights[1] = s.scene_root->push_child(create_node());
@@ -297,167 +445,4 @@ application::application(int argc, char** argv) :
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
-	glEnable(GL_DEPTH_TEST);
-
-	bool up = false, down = false, left = false, right = false, mouse = false;
-	float mousex = 0, mousey = 0;
-
-	//TODO refactor renderloop
-	while(running)
-	{
-		update_timing();
-
-		//TODO move this thing to somewhere else
-		//event polling
-		mousex = mousey = 0;
-		while(event.poll())
-		{
-			//For ImGui
-			ui.handle_event(event);
-			//For us
-			handle_event(event);
-
-			//Maybe move this thing too... xD
-			switch(event.type)
-			{
-				case SDL_QUIT:
-					running = false;
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					if(ImGui::GetIO().WantCaptureMouse) break;
-					mouse = true;
-					break;
-				case SDL_MOUSEBUTTONUP:
-					if(ImGui::GetIO().WantCaptureMouse) break;
-					mouse = false;
-					break;
-				case SDL_MOUSEMOTION:
-					if(ImGui::GetIO().WantCaptureMouse) break;
-					mousex = (float)event.motion.xrel;
-					mousey = (float)event.motion.yrel;
-					break;
-
-				case SDL_KEYDOWN:
-					if(ImGui::GetIO().WantCaptureKeyboard) break;
-					if(event.key.repeat) break;
-					switch(event.key.keysym.sym)
-					{
-						case SDLK_w:
-						case SDLK_z:
-							up = true;
-							break;
-						case SDLK_s:
-							down = true;
-							break;
-						case SDLK_q:
-						case SDLK_a:
-							left = true;
-							break;
-						case SDLK_d:
-							right = true;
-							break;
-						default: break;
-					}
-					break;
-				case SDL_KEYUP:
-					if(ImGui::GetIO().WantCaptureKeyboard) break;
-					if(event.key.repeat) break;
-					switch(event.key.keysym.sym)
-					{
-						case SDLK_w:
-						case SDLK_z:
-							up = false;
-							break;
-						case SDLK_s:
-							down = false;
-							break;
-						case SDLK_q:
-						case SDLK_a:
-							left = false;
-							break;
-						case SDLK_d:
-							right = false;
-							break;
-						default: break;
-					}
-					break;
-				default:
-					break;
-			}
-		}
-
-		//TODO build real input system for this
-		if(up)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-											   + cam_node->local_xform.get_orientation()
-												   * last_frame_delta_sec
-												   * (glm::vec3(0, 0, -0.3f)));
-		if(down)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-											   + cam_node->local_xform.get_orientation()
-												   * last_frame_delta_sec
-												   * (glm::vec3(0, 0, 0.3f)));
-		if(left)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-											   + cam_node->local_xform.get_orientation()
-												   * last_frame_delta_sec
-												   * (glm::vec3(-0.3f, 0, 0)));
-		if(right)
-			cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-											   + cam_node->local_xform.get_orientation()
-												   * last_frame_delta_sec
-												   * (glm::vec3(0.3f, 0, 0)));
-		if(mouse)
-		{
-			auto q = cam_node->local_xform.get_orientation();
-			q	  = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
-			q	  = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
-			cam_node->local_xform.set_orientation(q);
-		}
-
-		ui.frame();
-		scripts.update(last_frame_delta_sec);
-
-		//TOOD add this to
-		duck_root->local_xform.set_orientation(glm::angleAxis(glm::radians((180 * current_time_in_sec)), -transform::Y_AXIS));
-		plane1->local_xform.set_position({ 2, 0, 0 });
-		plane1->local_xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
-
-		s.scene_root->update_world_matrix();
-
-		//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
-		cam->set_world_matrix(cam_node->get_world_matrix());
-		shader_program_manager::set_frame_uniform(shader::uniform::gamma, shader::gamma);
-		shader_program_manager::set_frame_uniform(shader::uniform::camera_position, cam_node->local_xform.get_position());
-		shader_program_manager::set_frame_uniform(shader::uniform::view, cam->get_view_matrix());
-		shader_program_manager::set_frame_uniform(shader::uniform::projection, cam->get_projection_matrix());
-		shader_program_manager::set_frame_uniform(shader::uniform::main_directional_light, sun);
-		shader_program_manager::set_frame_uniform(shader::uniform::point_light_0, *p_lights[0]);
-		shader_program_manager::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
-		shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
-		shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
-
-		glClearColor(0.1f, 0.3f, 0.5f, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		const auto size = window.size();
-		cam->update_projection(size.x, size.y);
-
-		s.run_on_whole_graph([=](node* current_node) {
-			current_node->visit([=](auto&& node_attached_object) {
-				using T = std::decay_t<decltype(node_attached_object)>;
-				if constexpr(std::is_same_v<T, scene_object>)
-				{
-					//TODO instead of drawing, accumulate a buffer of thing that passes a frustrum culling test
-					node_attached_object.draw(*cam, current_node->get_world_matrix());
-				}
-			});
-		});
-
-		draw_debug_ui();
-		ui.render();
-
-		//swap buffers
-		window.gl_swap();
-	}
 }

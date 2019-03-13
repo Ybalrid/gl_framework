@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include "resource_system.hpp"
-#include "texture.hpp"
 #include "scene_object.hpp"
 #include "gltf_loader.hpp"
 #include "freeimage_raii.hpp"
@@ -18,11 +17,12 @@
 #include "node.hpp"
 #include "scene.hpp"
 #include "shader_program_manager.hpp"
+#include "texture_manager.hpp"
+#include "renderable_manager.hpp"
 
 class application
 {
 	void activate_vsync();
-	void handle_event(const sdl::Event& e);
 	void draw_debug_ui();
 	void update_timing();
 	void set_opengl_attribute_configuration(bool multisampling, int samples, bool srgb_framebuffer) const;
@@ -50,21 +50,32 @@ class application
 	sdl::Event event{};
 
 	gui ui;
-	bool running = true;
-
 	script_system scripts;
 	gltf_loader gltf;
-
 	scene s;
 	static scene* main_scene;
-
 	shader_program_manager shader_manager;
 	texture_manager texture_mgr;
+	renderable_manager renderable_mgr;
+	
+	bool running = true;
+
+	camera*  main_camera;
+	node* cam_node;
+	directional_light sun;
+	std::array<point_light*, 4> p_lights;
+
+	//key states
+	bool up = false, down = false, left = false, right = false, mouse = false;
+	float mousex = 0, mousey = 0;
 
 public:
 	static scene* get_main_scene();
 	void initialize_modern_opengl();
 	void initialize_gui();
+	void render_frame();
+	void run_events();
+	void run();
 	application(int argc, char** argv);
 	static std::vector<std::string> resource_paks;
 };
