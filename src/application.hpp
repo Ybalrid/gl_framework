@@ -60,10 +60,10 @@ class application
 	
 	bool running = true;
 
-	camera*  main_camera;
-	node* cam_node;
+	camera*  main_camera = nullptr;
+	node* cam_node = nullptr;
 	directional_light sun;
-	std::array<point_light*, 4> p_lights;
+	std::array<point_light*, 4> p_lights{nullptr, nullptr, nullptr, nullptr};
 
 	//key states
 	bool up = false, down = false, left = false, right = false, mouse = false;
@@ -76,6 +76,7 @@ public:
 	void render_frame();
 	void run_events();
 	void run();
+	void setup_scene();
 	application(int argc, char** argv);
 	static std::vector<std::string> resource_paks;
 };

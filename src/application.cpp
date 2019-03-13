@@ -44,7 +44,6 @@ void application::activate_vsync()
 	}
 }
 
-
 void application::draw_debug_ui()
 {
 	static bool show_demo_window = false;
@@ -130,7 +129,7 @@ void application::configure_and_create_window()
 	//extract window config
 	set_opengl_attribute_configuration(multisampling, samples, srgb_framebuffer);
 	const bool fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
-	sdl::Vec2i window_size{};
+	sdl::Vec2i window_size;
 
 	const auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
 	window_size.x				 = int(window_size_array->at(0));
@@ -297,29 +296,29 @@ void application::run_events()
 	//TODO build real input system for this
 	if(up)
 		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-			+ cam_node->local_xform.get_orientation()
-			* last_frame_delta_sec
-			* (glm::vec3(0, 0, -0.3f)));
+										   + cam_node->local_xform.get_orientation()
+											   * last_frame_delta_sec
+											   * (glm::vec3(0, 0, -0.3f)));
 	if(down)
 		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-			+ cam_node->local_xform.get_orientation()
-			* last_frame_delta_sec
-			* (glm::vec3(0, 0, 0.3f)));
+										   + cam_node->local_xform.get_orientation()
+											   * last_frame_delta_sec
+											   * (glm::vec3(0, 0, 0.3f)));
 	if(left)
 		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-			+ cam_node->local_xform.get_orientation()
-			* last_frame_delta_sec
-			* (glm::vec3(-0.3f, 0, 0)));
+										   + cam_node->local_xform.get_orientation()
+											   * last_frame_delta_sec
+											   * (glm::vec3(-0.3f, 0, 0)));
 	if(right)
 		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-			+ cam_node->local_xform.get_orientation()
-			* last_frame_delta_sec
-			* (glm::vec3(0.3f, 0, 0)));
+										   + cam_node->local_xform.get_orientation()
+											   * last_frame_delta_sec
+											   * (glm::vec3(0.3f, 0, 0)));
 	if(mouse)
 	{
 		auto q = cam_node->local_xform.get_orientation();
-		q      = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
-		q      = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
+		q	  = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
+		q	  = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
 		cam_node->local_xform.set_orientation(q);
 	}
 }
@@ -341,21 +340,9 @@ void application::run()
 	}
 }
 
-application::application(int argc, char** argv) :
- resources(argc > 0 ? argv[0] : nullptr)
+void application::setup_scene()
 {
-	main_scene = &s;
-	for(const auto& pak : resource_paks)
-	{
-		std::cerr << "Adding to resources " << pak << '\n';
-		resource_system::add_location(pak);
-	}
-
-	configure_and_create_window();
-	create_opengl_context();
-	initialize_modern_opengl();
-	initialize_gui();
-
+	main_scene							   = &s;
 	texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
 		auto img							 = image("/polutropon.png");
@@ -369,9 +356,9 @@ application::application(int argc, char** argv) :
 	{
 		//x=	y=		 z=			u=	v=		normal=
 		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,
-		 0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,
+		0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,
 		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,
-		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,
+		0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,
 	};
 
 	std::vector<unsigned int> plane_indices =
@@ -381,15 +368,14 @@ application::application(int argc, char** argv) :
 	};
 	// clang-format on
 
-	shader_handle unlit_shader  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
-	shader_handle simple_shader = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+	shader_handle simple_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 	//set opengl clear color
 
 	gltf = gltf_loader(simple_shader);
 
-	camera* cam = nullptr;
 	cam_node	= s.scene_root->push_child(create_node());
 	{
 		camera cam_obj;
@@ -397,11 +383,10 @@ application::application(int argc, char** argv) :
 		cam_node->local_xform.set_position({ 0, 5, 5 });
 		cam_node->local_xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 		cam_node->assign(std::move(cam_obj));
-		cam = cam_node->get_if_is<camera>();
-		assert(cam);
+		main_camera = cam_node->get_if_is<camera>();
+		assert(main_camera);
 	}
 
-	main_camera = cam;
 
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 	auto plane0			 = s.scene_root->push_child(create_node());
@@ -444,5 +429,20 @@ application::application(int argc, char** argv) :
 	lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
+}
 
+application::application(int argc, char** argv) :
+ resources(argc > 0 ? argv[0] : nullptr)
+{
+	for(const auto& pak : resource_paks)
+	{
+		std::cerr << "Adding to resources " << pak << '\n';
+		resource_system::add_location(pak);
+	}
+
+	configure_and_create_window();
+	create_opengl_context();
+	initialize_modern_opengl();
+	initialize_gui();
+	setup_scene();
 }

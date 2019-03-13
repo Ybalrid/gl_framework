@@ -78,7 +78,7 @@ renderable& renderable::operator=(renderable&& other) noexcept
 void renderable::draw() const
 {
 	//We need to have a shader and a texture!
-	assert(shader_program);
+	assert(shader_program != shader_program_manager::invalid_shader);
 
 	auto& shader_object = shader_program_manager::get_from_handle(shader_program);
 
