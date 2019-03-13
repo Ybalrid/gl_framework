@@ -4,7 +4,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-
 struct transform
 {
 	transform() = default;
@@ -42,18 +41,17 @@ struct transform
 	void rotate(float angle, const glm::vec3& axis);
 
 	///Positive X axis.
-	inline static const glm::vec3 X_AXIS{ 1.f,0.f,0.f };
+	inline static const glm::vec3 X_AXIS{ 1.f, 0.f, 0.f };
 	///Positive Y axis.
-	inline static const glm::vec3 Y_AXIS{ 0.f,1.f,0.f };
+	inline static const glm::vec3 Y_AXIS{ 0.f, 1.f, 0.f };
 	///Positive Z axis.
-	inline static const glm::vec3 Z_AXIS{ 0.f,0.f,1.f };
+	inline static const glm::vec3 Z_AXIS{ 0.f, 0.f, 1.f };
 	///Vector of magnitude zero.
 	inline static const glm::vec3 VEC_ZERO{ 0.f };
 	///Vector with a scale of 1 on each directions.
 	inline static const glm::vec3 UNIT_SCALE{ 1.f };
 	///Quaternion encoding a "zero" rotation. Built from an identity matrix.
 	inline static const glm::quat IDENTITY_QUAT{ (glm::quat(glm::mat4(1.f))) };
-
 
 private:
 	//This is the cached model matrix and a flag that signal if the model matrix is dirty

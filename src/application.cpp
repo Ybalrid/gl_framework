@@ -368,7 +368,7 @@ void application::setup_scene()
 	};
 	// clang-format on
 
-//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+	//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader_handle simple_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
@@ -376,7 +376,7 @@ void application::setup_scene()
 
 	gltf = gltf_loader(simple_shader);
 
-	cam_node	= s.scene_root->push_child(create_node());
+	cam_node = s.scene_root->push_child(create_node());
 	{
 		camera cam_obj;
 		cam_obj.fov = 45;
@@ -386,7 +386,6 @@ void application::setup_scene()
 		main_camera = cam_node->get_if_is<camera>();
 		assert(main_camera);
 	}
-
 
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 	auto plane0			 = s.scene_root->push_child(create_node());

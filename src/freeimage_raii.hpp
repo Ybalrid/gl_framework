@@ -8,7 +8,7 @@ struct freeimage
 	~freeimage();
 	freeimage(const freeimage&) = delete;
 	freeimage& operator=(const freeimage&) = delete;
-	freeimage(freeimage&&) = delete;
+	freeimage(freeimage&&)				   = delete;
 	freeimage& operator=(freeimage&&) = delete;
 };
 
@@ -24,6 +24,7 @@ struct freeimage_image
 
 	FIBITMAP* get() const;
 	void set_ptr_to(FIBITMAP* naked);
+
 private:
 	FIBITMAP* ptr = nullptr;
 };
@@ -38,7 +39,7 @@ struct freeimage_memory
 	freeimage_memory& operator=(const freeimage_memory&) = delete;
 	freeimage_memory(freeimage_memory&& o) noexcept;
 	freeimage_memory& operator=(freeimage_memory&& o) noexcept;
-	
+
 	freeimage_image load();
 	FIMEMORY* get() const;
 	void set_ptr_to(FIMEMORY* new_ptr);
@@ -46,4 +47,3 @@ struct freeimage_memory
 private:
 	FIMEMORY* ptr = nullptr;
 };
-

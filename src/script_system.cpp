@@ -43,7 +43,7 @@ script_system::script_system() :
 	install_additional_api();
 }
 
-script_system::~script_system() = default;
+script_system::~script_system()						   = default;
 script_system::script_system(script_system&&) noexcept = default;
 script_system& script_system::operator=(script_system&&) noexcept = default;
 

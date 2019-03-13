@@ -19,18 +19,18 @@ public:
 	~shader_program_manager();
 
 	shader_program_manager(const shader_program_manager&) = delete;
-	shader_program_manager(shader_program_manager&&) = delete;
+	shader_program_manager(shader_program_manager&&)	  = delete;
 	shader_program_manager& operator=(const shader_program_manager&) = delete;
 	shader_program_manager& operator=(shader_program_manager&&) = delete;
 
 	static shader& get_from_handle(shader_handle h);
 	static void get_rid_of(shader_handle h);
 
-	template<typename ... ConstructorArgs>
-	static shader_handle create_shader(ConstructorArgs ... args)
+	template <typename... ConstructorArgs>
+	static shader_handle create_shader(ConstructorArgs... args)
 	{
 		//no "unallocated" shader in the shaders array
-		if (manager->unallocated_shaders.empty())
+		if(manager->unallocated_shaders.empty())
 		{
 			manager->shaders.emplace_back(args...);
 			return manager->shaders.size() - 1;
@@ -43,12 +43,12 @@ public:
 	}
 
 	///Set the given uniform for *all* currently existing shader objects
-	template<typename uniform_parameter>
+	template <typename uniform_parameter>
 	static void set_frame_uniform(shader::uniform type, uniform_parameter param)
 	{
-		for (auto& a_shader : manager->shaders)
+		for(auto& a_shader : manager->shaders)
 		{
-			if (!a_shader.valid()) continue;
+			if(!a_shader.valid()) continue;
 			a_shader.use();
 			a_shader.set_uniform(type, param);
 		}

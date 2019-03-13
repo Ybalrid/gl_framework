@@ -21,7 +21,7 @@ shader_program_manager::~shader_program_manager()
 
 shader& shader_program_manager::get_from_handle(shader_handle h)
 {
-	if (h == invalid_shader) 
+	if(h == invalid_shader)
 		throw std::runtime_error("Cannot get from invalid shader handle");
 
 	return manager->shaders.at(h);
@@ -29,7 +29,7 @@ shader& shader_program_manager::get_from_handle(shader_handle h)
 
 void shader_program_manager::get_rid_of(shader_handle h)
 {
-	if (h == invalid_shader) return; //Nothing to do here
+	if(h == invalid_shader) return; //Nothing to do here
 	manager->get_from_handle(h) = shader();
 	manager->unallocated_shaders.push_back(h);
 }

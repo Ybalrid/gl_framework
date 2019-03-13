@@ -10,10 +10,9 @@ class scene_object
 	renderable_handle mesh = renderable_manager::invalid_renderable;
 
 public:
-
-	scene_object(renderable_handle r) : mesh{ r }
+	scene_object(renderable_handle r) :
+	 mesh{ r }
 	{
-
 	}
 
 	void draw(const camera& camera, const glm::mat4& model)
@@ -26,5 +25,4 @@ public:
 
 		mesh_object.draw();
 	}
-
 };

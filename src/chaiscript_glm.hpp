@@ -160,4 +160,3 @@ static ModulePtr get_glm_module()
 
 	return glm_module;
 }
-

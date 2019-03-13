@@ -24,7 +24,7 @@ bool tinygltf_read_whole_file_callback(std::vector<unsigned char>* bytes, std::s
 	{
 		*bytes = resource_system::get_file(path);
 	}
-	catch (const std::exception& e)
+	catch(const std::exception& e)
 	{
 		*err = e.what();
 		return false;
@@ -41,26 +41,26 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 	//Opening a memory stream in freeimage doesn't change the bytes given to it in our usage
 	//But you could write to the opened memory stream...
 	freeimage_memory image_stream(FreeImage_OpenMemory(const_cast<unsigned char*>(bytes), size));
-	if (!image_stream.get())
+	if(!image_stream.get())
 	{
-		if (error)
+		if(error)
 			*error = "FreeImage  " + std::to_string(image_idx) + " cannot open the image memory stream from the given pointer";
 		return false;
 	}
 
 	const auto type = FreeImage_GetFileTypeFromMemory(image_stream.get());
-	if (type == FIF_UNKNOWN)
+	if(type == FIF_UNKNOWN)
 	{
-		if (error)
+		if(error)
 			*error = "FreeImage " + std::to_string(image_idx) + " cannot understand the type of the image";
 		return false;
 	}
 
 	freeimage_image loaded_image(image_stream.load());
 
-	if (!loaded_image.get())
+	if(!loaded_image.get())
 	{
-		if (error)
+		if(error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
 		return false;
 	}
@@ -68,34 +68,34 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 	const auto w = FreeImage_GetWidth(loaded_image.get());
 	const auto h = FreeImage_GetWidth(loaded_image.get());
 
-	if (req_width && w != req_width)
+	if(req_width && w != req_width)
 	{
-		if (error)
+		if(error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image width doesn't match requested one";
 		return false;
 	}
 
-	if (req_height && h != req_height)
+	if(req_height && h != req_height)
 	{
-		if (error)
+		if(error)
 			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image height doesn't match requested one";
 		return false;
 	}
 
 	//Some drivers will only accept 32bit images apparently, convert everything.
-	image->width = w;
-	image->height = h;
+	image->width	 = w;
+	image->height	= h;
 	image->component = 4;
 
 	if(FreeImage_GetBPP(loaded_image.get()) != 32)
 		loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
-	
+
 	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
 	FreeImage_FlipVertical(loaded_image.get());
 
-	image->image.reserve(w*h * 4);
+	image->image.reserve(w * h * 4);
 	const auto bits = FreeImage_GetBits(loaded_image.get());
-	for (auto pixel = 0U; pixel < w*h; ++pixel)
+	for(auto pixel = 0U; pixel < w * h; ++pixel)
 	{
 		image->image.push_back(bits[pixel * 4 + 2]); //R
 		image->image.push_back(bits[pixel * 4 + 1]); //G
@@ -116,8 +116,8 @@ void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 {
 	tinygltf::FsCallbacks callbacks{};
 
-	callbacks.FileExists = tinygltf_file_exist_callback;
-	callbacks.ReadWholeFile = tinygltf_read_whole_file_callback;
+	callbacks.FileExists	 = tinygltf_file_exist_callback;
+	callbacks.ReadWholeFile  = tinygltf_read_whole_file_callback;
 	callbacks.ExpandFilePath = tinygltf_expand_file_path_callback;
 
 	//We are not writing glTF files from this application
@@ -127,4 +127,3 @@ void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 
 	gltf.SetFsCallbacks(callbacks);
 }
-

@@ -5,9 +5,9 @@ texture_manager* texture_manager::manager = nullptr;
 
 texture_manager::texture_manager()
 {
-	if(!manager) 
+	if(!manager)
 		manager = this;
-	else 
+	else
 		throw std::runtime_error("Cannont have more than one texture manager");
 
 	std::cout << "Initialized texture manager\n";
@@ -21,7 +21,7 @@ texture_manager::~texture_manager()
 
 texture& texture_manager::get_from_handle(texture_handle t)
 {
-	if (t == invalid_texture)
+	if(t == invalid_texture)
 		throw std::runtime_error("Cannot get from invalid texture handle");
 
 	return manager->textures.at(t);
@@ -29,7 +29,7 @@ texture& texture_manager::get_from_handle(texture_handle t)
 
 void texture_manager::get_rid_of(texture_handle t)
 {
-	if (t == invalid_texture) return;
+	if(t == invalid_texture) return;
 	manager->get_from_handle(t);
 	manager->unallocated_textures.push_back(t);
 }

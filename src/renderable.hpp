@@ -11,8 +11,8 @@
 
 class renderable
 {
-	shader_handle shader_program = shader_program_manager::invalid_shader;
-	texture_handle diffuse_texture = texture_manager::invalid_texture;
+	shader_handle shader_program	= shader_program_manager::invalid_shader;
+	texture_handle diffuse_texture  = texture_manager::invalid_texture;
 	texture_handle specular_texture = texture_manager::invalid_texture;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
@@ -23,8 +23,8 @@ class renderable
 	glm::mat3 normal = glm::mat3(1.f);
 
 	static constexpr GLuint vertex_position_location = 0;
-	static constexpr GLuint vertex_texture_location = 1;
-	static constexpr GLuint vertex_normal_location = 2;
+	static constexpr GLuint vertex_texture_location  = 1;
+	static constexpr GLuint vertex_normal_location   = 2;
 
 	void steal_guts(renderable& other);
 
@@ -41,15 +41,15 @@ public:
 	renderable() = default;
 
 	renderable(shader_handle program,
-	           const std::vector<float>& vertex_buffer,
-	           const std::vector<unsigned int>& index_buffer,
-	           configuration vertex_config,
-	           size_t vertex_buffer_stride,
-	           size_t vertex_coord_offset  = 0,
-	           size_t texture_coord_offset = 0,
-	           size_t normal_coord_offset  = 0,
-	           GLenum draw_operation       = GL_TRIANGLES,
-	           GLenum buffer_usage         = GL_STATIC_DRAW);
+			   const std::vector<float>& vertex_buffer,
+			   const std::vector<unsigned int>& index_buffer,
+			   configuration vertex_config,
+			   size_t vertex_buffer_stride,
+			   size_t vertex_coord_offset  = 0,
+			   size_t texture_coord_offset = 0,
+			   size_t normal_coord_offset  = 0,
+			   GLenum draw_operation	   = GL_TRIANGLES,
+			   GLenum buffer_usage		   = GL_STATIC_DRAW);
 
 	void set_diffuse_texture(texture_handle t);
 	void set_specular_texture(texture_handle t);

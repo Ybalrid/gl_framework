@@ -4,10 +4,10 @@
 #include <vector>
 #include "physfs_raii.hpp"
 
-
 class resource_system
 {
 	physfs_raii pysics_fs;
+
 public:
 	explicit resource_system(char* arg0);
 	~resource_system();

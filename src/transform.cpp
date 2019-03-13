@@ -2,13 +2,13 @@
 
 glm::mat4 transform::get_model() const
 {
-	if (dirty)
+	if(dirty)
 	{
 		const glm::mat4 translation_matrix = glm::translate(glm::mat4(1.f), current_position);
-		const glm::mat4 rotation_matrix = glm::mat4_cast(glm::normalize(current_orientation));
-		const glm::mat4 scaling_matrix = glm::scale(glm::mat4(1.f), current_scale);
-		model = translation_matrix * rotation_matrix * scaling_matrix;
-		dirty = false;
+		const glm::mat4 rotation_matrix	= glm::mat4_cast(glm::normalize(current_orientation));
+		const glm::mat4 scaling_matrix	 = glm::scale(glm::mat4(1.f), current_scale);
+		model							   = translation_matrix * rotation_matrix * scaling_matrix;
+		dirty							   = false;
 	}
 	return model;
 }
@@ -30,27 +30,27 @@ glm::quat transform::get_orientation() const
 
 void transform::set_position(const glm::vec3& new_position)
 {
-	if (glm::all(glm::equal(new_position,current_position))) 
+	if(glm::all(glm::equal(new_position, current_position)))
 		return;
 	current_position = new_position;
-	dirty = true;
+	dirty			 = true;
 }
 
 void transform::set_scale(const glm::vec3& new_scale)
 {
-	if (glm::all(glm::equal(new_scale, current_scale))) 
+	if(glm::all(glm::equal(new_scale, current_scale)))
 		return;
-	dirty = true;
+	dirty		  = true;
 	current_scale = new_scale;
 }
 
 void transform::set_orientation(const glm::quat& new_orientation)
 {
 	const auto normalized = normalize(new_orientation);
-	if (glm::all(glm::equal(normalized, current_orientation))) 
+	if(glm::all(glm::equal(normalized, current_orientation)))
 		return;
-	
-	dirty = true;
+
+	dirty				= true;
 	current_orientation = normalized;
 }
 
@@ -73,4 +73,3 @@ void transform::rotate(float angle, const glm::vec3& axis)
 {
 	set_orientation(glm::rotate(current_orientation, glm::radians(angle), axis));
 }
-

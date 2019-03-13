@@ -252,17 +252,17 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 		const auto material		 = model.materials[mesh.primitives[0].material];
 		const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 		const auto color_image   = model.images[color_texture.source];
-		GLuint tex = load_to_gl_texture(color_image);
-		auto diffuse_texture = texture_manager::create_texture(tex);
-		renderable_handle r = renderable_manager::create_renderable(dshader,
-																	vertex,
-																	index,
-																	renderable::configuration{ true, true, true },
-																	8,
-																	0,
-																	3,
-																	5,
-																	draw_mode);
+		GLuint tex				 = load_to_gl_texture(color_image);
+		auto diffuse_texture	 = texture_manager::create_texture(tex);
+		renderable_handle r		 = renderable_manager::create_renderable(dshader,
+																	 vertex,
+																	 index,
+																	 renderable::configuration{ true, true, true },
+																	 8,
+																	 0,
+																	 3,
+																	 5,
+																	 draw_mode);
 		renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture);
 		return r;
 	}

@@ -5,7 +5,7 @@ renderable_manager* renderable_manager::manager = nullptr;
 
 renderable_manager::renderable_manager()
 {
-	if (!manager)
+	if(!manager)
 		manager = this;
 	else
 		throw("Can only have one renderable manager");
@@ -21,7 +21,7 @@ renderable_manager::~renderable_manager()
 
 renderable& renderable_manager::get_from_handle(renderable_handle r)
 {
-	if (r == invalid_renderable)
+	if(r == invalid_renderable)
 		throw std::exception("Cannot get invalid renderable");
 
 	return manager->renderables.at(r);

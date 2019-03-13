@@ -9,15 +9,18 @@ glm::mat4 node::get_world_matrix() const
 
 void node::update_world_matrix()
 {
-	if(parent) {
+	if(parent)
+	{
 		world_space_model = parent->world_space_model * local_xform.get_model();
-	} else {
+	}
+	else
+	{
 		world_space_model = local_xform.get_model();
 	}
 
-	visit([&](auto&& l)
-	{
-		if constexpr(std::is_same_v<std::decay_t<decltype(l)>, light>) {
+	visit([&](auto&& l) {
+		if constexpr(std::is_same_v<std::decay_t<decltype(l)>, light>)
+		{
 			auto li = static_cast<light&>(l);
 			li.set_position_from_world_mat(world_space_model);
 			li.set_direction_from_world_mat(world_space_model);
@@ -64,9 +67,9 @@ node_ptr&& node::remove_child(size_t index)
 void node::clean_child_list()
 {
 	children.erase(std::remove(std::begin(children),
-	                           std::end(children),
-	                           nullptr),
-	               std::end(children));
+							   std::end(children),
+							   nullptr),
+				   std::end(children));
 }
 
 node_ptr create_node()

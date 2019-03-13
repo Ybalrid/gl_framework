@@ -17,7 +17,7 @@ class node;
 static void destroy_node(node* n);
 
 //declare node unique ptr with custom deleter
-using node_ptr = std::unique_ptr < node, decltype(&destroy_node)> ;
+using node_ptr = std::unique_ptr<node, decltype(&destroy_node)>;
 
 class node
 {
@@ -26,15 +26,15 @@ public:
 
 	//Define what a node can contain here
 	using node_payload = std::variant<std::monostate,
-		//list of things a node can be:
-		scene_object, 
-		camera, 
-		light,
-		point_light
-	>;
+									  //list of things a node can be:
+									  scene_object,
+									  camera,
+									  light,
+									  point_light>;
 
 	using child_list = std::vector<node_ptr>;
-	node() : ID{ counter++ }{}
+	node() :
+	 ID{ counter++ } {}
 	~node() = default;
 
 private:
@@ -47,7 +47,6 @@ private:
 	static size_t counter;
 
 public:
-
 	glm::mat4 get_world_matrix() const;
 	void update_world_matrix();
 	size_t get_id() const;
@@ -71,20 +70,20 @@ public:
 		return std::get_if<T>(&content);
 	}
 
-	template<typename T>
+	template <typename T>
 	bool is_a() const
 	{
 		return std::holds_alternative<T>(content);
 	}
 
-	template<typename T>
+	template <typename T>
 	T* assign(T&& object)
 	{
 		content.emplace<T>(std::move(object));
 		return get_if_is<T>();
 	}
 
-	template<typename T>
+	template <typename T>
 	void visit(T visitor)
 	{
 		std::visit(visitor, content);

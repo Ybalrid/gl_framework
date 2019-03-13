@@ -7,7 +7,6 @@
 #include <string>
 #include "light.hpp"
 
-
 class shader
 {
 
@@ -15,8 +14,7 @@ public:
 	static float gamma;
 
 	///All settable uniforms in shaders
-	enum class uniform
-	{
+	enum class uniform {
 		mvp,
 		model,
 		normal,
@@ -36,7 +34,7 @@ public:
 		point_light_2,
 		point_light_3,
 
-		// Add uniforms on top of this one, and do not forget to glGetUniformLocation 
+		// Add uniforms on top of this one, and do not forget to glGetUniformLocation
 		// at the end of the constructor of the shader class
 		MAX_UNIFORM_LOCATION_COUNT
 	};
@@ -61,9 +59,8 @@ public:
 	};
 
 	static constexpr const size_t NB_POINT_LIGHT{ 4 };
-	static constexpr const int material_diffuse_texture_slot = 0;
+	static constexpr const int material_diffuse_texture_slot  = 0;
 	static constexpr const int material_specular_texture_slot = 1;
-
 
 	///Construct a shader object. Take the location in the resource package of the source code
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);
@@ -73,7 +70,6 @@ public:
 	~shader();
 
 	bool valid() const;
-
 
 	shader(const shader&) = delete;
 	shader& operator=(const shader&) = delete;
@@ -93,12 +89,10 @@ public:
 	void set_uniform(uniform type, const point_light& light) const;
 
 private:
-
 	void steal_guts(shader& s);
 
 	GLuint program = 0;
 	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)]{};
 	directional_light_uniform_locations main_directional_light_uniform_locations;
 	point_light_uniform_locations point_light_list_uniform_locations[NB_POINT_LIGHT];
-
 };

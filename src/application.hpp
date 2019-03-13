@@ -57,13 +57,13 @@ class application
 	shader_program_manager shader_manager;
 	texture_manager texture_mgr;
 	renderable_manager renderable_mgr;
-	
+
 	bool running = true;
 
-	camera*  main_camera = nullptr;
-	node* cam_node = nullptr;
+	camera* main_camera = nullptr;
+	node* cam_node		= nullptr;
 	directional_light sun;
-	std::array<point_light*, 4> p_lights{nullptr, nullptr, nullptr, nullptr};
+	std::array<point_light*, 4> p_lights{ nullptr, nullptr, nullptr, nullptr };
 
 	//key states
 	bool up = false, down = false, left = false, right = false, mouse = false;

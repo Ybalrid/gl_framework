@@ -13,7 +13,7 @@ physfs_raii::physfs_raii(char* argv0)
 
 physfs_raii::~physfs_raii()
 {
-	if (init)
+	if(init)
 	{
 		PHYSFS_deinit();
 		std::cout << "Deinitialized Physics_FS\n";

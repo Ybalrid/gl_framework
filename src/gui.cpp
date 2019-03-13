@@ -13,10 +13,10 @@ void gui::console()
 	if(ImGui::Begin("Console", &show_console))
 	{
 		// Leave room for 1 separator + 1 InputText
-		ImGui::BeginChild("ScrollingRegion", 
-			ImVec2(0, -30), 
-			false, 
-			ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("ScrollingRegion",
+						  ImVec2(0, -30),
+						  false,
+						  ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
 		for(const auto& log_line : console_content)

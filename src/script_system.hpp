@@ -24,7 +24,7 @@ public:
 		{
 			eval_string(str);
 		}
-		catch (const std::exception& e)
+		catch(const std::exception& e)
 		{
 			std::cerr << e.what();
 			gui_ptr->push_to_console(e.what());
@@ -37,7 +37,7 @@ private:
 	//ChaiScript is HUGE.
 	//We are using a pimpl to hopefully speed-up the build time by having only one translation unit including chaiscript.h!!!!
 	struct impl;
-	std::unique_ptr<impl, void(*)(impl*)> pimpl;
+	std::unique_ptr<impl, void (*)(impl*)> pimpl;
 	bool imgui_registered = false;
 
 	gui* gui_ptr = nullptr;

@@ -2,18 +2,21 @@
 #include <iostream>
 #include <physfs.h>
 
-resource_system::resource_system(char* arg0): pysics_fs(arg0)
+resource_system::resource_system(char* arg0) :
+ pysics_fs(arg0)
 {
 	std::cout << "Initialized Resource system"
 #ifdef VERBOSE
-	" for " << arg0 << '\n'
+				 " for "
+			  << arg0 << '\n'
 #endif
-	<< '\n';
+			  << '\n';
 #ifdef VERBOSE
-	for (auto i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
+	for(auto i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
 	{
 		printf("Supported archive: [%s], which is [%s].\n",
-			(*i)->extension, (*i)->description);
+			   (*i)->extension,
+			   (*i)->description);
 	}
 #endif
 }
@@ -30,12 +33,12 @@ void resource_system::add_location(const std::string& real_path, bool last)
 
 std::vector<uint8_t> resource_system::get_file(const std::string& virtual_path)
 {
-	if (!PHYSFS_exists(virtual_path.c_str()))
-		throw std::runtime_error("file "+ virtual_path +" doesn't exist");
+	if(!PHYSFS_exists(virtual_path.c_str()))
+		throw std::runtime_error("file " + virtual_path + " doesn't exist");
 
 	const auto file = PHYSFS_openRead(virtual_path.c_str());
 
-	if (!file)
+	if(!file)
 		throw std::runtime_error("could not open " + virtual_path + "for reading");
 
 	const auto size = PHYSFS_fileLength(file);

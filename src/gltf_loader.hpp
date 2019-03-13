@@ -22,7 +22,6 @@ class gltf_loader
 	bool moved_from = false;
 
 public:
-
 	gltf_loader() = default;
 	~gltf_loader();
 
