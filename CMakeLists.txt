@@ -19,7 +19,11 @@ FILE (GLOB sources
 # just add this lib as a subdir,
 ADD_SUBDIRECTORY (third_party/physfs/)
 
-LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+
+SET (LIBRARIES_PACKAGE_DIR "path_to_libraries" CACHE PATH "path to the 3rd party libraries directory")
+LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/" "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake")
+FIND_PACKAGE (OpenAL REQUIRED)
+FIND_PACKAGE (SNDFILE REQUIRED)
 FIND_PACKAGE (SDL2 REQUIRED)
 FIND_PACKAGE (GLEW REQUIRED)
 FIND_PACKAGE (FreeImage REQUIRED)
@@ -34,8 +38,10 @@ TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
+TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
 TARGET_COMPILE_DEFINITIONS (test_project_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
+TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
 TARGET_LINK_LIBRARIES (test_project_exe
                        PRIVATE Threads::Threads
                                ${CMAKE_DL_LIBS}
@@ -44,7 +50,9 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                SDL2::SDL2main
                                GLEW::GLEW
                                OpenGL::GL
-                               ${FREEIMAGE_LIBRARIES})
+							   ${OPENAL_LIBRARY}
+                               ${FREEIMAGE_LIBRARIES}
+							   ${SNDFILE_LIBRARY})
 
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
                    COMMAND # add_custom_command(TARGET test_project_exe POST_BUILD

@@ -18,12 +18,32 @@ void node::update_world_matrix()
 		world_space_model = local_xform.get_model();
 	}
 
-	visit([&](auto&& l) {
-		if constexpr(std::is_same_v<std::decay_t<decltype(l)>, light>)
+	//call visitor that update some specifi types of objects
+	visit([&](auto&& o) {
+		using T =  std::decay_t<decltype(o)>;
+
+		//lights are specific uniforms that needs to be set
+		if constexpr (std::is_same_v <T, light>)
 		{
-			auto li = static_cast<light&>(l);
+			auto& li = static_cast<light&>(o);
 			li.set_position_from_world_mat(world_space_model);
 			li.set_direction_from_world_mat(world_space_model);
+		}
+
+		//Audio sources are objects in OpenAL and needs to be synced
+		if constexpr (std::is_same_v<T, audio_source>)
+		{
+			auto& as = static_cast<audio_source&>(o);
+			as.set_world_transform(world_space_model);
+		}
+
+		//Audio listener is an OpenAL concept. There's only one listener,
+		//but we can have one of these objects inside the scene graph that
+		//will call the unique listener and set it's position
+		if constexpr (std::is_same_v<T, listener_marker>)
+		{
+			auto& lm = static_cast<listener_marker&>(o);
+			lm.set_world_transform(world_space_model);
 		}
 	});
 

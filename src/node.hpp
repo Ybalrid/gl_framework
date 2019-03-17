@@ -12,6 +12,7 @@
 #include <iostream>
 #include <type_traits>
 #include <memory>
+#include "audio_system.hpp"
 
 //fw declare deleter
 class node;
@@ -31,7 +32,9 @@ public:
 									  scene_object,
 									  camera,
 									  light,
-									  point_light>;
+									  point_light,
+									  audio_source,
+									  listener_marker>;
 
 	using child_list = std::vector<node_ptr>;
 	node() :

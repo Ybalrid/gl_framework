@@ -324,6 +324,14 @@ void application::run_events()
 
 void application::run()
 {
+	auto buffer = audio_system::get_buffer("/sounds/rubber_duck.wav");
+	auto* source = s.scene_root->push_child(create_node())->assign(audio_source());
+	ALuint alsource = source->get_al_source();
+
+	alSourcei(alsource, AL_BUFFER, buffer.get_al_buffer());
+	alSourcei(alsource, AL_LOOPING, 1);
+	alSourcePlay(alsource);
+
 	//TODO refactor renderloop
 	while(running)
 	{
@@ -384,6 +392,8 @@ void application::setup_scene()
 		cam_node->assign(std::move(cam_obj));
 		main_camera = cam_node->get_if_is<camera>();
 		assert(main_camera);
+
+		cam_node->push_child(create_node())->assign(listener_marker());
 	}
 
 	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);

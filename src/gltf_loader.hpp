@@ -14,11 +14,9 @@ class gltf_loader
 	tinygltf::TinyGLTF gltf;
 	std::string error;
 	std::string warning;
-
-	shader_handle dshader = ~0;
+	shader_handle dshader = shader_program_manager::invalid_shader;
 
 	void steal_guts(gltf_loader& loader);
-
 	bool moved_from = false;
 
 public:

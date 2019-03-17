@@ -17,6 +17,7 @@
 #include "shader_program_manager.hpp"
 #include "texture_manager.hpp"
 #include "renderable_manager.hpp"
+#include "audio_system.hpp"
 
 class application
 {
@@ -66,6 +67,8 @@ class application
 	//key states
 	bool up = false, down = false, left = false, right = false, mouse = false;
 	float mousex = 0, mousey = 0;
+
+	audio_system audio;
 
 public:
 	static scene* get_main_scene();
