@@ -85,7 +85,7 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 	int major = 4, minor = 3;
 #ifdef __APPLE__
 	minor = 1;
-#endif;
+#endif
 
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);

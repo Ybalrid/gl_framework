@@ -9,6 +9,7 @@
 #endif
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
 #include <sndfile.h>
 #include <physfs.h>
 
