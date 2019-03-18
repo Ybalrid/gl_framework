@@ -1,7 +1,12 @@
 #pragma once
 
+#ifdef __APPLE__
+#include <al.h>
+#include <alc.h>
+#else
 #include <AL/al.h>
 #include <AL/alc.h>
+#endif
 #include <glm/glm.hpp>
 #include <vector>
 #include <sndfile.h>
