@@ -1,7 +1,10 @@
 # SDL OpenGL Project Skeleton
 
-This repository is a "base code" for making video games projects "from scratch".
+This repository is an open-source "base code" for making video games projects "from scratch".
 It's configured with CMake to use a number of helpful libraries.
+
+It is cross platform and supports Windows, Linux, and MacOS (and should be "trivially" adaptable
+to other platforms too!)
 
 This code will create a window, initialize an OpenGL core profile,
 be able to load GLSL shader code and glTF assets from "resource locations"
@@ -26,6 +29,16 @@ Think of this as a C++ OpenGL framework with some added sugar:
    - libsndfile *audio file loading*
  - **Scripting Engine:**
    - ChaiScript (as submodule) *simple to integrate scripting engine*
+
+The resulting combinaison of these components makes up for a *framework* that can serve as the
+basis for a cross platform application. This framework is know to work fine on Windows, Linux
+and MacOs as long as you have access to the required libraries, and a C++17 complient compiler
+and standard library.
+
+All of the non header-only libraries that you would be expected to dynamically link against,
+with the exception of FreeImage are currently part of the Steam Runtime for Linux, making for
+an easy distribution-version agnostic way of distributing applications using it.
+
 
 ## Licencing situation
 
