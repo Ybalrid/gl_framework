@@ -19,7 +19,6 @@ FILE (GLOB sources
 # just add this lib as a subdir,
 ADD_SUBDIRECTORY (third_party/physfs/)
 
-
 SET (LIBRARIES_PACKAGE_DIR "path_to_libraries" CACHE PATH "path to the 3rd party libraries directory")
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/" "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake")
 FIND_PACKAGE (OpenAL REQUIRED)
@@ -50,9 +49,9 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                SDL2::SDL2main
                                GLEW::GLEW
                                OpenGL::GL
-							   ${OPENAL_LIBRARY}
+                               ${OPENAL_LIBRARY}
                                ${FREEIMAGE_LIBRARIES}
-							   ${SNDFILE_LIBRARY})
+                               ${SNDFILE_LIBRARY})
 
 IF (APPLE)
     FIND_LIBRARY (IOKit IOKit)

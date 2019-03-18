@@ -12,12 +12,11 @@
 #include <sndfile.h>
 #include <physfs.h>
 
-
 class audio_buffer;
 
 class audio_system
 {
-	ALCdevice* device = nullptr;
+	ALCdevice* device   = nullptr;
 	ALCcontext* context = nullptr;
 
 	void steal_guts(audio_system& other);
@@ -41,12 +40,12 @@ public:
 	audio_system& operator=(audio_system&& other) noexcept;
 
 	static audio_buffer get_buffer(const std::string& virtual_path);
-
 };
 
 class audio_listener
 {
 	static audio_listener* unique_listener;
+
 public:
 	audio_listener();
 	~audio_listener();
@@ -103,7 +102,7 @@ public:
 };
 
 //Empty object that can be stashed into a node
-struct listener_marker 
+struct listener_marker
 {
 	void set_world_transform(const glm::mat4& transform) const;
 };
