@@ -87,7 +87,7 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer);		 //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);							 //OpenGL 4+
-	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);							 //OpenGL 4.6
+	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);							 //OpenGL 4.1
 }
 
 void application::initialize_glew() const
@@ -102,6 +102,7 @@ void application::initialize_glew() const
 
 void application::install_opengl_debug_callback() const
 {
+    if(glDebugMessageCallback)
 	glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param) {
 		std::cerr << "-----\n";
 		std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);

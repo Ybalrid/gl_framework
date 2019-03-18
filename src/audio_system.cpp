@@ -132,7 +132,7 @@ audio_buffer audio_system::get_buffer(const std::string & virtual_path)
 				throw std::runtime_error("Unreconginzed channel count in file " + virtual_path);
 			}
 		}(info.channels),
-		sizeof(ALshort) * sample_count,
+		static_cast<ALsizei>(sizeof(ALshort) * sample_count),
 		sample_rate
 	};
 

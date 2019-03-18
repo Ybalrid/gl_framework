@@ -54,6 +54,11 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                ${FREEIMAGE_LIBRARIES}
 							   ${SNDFILE_LIBRARY})
 
+IF (APPLE)
+    FIND_LIBRARY (IOKit IOKit)
+    TARGET_LINK_LIBRARIES (test_project_exe PRIVATE ${IOKit})
+ENDIF (APPLE)
+
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
                    COMMAND # add_custom_command(TARGET test_project_exe POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
