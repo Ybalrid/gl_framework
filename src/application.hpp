@@ -40,8 +40,9 @@ class application
 	uint32_t last_frame_delta  = 0;
 	float last_frame_delta_sec = 0;
 	float current_time_in_sec  = 0;
-	int frames				   = 0;
+	int frames_in_current_sec  = 0;
 	int fps					   = 0;
+	size_t frames			   = 0;
 
 	sdl::Root root{ SDL_INIT_EVERYTHING };
 	sdl::Window window;

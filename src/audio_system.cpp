@@ -251,6 +251,41 @@ void audio_source::set_world_transform(const glm::mat4& transform) const
 	alSource3f(source, AL_POSITION, position.x, position.y, position.z);
 }
 
+void audio_source::play() const
+{
+	alSourcePlay(source);
+}
+
+void audio_source::set_looping(bool loop_state) const
+{
+	alSourcei(source, AL_LOOPING, loop_state ? AL_TRUE : AL_FALSE);
+}
+
+void audio_source::set_volume(float level) const
+{
+	alSourcef(source, AL_GAIN, level);
+}
+
+void audio_source::set_pitch(float level) const
+{
+	alSourcef(source, AL_PITCH, level);
+}
+
+void audio_source::pause() const
+{
+	alSourcePause(source);
+}
+
+void audio_source::stop() const
+{
+	alSourceStop(source);
+}
+
+void audio_source::rewind() const
+{
+	alSourceRewind(source);
+}
+
 void listener_marker::set_world_transform(const glm::mat4& transform) const
 {
 	audio_listener::get_listener()->set_world_transform(transform);

@@ -100,6 +100,14 @@ public:
 
 	ALuint get_al_source() const;
 	void set_world_transform(const glm::mat4& transform) const;
+
+	void play() const;
+	void set_looping(bool loop_state = true) const;
+	void set_volume(float level) const;
+	void set_pitch(float level) const;
+	void pause() const;
+	void stop() const;
+	void rewind() const;
 };
 
 //Empty object that can be stashed into a node

@@ -73,11 +73,11 @@ void application::update_timing()
 	//take care of the FPS counter
 	if(current_time - last_second_time >= 1000)
 	{
-		fps				 = frames;
-		frames			 = 0;
+		fps				 = frames_in_current_sec;
+		frames_in_current_sec			 = 0;
 		last_second_time = current_time;
 	}
-	frames++;
+	frames_in_current_sec++;
 }
 
 void application::set_opengl_attribute_configuration(const bool multisampling, const int samples, const bool srgb_framebuffer) const
@@ -92,7 +92,7 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer);		 //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);						 //OpenGL 4+
-	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);						 //OpenGL 4.1
+	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);						 //OpenGL 4.1 or 4.3
 }
 
 void application::initialize_glew() const
@@ -179,10 +179,10 @@ void application::initialize_gui()
 void application::render_frame()
 {
 	ui.frame();
+	
 	scripts.update(last_frame_delta_sec);
 
 	s.scene_root->update_world_matrix();
-
 	//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
 	main_camera->set_world_matrix(cam_node->get_world_matrix());
 	shader_program_manager::set_frame_uniform(shader::uniform::gamma, shader::gamma);
@@ -195,7 +195,7 @@ void application::render_frame()
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
 
-	glClearColor(0.1f, 0.3f, 0.5f, 1);
+	glClearColor(0.4f ,0.5f,0.6f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	const auto size = window.size();
@@ -221,6 +221,8 @@ void application::render_frame()
 
 	//swap buffers
 	window.gl_swap();
+
+	frames++;
 }
 
 void application::run_events()
@@ -343,6 +345,7 @@ void application::run()
 	alSourcei(alsource, AL_LOOPING, 1);
 	alSourcePlay(alsource);
 
+	
 	//TODO refactor renderloop
 	while(running)
 	{
