@@ -340,10 +340,9 @@ void application::run()
 	auto buffer		= audio_system::get_buffer("/sounds/rubber_duck.wav");
 	auto* source	= s.scene_root->push_child(create_node())->assign(audio_source());
 	ALuint alsource = source->get_al_source();
-
-	alSourcei(alsource, AL_BUFFER, buffer.get_al_buffer());
-	alSourcei(alsource, AL_LOOPING, 1);
-	alSourcePlay(alsource);
+	source->set_buffer(buffer);
+	source->set_looping();
+	source->play();
 
 	
 	//TODO refactor renderloop

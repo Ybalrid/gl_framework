@@ -251,6 +251,11 @@ void audio_source::set_world_transform(const glm::mat4& transform) const
 	alSource3f(source, AL_POSITION, position.x, position.y, position.z);
 }
 
+void audio_source::set_buffer(const audio_buffer & buffer) const
+{
+	alSourcei(source, AL_BUFFER, buffer.get_al_buffer());
+}
+
 void audio_source::play() const
 {
 	alSourcePlay(source);

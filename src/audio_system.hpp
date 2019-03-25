@@ -101,6 +101,7 @@ public:
 	ALuint get_al_source() const;
 	void set_world_transform(const glm::mat4& transform) const;
 
+	void set_buffer(const audio_buffer& buffer) const;
 	void play() const;
 	void set_looping(bool loop_state = true) const;
 	void set_volume(float level) const;
