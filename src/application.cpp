@@ -234,6 +234,9 @@ void application::run_events()
 	{
 		//For ImGui
 		ui.handle_event(event);
+
+		inputs.event(event);
+
 		//Maybe move this thing too... xD
 		switch(event.type)
 		{
@@ -339,7 +342,6 @@ void application::run()
 {
 	auto buffer		= audio_system::get_buffer("/sounds/rubber_duck.wav");
 	auto* source	= s.scene_root->push_child(create_node())->assign(audio_source());
-	ALuint alsource = source->get_al_source();
 	source->set_buffer(buffer);
 	source->set_looping();
 	source->play();
@@ -466,4 +468,5 @@ application::application(int argc, char** argv) :
 	initialize_modern_opengl();
 	initialize_gui();
 	setup_scene();
+	controllers = sdl::GameController::open_all_available_controllers();
 }

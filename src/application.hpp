@@ -18,6 +18,7 @@
 #include "texture_manager.hpp"
 #include "renderable_manager.hpp"
 #include "audio_system.hpp"
+#include "input_handler.hpp"
 
 class application
 {
@@ -70,6 +71,8 @@ class application
 	float mousex = 0, mousey = 0;
 
 	audio_system audio;
+	input_handler inputs;
+	std::vector<sdl::GameController> controllers;
 
 public:
 	static scene* get_main_scene();
