@@ -4,6 +4,7 @@ SET (CMAKE_CXX_STANDARD 17)
 
 IF (MSVC)
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+	add_definitions(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
 ENDIF ()
 
 FILE (GLOB sources
