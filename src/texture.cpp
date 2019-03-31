@@ -14,7 +14,7 @@ void texture::steal_guts(texture& o)
 	{
 		if(texture_list[i]->name == name)
 		{
-			texture_list.erase(texture_list.begin() + i);
+			texture_list.erase(texture_list.begin() + long(i));
 			break;
 		}
 	}
@@ -100,7 +100,7 @@ void texture::load_from(const image& img, bool is_sRGB, GLenum target) const
 void texture::generate_mipmaps(GLenum target) const
 {
 	bind();
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glGenerateMipmap(target);
 }
 
 void texture::bind_0(GLenum target)

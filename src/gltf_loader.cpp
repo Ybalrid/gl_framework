@@ -73,7 +73,7 @@ renderable_handle gltf_loader::load_mesh(const std::string& virtual_path, int in
 		std::cerr << error;
 	}
 
-	return build_renderable(model.meshes[index], model);
+	return build_renderable(model.meshes[size_t(index)], model);
 }
 
 renderable_handle gltf_loader::load_mesh(const std::string& virtual_path, const std::string& name)
@@ -115,9 +115,9 @@ std::vector<float> gltf_loader::get_vertices(const tinygltf::Model& model, int v
 {
 	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/;
 	std::vector<float> vertex_buffer;
-	const auto vertex_accessor  = model.accessors[vertex_accessor_index];
-	const auto texture_accessor = model.accessors[texture_accessor_index];
-	const auto normal_accessor  = model.accessors[normal_accessor_index];
+	const auto vertex_accessor  = model.accessors[size_t(vertex_accessor_index)];
+	const auto texture_accessor = model.accessors[size_t(texture_accessor_index)];
+	const auto normal_accessor  = model.accessors[size_t(normal_accessor_index)];
 
 	// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z]
 	vertex_buffer.resize(vertex_accessor.count * (c));
@@ -139,7 +139,7 @@ std::vector<float> gltf_loader::get_vertices(const tinygltf::Model& model, int v
 	assert(vertex_accessor.count == texture_accessor.count);
 
 	//We have to deal with possibly interleaved buffers that have possibliy different data types in them.
-	for(auto i = 0; i < vertex_accessor.count; i++)
+	for(size_t i = 0; i < vertex_accessor.count; i++)
 	{
 		//3 floats for vertex position
 		for(int j = 0; j < 3; ++j)
