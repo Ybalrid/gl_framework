@@ -100,6 +100,7 @@ void script_system::eval_string(const std::string& input)
 #include "application.hpp"
 #include "scene.hpp"
 #include "node.hpp"
+#include "audio_system.hpp"
 
 void script_system::install_additional_api()
 {
@@ -167,7 +168,11 @@ void script_system::install_additional_api()
 					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, light>)
 						 type = "light";
 					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, point_light>)
-						 type = "point_light";
+	                     type = "point_light";
+	                 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, audio_source>)
+	                    type = "audio_source";
+	                 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, listener_marker>)
+	                    type = "audio_listener_marker";
 					 else
 						 type = "???????? :O";
 				 });
