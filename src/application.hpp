@@ -72,7 +72,6 @@ class application
 
 	audio_system audio;
 	input_handler inputs;
-	std::vector<sdl::GameController> controllers;
 
 public:
 	static scene* get_main_scene();
