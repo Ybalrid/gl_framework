@@ -2,6 +2,7 @@
 
 #include "input_handler.hpp"
 #include <iostream>
+
 void input_handler::event(const sdl::Event & e)
 {
 	using std::cout;
@@ -34,4 +35,8 @@ void input_handler::event(const sdl::Event & e)
 	default:
 		break;
 	}
+}
+
+input_handler::input_handler() : controllers(sdl::GameController::open_all_available_controllers())
+{
 }

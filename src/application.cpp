@@ -364,6 +364,7 @@ void application::run()
 
 void application::setup_scene()
 {
+	//TODO everything about this sould be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
 	main_scene							   = &s;
 	texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
@@ -468,5 +469,4 @@ application::application(int argc, char** argv) :
 	initialize_modern_opengl();
 	initialize_gui();
 	setup_scene();
-	controllers = sdl::GameController::open_all_available_controllers();
 }
