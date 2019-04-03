@@ -7,9 +7,10 @@
 class input_handler 
 {
 	std::vector<sdl::GameController> controllers;
-	ImGuiIO& imgui{ ImGui::GetIO() };
+    ImGuiIO* imgui{ nullptr };
 public:
-	void event(const sdl::Event& e);
+    void event(const sdl::Event& e);
+    void setup_imgui();
 	input_handler();
 
 };

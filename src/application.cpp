@@ -173,7 +173,8 @@ void application::initialize_gui()
 {
 	ui = gui(window.ptr(), context.ptr());
 	scripts.register_imgui_library(&ui);
-	ui.set_console_input_consumer(&scripts);
+    ui.set_console_input_consumer(&scripts);
+    inputs.setup_imgui();
 }
 
 void application::render_frame()
