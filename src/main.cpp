@@ -1,6 +1,9 @@
 #include "application.hpp"
 #include <iostream>
 
+#ifdef __linux__
+#include <unistd.h>
+#endif
 
 int main(int argc, char* argv[])
 {
