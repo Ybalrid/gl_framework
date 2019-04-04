@@ -4,7 +4,7 @@
 
 struct scene
 {
-	node_ptr scene_root{ create_node() };
+	node_ptr scene_root { create_node() };
 
 	template <class T, class... Args>
 	void run_on_subgraph(node* start, T callable, Args... args)

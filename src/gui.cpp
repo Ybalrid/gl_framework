@@ -1,4 +1,5 @@
 #include "gui.hpp"
+#include "resource_system.hpp"
 #include <imgui.h>
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl3.h>
@@ -9,78 +10,95 @@
 
 void gui::console()
 {
-	ImGui::SetNextWindowSize(ImVec2(500, 650), ImGuiCond_FirstUseEver);
-	if(ImGui::Begin("Console", &show_console))
+	if(show_console)
 	{
+		//Acquire window geometry
+		int x, y;
+		SDL_GetWindowSize(w, &x, &y);
+
+		//Configure window styling
+		ImGui::SetNextWindowSize(ImVec2(x, std::max(y / 3, 300)));
+		ImGui::SetNextWindowPos({ 0, 0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
+		ImGui::Begin("Console", &show_console, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
 		// Leave room for 1 separator + 1 InputText
+
 		ImGui::BeginChild("ScrollingRegion",
 						  ImVec2(0, -30),
 						  false,
 						  ImGuiWindowFlags_HorizontalScrollbar);
+
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
+		ImGui::PushFont(console_font);
 		for(const auto& log_line : console_content)
 			ImGui::TextUnformatted(log_line.c_str());
+		ImGui::PopFont();
 
 		if(scroll_console_to_bottom)
 			ImGui::SetScrollHereY(1.f);
 		scroll_console_to_bottom = false;
 
 		ImGui::PopStyleVar();
+
 		ImGui::EndChild();
 		ImGui::Separator();
 		//---------------
 		bool reclaim_focus = false;
-		if(ImGui::InputText("Input",
-							console_input,
-							IM_ARRAYSIZE(console_input),
-							ImGuiInputTextFlags_EnterReturnsTrue
-								| ImGuiInputTextFlags_CallbackCompletion
-								| ImGuiInputTextFlags_CallbackHistory,
-							[](ImGuiInputTextCallbackData* data) -> int {
-								gui* ui = static_cast<gui*>(data->UserData);
-								switch(data->EventFlag)
-								{
-									case ImGuiInputTextFlags_CallbackHistory:
-									{
-										const char* text			   = nullptr;
-										const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
 
-										if(data->EventKey == ImGuiKey_UpArrow)
-										{
-											if(!ui->console_history.empty())
-												text = ui->console_history
-														   [console_history_max
-															- std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++))]
-															   .c_str();
-											ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
-										}
+		ImGui::PushFont(console_font);
+		if(ImGui::InputText(
+			   "Input",
+			   console_input,
+			   sizeof(console_input),
+			   ImGuiInputTextFlags_EnterReturnsTrue
+				   | ImGuiInputTextFlags_CallbackCompletion
+				   | ImGuiInputTextFlags_CallbackHistory,
+			   [](ImGuiInputTextCallbackData* data) -> int {
+				   gui* ui = static_cast<gui*>(data->UserData);
+				   switch(data->EventFlag)
+				   {
+					   case ImGuiInputTextFlags_CallbackHistory:
+					   {
+						   const char* text				  = nullptr;
+						   const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
 
-										else if(data->EventKey == ImGuiKey_DownArrow)
-										{
-											if(!ui->console_history.empty())
-												text = ui->console_history
-														   [console_history_max
-															- std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--))]
-															   .c_str();
-											ui->history_counter = std::max<int>(0, ui->history_counter);
-										}
+						   if(data->EventKey == ImGuiKey_UpArrow)
+						   {
+							   if(!ui->console_history.empty())
+								   text = ui->console_history
+											  [size_t(console_history_max
+													  - std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++)))]
+												  .c_str();
+							   ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
+						   }
 
-										if(text)
-										{
-											data->DeleteChars(0, data->BufTextLen);
-											data->InsertChars(0, text);
-										}
-									}
-									break;
+						   else if(data->EventKey == ImGuiKey_DownArrow)
+						   {
+							   if(!ui->console_history.empty())
+								   text = ui->console_history
+											  [size_t(console_history_max
+													  - std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--)))]
+												  .c_str();
+							   ui->history_counter = std::max<int>(0, ui->history_counter);
+						   }
 
-									default:
-										break;
-								}
+						   if(text)
+						   {
+							   data->DeleteChars(0, data->BufTextLen);
+							   data->InsertChars(0, text);
+						   }
+					   }
+					   break;
 
-								return 0;
-							},
-							this))
+					   default:
+						   break;
+				   }
+
+				   return 0;
+			   },
+			   this))
 		{
 			console_content.push_back("> " + std::string(console_input));
 			console_history.emplace_back(console_input);
@@ -96,16 +114,21 @@ void gui::console()
 			reclaim_focus			 = true;
 			scroll_console_to_bottom = true;
 		}
+		ImGui::PopFont();
 
 		ImGui::SetItemDefaultFocus();
 		if(reclaim_focus)
 			ImGui::SetKeyboardFocusHere(-1);
+		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar();
 	}
-	ImGui::End();
 }
 
 gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 {
+	w = window;
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io	= ImGui::GetIO();
@@ -115,7 +138,29 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
-	w = window;
+	auto vera_mono_ttf = resource_system::get_file("/fonts/VeraMono.ttf");
+	auto biolinum_ttf  = resource_system::get_file("/fonts/LinBiolinum_Rah.ttf");
+	//Okay, so for some reason, ImGui wants to own the pointer to the font data, and will call "free" on my pointer.
+	//So, we're going to stash the ttf file content on the heap, so it will be happy:
+	void* biolinum_data = malloc(biolinum_ttf.size());
+	assert(biolinum_data);
+	memcpy(biolinum_data, biolinum_ttf.data(), biolinum_ttf.size());
+	ImFontConfig biolinum_config;
+	strcpy(biolinum_config.Name, "biolinum");
+	default_font = io.Fonts->AddFontFromMemoryTTF(biolinum_data, int(biolinum_ttf.size()), 18.f, &biolinum_config);
+
+	void* vera_mono_ttf_data = malloc(vera_mono_ttf.size());
+	assert(vera_mono_ttf_data); //has to be not null
+	memcpy(vera_mono_ttf_data, vera_mono_ttf.data(), vera_mono_ttf.size());
+	ImFontConfig vera_mono_config;
+	strcpy(vera_mono_config.Name, "vera mono");
+	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f);
+
+	ugly_font = io.Fonts->AddFontDefault();
+
+	if(!console_font)
+		std::cerr << "console font is null\n";
+
 	std::cout << "Initialized ImGui " << IMGUI_VERSION << " based gui system\n";
 }
 
@@ -162,16 +207,24 @@ void gui::clear_console()
 	console_content.clear();
 }
 
-gui::gui(gui&& o) noexcept
+void gui::move_from(gui& o)
 {
 	w   = o.w;
 	o.w = nullptr;
+
+	console_font = o.console_font;
+	default_font = o.default_font;
+	ugly_font	= o.ugly_font;
+}
+
+gui::gui(gui&& o) noexcept
+{
+	move_from(o);
 }
 
 gui& gui::operator=(gui&& o) noexcept
 {
-	w   = o.w;
-	o.w = nullptr;
+	move_from(o);
 	return *this;
 }
 

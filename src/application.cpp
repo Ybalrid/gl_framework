@@ -73,9 +73,9 @@ void application::update_timing()
 	//take care of the FPS counter
 	if(current_time - last_second_time >= 1000)
 	{
-		fps				 = frames_in_current_sec;
-		frames_in_current_sec			 = 0;
-		last_second_time = current_time;
+		fps					  = frames_in_current_sec;
+		frames_in_current_sec = 0;
+		last_second_time	  = current_time;
 	}
 	frames_in_current_sec++;
 }
@@ -173,14 +173,14 @@ void application::initialize_gui()
 {
 	ui = gui(window.ptr(), context.ptr());
 	scripts.register_imgui_library(&ui);
-    ui.set_console_input_consumer(&scripts);
-    inputs.setup_imgui();
+	ui.set_console_input_consumer(&scripts);
+	inputs.setup_imgui();
 }
 
 void application::render_frame()
 {
 	ui.frame();
-	
+
 	scripts.update(last_frame_delta_sec);
 
 	s.scene_root->update_world_matrix();
@@ -196,17 +196,15 @@ void application::render_frame()
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
 
-	glClearColor(0.4f ,0.5f,0.6f, 1);
+	glClearColor(0.4f, 0.5f, 0.6f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	const auto size = window.size();
 	main_camera->update_projection(size.x, size.y);
 
 	glEnable(GL_DEPTH_TEST);
-	s.run_on_whole_graph([=](node* current_node)
-	{
-		current_node->visit([=](auto&& node_attached_object)
-		{
+	s.run_on_whole_graph([=](node* current_node) {
+		current_node->visit([=](auto&& node_attached_object) {
 			using T = std::decay_t<decltype(node_attached_object)>;
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
@@ -341,13 +339,12 @@ void application::run_events()
 
 void application::run()
 {
-	auto buffer		= audio_system::get_buffer("/sounds/rubber_duck.wav");
-	auto* source	= s.scene_root->push_child(create_node())->assign(audio_source());
+	auto buffer  = audio_system::get_buffer("/sounds/rubber_duck.wav");
+	auto* source = s.scene_root->push_child(create_node())->assign(audio_source());
 	source->set_buffer(buffer);
 	source->set_looping();
 	source->play();
 
-	
 	//TODO refactor renderloop
 	while(running)
 	{
@@ -394,7 +391,7 @@ void application::setup_scene()
 
 	//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	shader_handle simple_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration{ true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 	//set opengl clear color
 
@@ -434,7 +431,7 @@ void application::setup_scene()
 	sun.ambient   = glm::vec3(0);
 	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
 
-	std::array<node*, 4> lights{ nullptr, nullptr, nullptr, nullptr };
+	std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
 
 	lights[0] = s.scene_root->push_child(create_node());
 	lights[1] = s.scene_root->push_child(create_node());

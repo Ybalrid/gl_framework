@@ -114,7 +114,7 @@ void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf)
 
 void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 {
-	tinygltf::FsCallbacks callbacks{};
+	tinygltf::FsCallbacks callbacks {};
 
 	callbacks.FileExists	 = tinygltf_file_exist_callback;
 	callbacks.ReadWholeFile  = tinygltf_read_whole_file_callback;

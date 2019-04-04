@@ -4,13 +4,13 @@
 #include <cpp-sdl2/game_controller.hpp>
 #include <imgui.h>
 
-class input_handler 
+class input_handler
 {
 	std::vector<sdl::GameController> controllers;
-    ImGuiIO* imgui{ nullptr };
-public:
-    void event(const sdl::Event& e);
-    void setup_imgui();
-	input_handler();
+	ImGuiIO* imgui { nullptr };
 
+public:
+	void event(const sdl::Event& e);
+	void setup_imgui();
+	input_handler();
 };

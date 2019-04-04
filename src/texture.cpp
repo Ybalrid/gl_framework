@@ -1,7 +1,7 @@
 #include "texture.hpp"
 #include <algorithm>
 
-std::vector<texture*> texture::texture_list{};
+std::vector<texture*> texture::texture_list {};
 
 void texture::gen()
 {

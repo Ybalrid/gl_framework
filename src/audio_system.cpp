@@ -13,7 +13,7 @@ void audio_system::steal_guts(audio_system& other)
 	other.context = nullptr;
 }
 
-SF_VIRTUAL_IO audio_system::soundfile_io{};
+SF_VIRTUAL_IO audio_system::soundfile_io {};
 
 audio_system::audio_system(const char* device_name)
 {
@@ -27,9 +27,9 @@ audio_system::audio_system(const char* device_name)
 
 	std::cout << "Initialized OpenAL " << alGetString(AL_VERSION) << " from '" << alGetString(AL_VENDOR) << "' based Audio system\n";
 
-	soundfile_io.get_filelen = [](void* user_data) -> sf_count_t {
+	soundfile_io.get_filelen = [](void* user_data) {
 		auto* handle = reinterpret_cast<soundfile_buffer*>(user_data);
-		return handle->data.size();
+		return sf_count_t(handle->data.size());
 	};
 
 	soundfile_io.seek = [](sf_count_t offset, int whence, void* user_data) -> sf_count_t {
@@ -40,7 +40,7 @@ audio_system::audio_system(const char* device_name)
 				handle->seek_position += offset;
 				break;
 			case SEEK_END:
-				handle->seek_position = handle->data.size() + offset;
+				handle->seek_position = sf_count_t(handle->data.size()) + offset;
 				break;
 			case SEEK_SET:
 				handle->seek_position = offset;
@@ -55,7 +55,7 @@ audio_system::audio_system(const char* device_name)
 	soundfile_io.read = [](void* ptr, sf_count_t count, void* user_data) -> sf_count_t {
 		auto* handle		= reinterpret_cast<soundfile_buffer*>(user_data);
 		ALubyte* data_start = handle->data.data() + handle->seek_position;
-		memcpy(ptr, data_start, count);
+		memcpy(ptr, data_start, size_t(count));
 		handle->seek_position += count;
 		return count;
 	};
@@ -107,14 +107,15 @@ audio_buffer audio_system::get_buffer(const std::string& virtual_path)
 	//Allocate buffer transport data
 	const ALsizei sample_count = static_cast<ALsizei>(info.channels * info.frames);
 	const ALsizei sample_rate  = static_cast<ALsizei>(info.samplerate);
-	std::vector<ALshort> sample_buffer(sample_count);
+	std::vector<ALshort> sample_buffer(static_cast<size_t>(sample_count));
 
 	//read samples into buffer
-	const auto actually_read = sf_read_short(sound_file, sample_buffer.data(), sample_count);
+	/*const auto actually_read = */
+	sf_read_short(sound_file, sample_buffer.data(), sample_count);
 	sf_close(sound_file);
 
 	//Handle config
-	const buffer_config config{
+	const buffer_config config {
 		[&](const int c) {
 			switch(c)
 			{
@@ -126,7 +127,7 @@ audio_buffer audio_system::get_buffer(const std::string& virtual_path)
 					throw std::runtime_error("Unreconginzed channel count in file " + virtual_path);
 			}
 		}(info.channels),
-		static_cast<ALsizei>(sizeof(ALshort) * sample_count),
+		static_cast<ALsizei>(sizeof(ALshort) * size_t(sample_count)),
 		sample_rate
 	};
 
@@ -157,7 +158,7 @@ void audio_listener::set_world_transform(const glm::mat4& transform) const
 	const glm::vec3 orientation_up = orientation * glm::vec3(0, 1.f, 0);
 
 	//Construct an orientation vector as OpenAL want's it
-	const std::array<ALfloat, 6> al_orientation{ orientation_at.x, orientation_at.y, orientation_at.z, orientation_up.x, orientation_up.y, orientation_up.z };
+	const std::array<ALfloat, 6> al_orientation { orientation_at.x, orientation_at.y, orientation_at.z, orientation_up.x, orientation_up.y, orientation_up.z };
 
 	//Set the listener position and orientation
 	alListener3f(AL_POSITION, position.x, position.y, position.z);
@@ -251,9 +252,9 @@ void audio_source::set_world_transform(const glm::mat4& transform) const
 	alSource3f(source, AL_POSITION, position.x, position.y, position.z);
 }
 
-void audio_source::set_buffer(const audio_buffer & buffer) const
+void audio_source::set_buffer(const audio_buffer& buffer) const
 {
-	alSourcei(source, AL_BUFFER, buffer.get_al_buffer());
+	alSourcei(source, AL_BUFFER, ALint(buffer.get_al_buffer()));
 }
 
 void audio_source::play() const

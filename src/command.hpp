@@ -1,8 +1,8 @@
 #pragma once
 
 #include "node.hpp"
-struct command 
+struct command
 {
-	virtual ~command() = default;
+	virtual ~command()				  = default;
 	virtual void execute(node* actor) = 0;
 };

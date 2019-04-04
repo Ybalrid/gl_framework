@@ -38,13 +38,13 @@ public:
 
 	using child_list = std::vector<node_ptr>;
 	node() :
-	 ID{ counter++ } {}
+	 ID { counter++ } {}
 	~node() = default;
 
 private:
 	child_list children;
 	node* parent = nullptr;
-	glm::mat4 world_space_model{ 1.f };
+	glm::mat4 world_space_model { 1.f };
 	node_payload content;
 
 	const size_t ID;
