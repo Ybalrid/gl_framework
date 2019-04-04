@@ -109,7 +109,7 @@ void application::install_opengl_debug_callback() const
 {
 	if(glDebugMessageCallback)
 	{
-		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param) {
+		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum /*severity*/, GLsizei /*length*/, const GLchar* message, const void* /*user_param*/) {
 			std::cerr << "-----\n";
 			std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);
 			std::cerr << "-----\n";
@@ -252,8 +252,8 @@ void application::run_events()
 				break;
 			case SDL_MOUSEMOTION:
 				if(ImGui::GetIO().WantCaptureMouse) break;
-				mousex = (float)event.motion.xrel;
-				mousey = (float)event.motion.yrel;
+                mousex = float(event.motion.xrel);
+                mousey = float(event.motion.yrel);
 				break;
 
 			case SDL_KEYDOWN:
