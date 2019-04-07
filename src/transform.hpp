@@ -4,9 +4,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <string>
+
 struct transform
 {
 	transform() = default;
+
 	///Get the model matrix. Model matrix is cached until transform get's dirty.
 	glm::mat4 get_model() const;
 
@@ -49,9 +52,11 @@ struct transform
 	///Vector of magnitude zero.
 	inline static const glm::vec3 VEC_ZERO { 0.f };
 	///Vector with a scale of 1 on each directions.
-	inline static const glm::vec3 UNIT_SCALE { 1.f };
+	inline static const glm::vec3 UNIT_SCALE { 1.f, 1.f, 1.f };
 	///Quaternion encoding a "zero" rotation. Built from an identity matrix.
 	inline static const glm::quat IDENTITY_QUAT { (glm::quat(glm::mat4(1.f))) };
+
+	std::string to_string() const;
 
 private:
 	//This is the cached model matrix and a flag that signal if the model matrix is dirty
@@ -59,6 +64,7 @@ private:
 	mutable glm::mat4 model { 1.f };
 
 	//The internally stored absolute position, scale and orientation
-	glm::vec3 current_position { VEC_ZERO }, current_scale { UNIT_SCALE };
+	glm::vec3 current_position { VEC_ZERO };
+	glm::vec3 current_scale { UNIT_SCALE };
 	glm::quat current_orientation { IDENTITY_QUAT };
 };

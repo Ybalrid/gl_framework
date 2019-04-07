@@ -115,9 +115,9 @@ void gui::console()
 									   if(matches.size() == 1)
 									   {
 										   //Delete everythign up to the one character after the found delimiter
-                                           data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, current_input.size() - last_word_start_char -  (last_word_start_char > 0 ? 1 : 0));
+										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, current_input.size() - last_word_start_char - (last_word_start_char > 0 ? 1 : 0));
 										   //Write the match at the end of the string
-                                           data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
+										   data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
 										   ui->scroll_console_to_bottom = true;
 									   }
 									   else

@@ -344,7 +344,7 @@ void application::run()
 	auto* source = s.scene_root->push_child(create_node())->assign(audio_source());
 	source->set_buffer(buffer);
 	source->set_looping();
-//	source->play();
+	//	source->play();
 
 	//TODO refactor renderloop
 	while(running)
