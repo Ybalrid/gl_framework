@@ -173,6 +173,7 @@ void application::initialize_gui()
 {
 	ui = gui(window.ptr(), context.ptr());
 	scripts.register_imgui_library(&ui);
+	ui.set_script_engine_ptr(&scripts);
 	ui.set_console_input_consumer(&scripts);
 	inputs.setup_imgui();
 }
@@ -252,8 +253,8 @@ void application::run_events()
 				break;
 			case SDL_MOUSEMOTION:
 				if(ImGui::GetIO().WantCaptureMouse) break;
-                mousex = float(event.motion.xrel);
-                mousey = float(event.motion.yrel);
+				mousex = float(event.motion.xrel);
+				mousey = float(event.motion.yrel);
 				break;
 
 			case SDL_KEYDOWN:
@@ -343,7 +344,7 @@ void application::run()
 	auto* source = s.scene_root->push_child(create_node())->assign(audio_source());
 	source->set_buffer(buffer);
 	source->set_looping();
-	source->play();
+//	source->play();
 
 	//TODO refactor renderloop
 	while(running)

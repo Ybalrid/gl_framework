@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include "resource_system.hpp"
+#include "script_system.hpp"
 #include <imgui.h>
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl3.h>
@@ -7,6 +8,11 @@
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
 #include <iostream>
+
+void gui::set_script_engine_ptr(script_system* s)
+{
+	scripting_engine = s;
+}
 
 void gui::console()
 {
@@ -48,8 +54,9 @@ void gui::console()
 		bool reclaim_focus = false;
 
 		ImGui::PushFont(console_font);
+		ImGui::PushItemWidth(-1);
 		if(ImGui::InputText(
-			   "Input",
+			   "##Input",
 			   console_input,
 			   sizeof(console_input),
 			   ImGuiInputTextFlags_EnterReturnsTrue
@@ -59,6 +66,72 @@ void gui::console()
 				   gui* ui = static_cast<gui*>(data->UserData);
 				   switch(data->EventFlag)
 				   {
+					   case ImGuiInputTextFlags_CallbackCompletion:
+						   if(!ui->scripting_engine)
+							   ui->push_to_console("no completion yet...");
+						   else
+						   {
+							   //Get the updated list of functions and objects names
+							   auto list_of_words = ui->scripting_engine->global_scope_object_names();
+
+							   //get the content of the buffer
+							   std::string current_input = (ui->console_input);
+
+							   //point where the last word shoud start
+							   auto last_word_start_char = current_input.find_last_of(" .()[]-+-/<>~=\"");
+							   std::string last_word	 = "";
+							   if(last_word_start_char != std::string::npos)
+							   {
+								   last_word = current_input.substr(1 + last_word_start_char);
+							   }
+							   else // try to use the whole input?
+							   {
+								   last_word			= current_input;
+								   last_word_start_char = 0;
+							   }
+
+							   //We have a word
+							   if(!last_word.empty())
+							   {
+								   //find matching symbols with the string at the begining
+								   std::vector<std::string> matches;
+								   auto it = list_of_words.begin();
+								   while(it != list_of_words.end())
+								   {
+									   it = std::find_if(it, list_of_words.end(), [&](const std::string& str) {
+										   return str.rfind(last_word, 0) == 0; //this return true if str starts with last_word
+									   });
+									   if(it != list_of_words.end())
+										   matches.emplace_back(*it);
+									   //Escape the loop now if we haven't found anything
+									   if(it == list_of_words.end())
+										   break;
+									   ++it;
+								   }
+								   //if something matches
+								   if(!matches.empty())
+								   {
+									   //if there's only one to use:
+									   if(matches.size() == 1)
+									   {
+										   //Delete everythign up to the one character after the found delimiter
+                                           data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, current_input.size() - last_word_start_char -  (last_word_start_char > 0 ? 1 : 0));
+										   //Write the match at the end of the string
+                                           data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
+										   ui->scroll_console_to_bottom = true;
+									   }
+									   else
+									   {
+										   for(const auto& match : matches)
+										   {
+											   ui->push_to_console(match);
+											   ui->scroll_console_to_bottom = true;
+										   }
+									   }
+								   }
+							   }
+						   }
+						   break;
 					   case ImGuiInputTextFlags_CallbackHistory:
 					   {
 						   const char* text				  = nullptr;
@@ -114,6 +187,7 @@ void gui::console()
 			reclaim_focus			 = true;
 			scroll_console_to_bottom = true;
 		}
+		ImGui::PopItemWidth();
 		ImGui::PopFont();
 
 		ImGui::SetItemDefaultFocus();
@@ -154,7 +228,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 	memcpy(vera_mono_ttf_data, vera_mono_ttf.data(), vera_mono_ttf.size());
 	ImFontConfig vera_mono_config;
 	strcpy(vera_mono_config.Name, "vera mono");
-	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f);
+	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f, &vera_mono_config);
 
 	ugly_font = io.Fonts->AddFontDefault();
 

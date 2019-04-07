@@ -95,6 +95,44 @@ void script_system::eval_string(const std::string& input)
 	chai.eval(input);
 }
 
+#include <algorithm>
+std::vector<std::string> script_system::global_scope_object_names()
+{
+	auto& chai = pimpl->get();
+
+	const auto& state	 = chai.get_state().engine_state;
+	const auto& functions = state.m_function_objects;
+    const auto& globals   = state.m_global_objects;
+    const auto& locals = chai.get_locals();
+
+    const auto size = functions.size() + globals.size() + locals.size();
+
+	std::vector<std::string> output;
+	output.reserve(size);
+
+	for(const auto& [function_name, proxy] : functions)
+	{
+		(void)proxy;
+		output.emplace_back(function_name);
+	}
+
+	for(const auto& [global_name, proxy] : globals)
+	{
+		(void)proxy;
+		output.emplace_back(global_name);
+    }
+
+    for(const auto& [local_name, proxy] : locals)
+    {
+        (void) proxy;
+        output.emplace_back(local_name);
+    }
+
+	std::sort(output.begin(), output.end());
+
+	return output;
+}
+
 //include and bind the rest of this engine API to ChaiScript
 #include "transform.hpp"
 #include "application.hpp"
