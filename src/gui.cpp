@@ -250,20 +250,41 @@ gui::~gui()
 	}
 }
 
+const char is_imgui[] = "ImGui code";
 void gui::frame()
 {
+	#ifdef _DEBUG
+	if(glPushDebugGroup)
+		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
+	#endif
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(w);
 	ImGui::NewFrame();
 
 	if(show_console)
 		console();
+
+	#ifdef _DEBUG
+	if(glPopDebugGroup)
+		glPopDebugGroup();
+	#endif
 }
 
 void gui::render() const
 {
+	#ifdef _DEBUG
+	if(glPushDebugGroup)
+		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
+	#endif
+
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	#ifdef _DEBUG
+	if(glPopDebugGroup)
+		glPopDebugGroup();
+	#endif
 }
 
 void gui::handle_event(sdl::Event e) const

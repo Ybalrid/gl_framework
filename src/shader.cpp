@@ -93,8 +93,10 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 		point_light_list_uniform_locations[i].specular  = glGetUniformLocation(program, (point_light_name + "specular").c_str());
 	}
 
+	use();
 	set_uniform(uniform::material_diffuse, material_diffuse_texture_slot);
 	set_uniform(uniform::material_specular, material_specular_texture_slot);
+	use_0();
 }
 
 shader::shader()

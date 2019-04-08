@@ -50,13 +50,15 @@ void application::draw_debug_ui()
 
 	if(debug_ui)
 	{
-		ImGui::Begin("Debug Window", &debug_ui);
-		ImGui::Text("Debug information");
-		ImGui::Text("FPS: %d", fps);
-		ImGui::Checkbox("Show demo window ?", &show_demo_window);
+		if(ImGui::Begin("Debug Window", &debug_ui))
+		{
+			ImGui::Text("Debug information");
+			ImGui::Text("FPS: %d", fps);
+			ImGui::Checkbox("Show demo window ?", &show_demo_window);
 
-		if(show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
+			if(show_demo_window)
+				ImGui::ShowDemoWindow(&show_demo_window);
+		}
 		ImGui::End();
 	}
 }
@@ -84,7 +86,7 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 {
 	int major = 4, minor = 3;
 #ifdef __APPLE__
-	minor = 1;
+	minor = 1; //Apple actively </3 OpenGL :'-(
 #endif
 
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
@@ -93,6 +95,9 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);						 //OpenGL 4+
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);						 //OpenGL 4.1 or 4.3
+#ifdef _DEBUG
+	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG); //create a so-called "debug" context
+#endif
 }
 
 void application::initialize_glew() const
@@ -109,10 +114,14 @@ void application::install_opengl_debug_callback() const
 {
 	if(glDebugMessageCallback)
 	{
-		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum /*severity*/, GLsizei /*length*/, const GLchar* message, const void* /*user_param*/) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*user_param*/) {
+
+			if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
 			std::cerr << "-----\n";
-			std::cerr << "opengl debug message: " << glGetString(source) << ' ' << glGetString(type) << ' ' << id << ' ' << std::string(message);
-			std::cerr << "-----\n";
+			std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id << ") message(" << std::string(message) << ")\n";
+			std::cerr << "-----" << std::endl; //flush here
 		},
 							   nullptr);
 	}
