@@ -20,7 +20,7 @@ gltf_loader::~gltf_loader()
 }
 
 gltf_loader::gltf_loader(shader_handle default_shader) :
- dshader{ default_shader }
+ dshader { default_shader }
 {
 	std::cout << "Initialized glTF 2.0 loader using tinygltf\n";
 	//This register our custom ImageLoader with tinygltf
@@ -258,7 +258,7 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 		renderable_handle r		 = renderable_manager::create_renderable(dshader,
 																	 vertex,
 																	 index,
-																	 renderable::configuration{ true, true, true },
+																	 renderable::configuration { true, true, true },
 																	 8,
 																	 0,
 																	 3,
@@ -271,7 +271,7 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 	return renderable_manager::create_renderable(dshader,
 												 vertex,
 												 index,
-												 renderable::configuration{ true, true, true },
+												 renderable::configuration { true, true, true },
 												 8,
 												 0,
 												 3,

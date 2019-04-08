@@ -19,17 +19,27 @@ struct console_input_consumer
 	virtual bool operator()(const std::string& str) = 0;
 };
 
+struct ImFont;
+class script_system;
 class gui
 {
 	SDL_Window* w = nullptr;
 
 	void console();
 	char console_input[2048] = { 0 };
-	std::vector<std::string> console_content{ "Debuging console." };
-	std::vector<std::string> console_history{};
+	std::vector<std::string> console_content {};
+	std::vector<std::string> console_history {};
 	bool scroll_console_to_bottom   = false;
 	console_input_consumer* cis_ptr = nullptr;
 	int history_counter				= 0;
+
+	ImFont* console_font;
+	ImFont* default_font;
+	ImFont* ugly_font;
+
+	void move_from(gui& other);
+
+	script_system* scripting_engine;
 
 public:
 	bool show_console = false;
@@ -43,6 +53,8 @@ public:
 	void set_console_input_consumer(console_input_consumer* cis);
 	void push_to_console(const std::string& text);
 	void clear_console();
+
+	void set_script_engine_ptr(script_system* s);
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;

@@ -11,7 +11,7 @@ class scene_object
 
 public:
 	scene_object(renderable_handle r) :
-	 mesh{ r }
+	 mesh { r }
 	{
 	}
 

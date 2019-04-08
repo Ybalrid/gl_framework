@@ -11,7 +11,7 @@ public:
 						   hud,
 						   eye_vr };
 
-	projection_mode projection_type{ perspective };
+	projection_mode projection_type { perspective };
 	void (*vr_eye_projection_callback)(glm::mat4& projection_output, float near_clip, float far_clip) = nullptr;
 	float near_clip																					  = 0.1f;
 	float far_clip																					  = 1000.f;
@@ -29,6 +29,6 @@ public:
 
 private:
 	//enclosed projection matrix
-	glm::mat4 projection{ 1.f };
-	glm::mat4 world_model_matrix{ 1.f };
+	glm::mat4 projection { 1.f };
+	glm::mat4 world_model_matrix { 1.f };
 };

@@ -41,24 +41,24 @@ public:
 
 	struct directional_light_uniform_locations
 	{
-		int direction{ -1 };
-		int ambient{ -1 };
-		int diffuse{ -1 };
-		int specular{ -1 };
+		int direction { -1 };
+		int ambient { -1 };
+		int diffuse { -1 };
+		int specular { -1 };
 	};
 
 	struct point_light_uniform_locations
 	{
-		int position{ -1 };
-		int constant{ -1 };
-		int linear{ -1 };
-		int quadratic{ -1 };
-		int ambient{ -1 };
-		int diffuse{ -1 };
-		int specular{ -1 };
+		int position { -1 };
+		int constant { -1 };
+		int linear { -1 };
+		int quadratic { -1 };
+		int ambient { -1 };
+		int diffuse { -1 };
+		int specular { -1 };
 	};
 
-	static constexpr const size_t NB_POINT_LIGHT{ 4 };
+	static constexpr const size_t NB_POINT_LIGHT { 4 };
 	static constexpr const int material_diffuse_texture_slot  = 0;
 	static constexpr const int material_specular_texture_slot = 1;
 
@@ -92,7 +92,7 @@ private:
 	void steal_guts(shader& s);
 
 	GLuint program = 0;
-	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)]{};
+	GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)] {};
 	directional_light_uniform_locations main_directional_light_uniform_locations;
 	point_light_uniform_locations point_light_list_uniform_locations[NB_POINT_LIGHT];
 };

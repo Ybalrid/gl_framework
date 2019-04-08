@@ -95,6 +95,49 @@ void script_system::eval_string(const std::string& input)
 	chai.eval(input);
 }
 
+#include <algorithm>
+std::vector<std::string> script_system::global_scope_object_names()
+{
+	auto& chai = pimpl->get();
+
+	const auto& state	 = chai.get_state().engine_state;
+	const auto& functions = state.m_function_objects;
+	const auto& globals   = state.m_global_objects;
+	const auto& locals	= chai.get_locals();
+
+	const auto size = functions.size() + globals.size() + locals.size() + 2;
+
+	std::vector<std::string> output;
+	output.reserve(size);
+
+	//Add the true and false token to the list:
+	output.emplace_back("true");
+	output.emplace_back("false");
+
+	for(const auto& [function_name, proxy] : functions)
+	{
+		(void)proxy;
+		output.emplace_back(function_name);
+	}
+
+	for(const auto& [global_name, proxy] : globals)
+	{
+		(void)proxy;
+		output.emplace_back(global_name);
+	}
+
+	for(const auto& [local_name, proxy] : locals)
+	{
+		(void)proxy;
+		output.emplace_back(local_name);
+	}
+
+	//Sorting here will make the searching faster later
+	std::sort(output.begin(), output.end());
+
+	return output;
+}
+
 //include and bind the rest of this engine API to ChaiScript
 #include "transform.hpp"
 #include "application.hpp"
@@ -122,19 +165,7 @@ void script_system::install_additional_api()
 	chai.add(fun(&transform::get_position), "get_position");
 	chai.add(fun(&transform::get_orientation), "get_orientation");
 	chai.add(fun(&transform::get_scale), "get_scale");
-	// clang-format off
-	chai.add(fun([](const ::transform& t) -> std::string 
-			{
-				 const auto& p = t.get_position();
-				 const auto& s = t.get_scale();
-				 const auto& o = t.get_orientation();
-				 return "position    (" + to_string(p.x) + ", " + to_string(p.y) + "," + to_string(p.z) + ")\n"
-					 + "orientation (" + to_string(o.w) + ", " + to_string(o.x) + ", " + to_string(o.y) + ", " + to_string(o.z) + ")\n"
-					 + "scale       (" + to_string(s.x) + ", " + to_string(s.y) + ", " + to_string(s.z) + ")";
-			 }),
-			 "to_string");
-	// clang-format on
-
+	chai.add(fun(&transform::to_string), "to_string");
 	chai.add(user_type<scene>(), "scene");
 
 	// clang-format off
@@ -186,9 +217,12 @@ void script_system::install_additional_api()
 			{
 				 std::string str;
 				 auto to_string_node = chai.eval<std::function<std::string(node*)>>("to_string");
+                 auto to_string_xform = chai.eval<std::function<std::string(::transform*)>>("to_string");
 				 s->run_on_whole_graph([&](node* n) 
 				 {
 					 str += to_string_node(n);
+                     str += "\n";
+                     str += to_string_xform(&n->local_xform);
 					 str += "\n\n";
 				 });
 				 return str;

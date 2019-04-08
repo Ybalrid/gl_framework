@@ -63,7 +63,7 @@ struct buffer_config
 class audio_buffer
 {
 	ALuint buffer = 0;
-	buffer_config current_config{};
+	buffer_config current_config {};
 
 	void steal_guts(audio_buffer& other);
 

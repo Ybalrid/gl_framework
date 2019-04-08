@@ -33,6 +33,8 @@ public:
 		return true;
 	}
 
+	std::vector<std::string> global_scope_object_names();
+
 private:
 	//ChaiScript is HUGE.
 	//We are using a pimpl to hopefully speed-up the build time by having only one translation unit including chaiscript.h!!!!

@@ -45,10 +45,10 @@ class application
 	int fps					   = 0;
 	size_t frames			   = 0;
 
-	sdl::Root root{ SDL_INIT_EVERYTHING };
+	sdl::Root root { SDL_INIT_EVERYTHING };
 	sdl::Window window;
 	sdl::Window::GlContext context;
-	sdl::Event event{};
+	sdl::Event event {};
 
 	gui ui;
 	script_system scripts;
@@ -64,7 +64,7 @@ class application
 	camera* main_camera = nullptr;
 	node* cam_node		= nullptr;
 	directional_light sun;
-	std::array<point_light*, 4> p_lights{ nullptr, nullptr, nullptr, nullptr };
+	std::array<point_light*, 4> p_lights { nullptr, nullptr, nullptr, nullptr };
 
 	//key states
 	bool up = false, down = false, left = false, right = false, mouse = false;

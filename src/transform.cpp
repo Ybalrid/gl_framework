@@ -73,3 +73,11 @@ void transform::rotate(float angle, const glm::vec3& axis)
 {
 	set_orientation(glm::rotate(current_orientation, glm::radians(angle), axis));
 }
+
+std::string transform::to_string() const
+{
+
+	return "position    vec3(" + std::to_string(current_position.x) + ", " + std::to_string(current_position.y) + "," + std::to_string(current_position.z) + ")\n"
+		+ "orientation quat(" + std::to_string(current_orientation.w) + ", " + std::to_string(current_orientation.x) + ", " + std::to_string(current_orientation.y) + ", " + std::to_string(current_orientation.z) + ")\n"
+		+ "scale       vec3(" + std::to_string(current_scale.x) + ", " + std::to_string(current_scale.y) + ", " + std::to_string(current_scale.z) + ")";
+}

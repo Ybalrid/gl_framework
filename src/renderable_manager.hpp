@@ -12,7 +12,7 @@ class renderable_manager
 	std::vector<renderable_handle> unallocated_renderables;
 
 public:
-	static constexpr renderable_handle invalid_renderable{ std::numeric_limits<renderable_handle>::max() };
+	static constexpr renderable_handle invalid_renderable { std::numeric_limits<renderable_handle>::max() };
 
 	renderable_manager();
 	~renderable_manager();
