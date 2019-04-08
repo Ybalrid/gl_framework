@@ -141,13 +141,13 @@ void gui::frame()
 		console();
 }
 
-void gui::render()
+void gui::render() const
 {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void gui::handle_event(sdl::Event e)
+void gui::handle_event(sdl::Event e) const
 {
 	ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<SDL_Event*>(&e));
 }

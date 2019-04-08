@@ -37,8 +37,8 @@ public:
 	gui(SDL_Window* window, SDL_GLContext gl_context);
 	~gui();
 	void frame();
-	void render();
-	void handle_event(sdl::Event e);
+	void render() const;
+	void handle_event(sdl::Event e) const;
 
 	void set_console_input_consumer(console_input_consumer* cis);
 	void push_to_console(const std::string& text);
