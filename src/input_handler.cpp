@@ -1,7 +1,7 @@
 #include "input_handler.hpp"
 #include <iostream>
 
-void input_handler::event(const sdl::Event& e)
+input_command* input_handler::event(const sdl::Event& e)
 {
 	using std::cout;
 	switch(e.type)
@@ -35,6 +35,8 @@ void input_handler::event(const sdl::Event& e)
 		default:
 			break;
 	}
+
+	return nullptr;
 }
 
 input_handler::input_handler() :
