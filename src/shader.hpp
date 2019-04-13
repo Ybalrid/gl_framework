@@ -58,7 +58,7 @@ public:
 		int specular { -1 };
 	};
 
-	static constexpr const size_t NB_POINT_LIGHT { 4 };
+	static constexpr const size_t NB_POINT_LIGHT { 4 }; //this needs to match the same variable in the fragment shader
 	static constexpr const int material_diffuse_texture_slot  = 0;
 	static constexpr const int material_specular_texture_slot = 1;
 

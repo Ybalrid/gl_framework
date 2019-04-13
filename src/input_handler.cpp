@@ -7,33 +7,30 @@ void input_handler::event(const sdl::Event& e)
 	switch(e.type)
 	{
 		case SDL_KEYDOWN:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) break;
-			cout << "keydown\n";
+			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) 
+				break;
 			break;
 		case SDL_KEYUP:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) break;
-			cout << "keyup\n";
+			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) 
+				break;
 			break;
 		case SDL_MOUSEMOTION:
-			if(imgui && imgui->WantCaptureMouse) break;
-			cout << "mousemotion\n";
+			if(imgui && imgui->WantCaptureMouse) 
+				break;
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-			if(imgui && imgui->WantCaptureMouse) break;
-			cout << "mousebuttondown\n";
+			if(imgui && imgui->WantCaptureMouse) 
+				break;
 			break;
 		case SDL_MOUSEBUTTONUP:
-			if(imgui && imgui->WantCaptureMouse) break;
-			cout << "mousebuttonup\n";
+			if(imgui && imgui->WantCaptureMouse) 
+				break;
 			break;
 		case SDL_CONTROLLERAXISMOTION:
-			cout << "controlleraxismotion\n";
 			break;
 		case SDL_CONTROLLERBUTTONDOWN:
-			cout << "controllerbuttondown\n";
 			break;
 		case SDL_CONTROLLERBUTTONUP:
-			cout << "controllerbuttonup\n";
 			break;
 		default:
 			break;
