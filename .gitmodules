@@ -19,3 +19,6 @@
 [submodule "third_party/cpptoml"]
 	path = third_party/cpptoml
 	url = https://github.com/skystrife/cpptoml
+[submodule "third_party/jet-live"]
+	path = third_party/jet-live
+	url = https://github.com/ddovod/jet-live
