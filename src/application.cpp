@@ -54,7 +54,8 @@ void application::draw_debug_ui()
 		{
 			ImGui::Text("Debug information");
 			ImGui::Text("FPS: %d", fps);
-			ImGui::Checkbox("Show demo window ?", &show_demo_window);
+            ImGui::Checkbox("Show demo window ?", &show_demo_window);
+            ImGui::Text("Hello jetlive for real this time!");
 
 			if(show_demo_window)
 				ImGui::ShowDemoWindow(&show_demo_window);
@@ -117,7 +118,6 @@ void application::install_opengl_debug_callback() const
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*user_param*/) {
-
 			if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
 			std::cerr << "-----\n";
 			std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id << ") message(" << std::string(message) << ")\n";
@@ -189,7 +189,7 @@ void application::initialize_gui()
 
 void application::render_frame()
 {
-	ui.frame();
+    ui.frame();
 
 	scripts.update(last_frame_delta_sec);
 
@@ -267,19 +267,19 @@ void application::run_events()
 				break;
 
 			case SDL_KEYDOWN:
-                if(ImGui::GetIO().WantCaptureKeyboard && event.key.keysym.scancode != SDL_SCANCODE_GRAVE) break;
+				if(ImGui::GetIO().WantCaptureKeyboard && event.key.keysym.scancode != SDL_SCANCODE_GRAVE) break;
 				if(event.key.repeat) break;
 				switch(event.key.keysym.scancode)
 				{
-                    case SDL_SCANCODE_GRAVE:
-                    if(!ui.is_console_showed())
-                    {
-                        ui.show_console();
-                    }
-                    else
-                    {
-                        ui.hide_console();
-                    }
+					case SDL_SCANCODE_GRAVE:
+						if(!ui.is_console_showed())
+						{
+							ui.show_console();
+						}
+						else
+						{
+							ui.hide_console();
+						}
 						break;
 					case SDL_SCANCODE_TAB:
 						debug_ui = !debug_ui;
@@ -307,7 +307,7 @@ void application::run_events()
 					case SDL_SCANCODE_W:
 						up = false;
 						break;
-					case SDL_SCANCODE_S:
+                    case SDL_SCANCODE_S:
 						down = false;
 						break;
 					case SDL_SCANCODE_A:
@@ -316,6 +316,13 @@ void application::run_events()
 					case SDL_SCANCODE_D:
 						right = false;
 						break;
+
+#ifdef USING_JETLIVE
+					case SDL_SCANCODE_R:
+						if(event.key.keysym.mod & SDL_Keymod::KMOD_LCTRL)
+							liveInstance.tryReload();
+						break;
+#endif
 					default: break;
 				}
 				break;
@@ -365,14 +372,11 @@ void application::run()
 	//TODO refactor renderloop
 	while(running)
 	{
+#ifdef USING_JETLIVE
+		liveInstance.update();
+#endif
 		update_timing();
-		run_events();
-
-		//TOOD maybe script this thing?
-		//duck_root->local_xform.set_orientation(glm::angleAxis(glm::radians((180 * current_time_in_sec)), -transform::Y_AXIS));
-		//plane1->local_xform.set_position({ 2, 0, 0 });
-		//plane1->local_xform.set_orientation(glm::angleAxis(glm::radians(90.f), transform::Z_AXIS));
-
+        run_events();
 		render_frame();
 	}
 }

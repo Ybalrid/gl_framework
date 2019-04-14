@@ -1,5 +1,12 @@
 #pragma once
 
+#ifdef USING_JETLIVE
+#include "jet/live/Live.hpp"
+#include "jet/live/ILiveListener.hpp"
+#include "nameof.hpp"
+#include <iostream>
+#endif
+
 #include <GL/glew.h>
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
@@ -7,8 +14,9 @@
 #include <vector>
 #include <string>
 #include "resource_system.hpp"
-#include "gltf_loader.hpp"
 #include "freeimage_raii.hpp"
+
+#include "gltf_loader.hpp"
 #include "gui.hpp"
 #include "script_system.hpp"
 
@@ -20,8 +28,27 @@
 #include "audio_system.hpp"
 #include "input_handler.hpp"
 
+#ifdef USING_JETLIVE
+class jet_live_log_listener : public jet::ILiveListener
+{
+public:
+    void onLog(jet::LogSeverity severity, const std::string& message) override
+    {
+        std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl;//I'll accept the slow flush here
+    }
+};
+
+#endif
+
+//class gltf_loader;
+
 class application
 {
+
+#ifdef USING_JETLIVE
+    jet::Live liveInstance{std::make_unique<jet_live_log_listener>()};
+#endif
+
 	void activate_vsync();
 	void draw_debug_ui();
 	void update_timing();

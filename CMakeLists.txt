@@ -1,5 +1,10 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 3.12)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
 PROJECT (test_project)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -falign-functions=16 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -falign-functions=16 ")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-export-dynamic ")
+
 SET (CMAKE_CXX_STANDARD 17)
 
 IF (MSVC)
@@ -11,6 +16,13 @@ ELSE()
                 add_definitions(-D_DEBUG -DDEBUG)
         ENDIF()
 ENDIF ()
+
+IF (UNIX)
+        SET(JET_LIVE_BUILD_EXAMPLE OFF)
+        ADD_SUBDIRECTORY(third_party/jet-live)
+	MESSAGE("we are using jet-live")
+        ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
+ENDIF()
 
 FILE (GLOB sources
            CONFIGURE_DEPENDS
@@ -24,6 +36,7 @@ FILE (GLOB sources
 
 # just add this lib as a subdir,
 ADD_SUBDIRECTORY (third_party/physfs/)
+
 
 SET (LIBRARIES_PACKAGE_DIR "path_to_libraries" CACHE PATH "path to the 3rd party libraries directory")
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/" "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake")
@@ -59,6 +72,7 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                ${FREEIMAGE_LIBRARIES}
                                ${SNDFILE_LIBRARY})
 
+
 IF (APPLE)
     FIND_LIBRARY (IOKit IOKit)
     TARGET_LINK_LIBRARIES (test_project_exe PRIVATE ${IOKit})
@@ -69,3 +83,5 @@ ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res
                            ${CMAKE_BINARY_DIR}/unpacked_res)
+
+TARGET_LINK_LIBRARIES(test_project_exe PUBLIC jet-live)
