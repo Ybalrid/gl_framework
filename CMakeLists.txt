@@ -5,7 +5,11 @@ SET (CMAKE_CXX_STANDARD 17)
 IF (MSVC)
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 	add_definitions(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
-	add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+        add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+ELSE()
+        IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+                add_definitions(-D_DEBUG -DDEBUG)
+        ENDIF()
 ENDIF ()
 
 FILE (GLOB sources
