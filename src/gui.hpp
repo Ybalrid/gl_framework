@@ -41,8 +41,9 @@ class gui
 
 	script_system* scripting_engine;
 
+    bool show_console_ = false;
+    bool last_frame_showed = false;
 public:
-	bool show_console = false;
 	gui()			  = default;
 	gui(SDL_Window* window, SDL_GLContext gl_context);
 	~gui();
@@ -55,6 +56,10 @@ public:
 	void clear_console();
 
 	void set_script_engine_ptr(script_system* s);
+
+    void show_console();
+    void hide_console();
+    bool is_console_showed();
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;

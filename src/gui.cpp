@@ -16,7 +16,7 @@ void gui::set_script_engine_ptr(script_system* s)
 
 void gui::console()
 {
-	if(show_console)
+    if(show_console_)
 	{
 		//Acquire window geometry
 		int x, y;
@@ -27,7 +27,7 @@ void gui::console()
 		ImGui::SetNextWindowPos({ 0, 0 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
-		ImGui::Begin("Console", &show_console, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
+        ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
 		// Leave room for 1 separator + 1 InputText
 
 		ImGui::BeginChild("ScrollingRegion",
@@ -54,7 +54,12 @@ void gui::console()
 		bool reclaim_focus = false;
 
 		ImGui::PushFont(console_font);
-		ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(-1);
+        if(!last_frame_showed)
+        {
+            ImGui::SetKeyboardFocusHere(1);
+            last_frame_showed = true;
+        }
 		if(ImGui::InputText(
 			   "##Input",
 			   console_input,
@@ -199,6 +204,23 @@ void gui::console()
 	}
 }
 
+void gui::show_console()
+{
+    show_console_ = true;
+    last_frame_showed = false;
+}
+
+void gui::hide_console()
+{
+    show_console_ = false;
+    last_frame_showed = false;
+}
+
+bool gui::is_console_showed()
+{
+    return show_console_;
+}
+
 gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 {
 	w = window;
@@ -262,7 +284,7 @@ void gui::frame()
 	ImGui_ImplSDL2_NewFrame(w);
 	ImGui::NewFrame();
 
-	if(show_console)
+    if(show_console_)
 		console();
 
 	#ifdef _DEBUG

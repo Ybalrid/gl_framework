@@ -267,12 +267,19 @@ void application::run_events()
 				break;
 
 			case SDL_KEYDOWN:
-				if(ImGui::GetIO().WantCaptureKeyboard) break;
+                if(ImGui::GetIO().WantCaptureKeyboard && event.key.keysym.scancode != SDL_SCANCODE_GRAVE) break;
 				if(event.key.repeat) break;
 				switch(event.key.keysym.scancode)
 				{
-					case SDL_SCANCODE_GRAVE:
-						ui.show_console = !ui.show_console;
+                    case SDL_SCANCODE_GRAVE:
+                    if(!ui.is_console_showed())
+                    {
+                        ui.show_console();
+                    }
+                    else
+                    {
+                        ui.hide_console();
+                    }
 						break;
 					case SDL_SCANCODE_TAB:
 						debug_ui = !debug_ui;
