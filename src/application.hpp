@@ -29,6 +29,7 @@
 #include "input_handler.hpp"
 
 #ifdef USING_JETLIVE
+#ifdef _DEBUG
 class jet_live_log_listener : public jet::ILiveListener
 {
 public:
@@ -37,7 +38,7 @@ public:
         std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl;//I'll accept the slow flush here
     }
 };
-
+#endif
 #endif
 
 //class gltf_loader;
@@ -46,7 +47,9 @@ class application
 {
 
 #ifdef USING_JETLIVE
+#ifdef _DEBUG
     jet::Live liveInstance{std::make_unique<jet_live_log_listener>()};
+#endif
 #endif
 
 	void activate_vsync();

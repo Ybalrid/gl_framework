@@ -52,16 +52,29 @@ void application::draw_debug_ui()
 	{
 		if(ImGui::Begin("Debug Window", &debug_ui))
 		{
-			ImGui::Text("Debug information");
 			ImGui::Text("FPS: %d", fps);
             ImGui::Checkbox("Show demo window ?", &show_demo_window);
-            ImGui::Text("Hello jetlive for real this time!");
 
 			if(show_demo_window)
 				ImGui::ShowDemoWindow(&show_demo_window);
 		}
 		ImGui::End();
-	}
+    }
+
+#ifndef NON_NAGGING_DEBUG
+#ifdef _DEBUG
+    ImGui::Begin("Developement build", nullptr, ImGuiWindowFlags_NoCollapse);
+    ImGui::Text("This is a deveolpement debug build");
+#ifdef USING_JETLIVE
+    ImGui::Text("Dynamic recompilation is available.");
+    ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
+#elif defined(WIN32)
+    ImGui::Text("Dynamic hot-reload of code is available via blink.");
+    ImGui::Text("Attach blink to pid %d to hotreload changed code", _getpid());
+#endif
+    ImGui::End();
+#endif
+#endif
 }
 
 void application::update_timing()
@@ -318,11 +331,14 @@ void application::run_events()
 						break;
 
 #ifdef USING_JETLIVE
+#ifdef _DEBUG
 					case SDL_SCANCODE_R:
 						if(event.key.keysym.mod & SDL_Keymod::KMOD_LCTRL)
 							liveInstance.tryReload();
 						break;
 #endif
+#endif
+
 					default: break;
 				}
 				break;
@@ -371,9 +387,11 @@ void application::run()
 
 	//TODO refactor renderloop
 	while(running)
-	{
+    {
+#ifdef _DEBUG
 #ifdef USING_JETLIVE
 		liveInstance.update();
+#endif
 #endif
 		update_timing();
         run_events();
