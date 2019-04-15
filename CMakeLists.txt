@@ -49,6 +49,7 @@ FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
 ADD_EXECUTABLE (test_project_exe ${sources})
+TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")

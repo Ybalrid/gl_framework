@@ -22,3 +22,6 @@
 [submodule "third_party/jet-live"]
 	path = third_party/jet-live
 	url = https://github.com/ddovod/jet-live
+[submodule "third_party/nameof"]
+	path = third_party/nameof
+	url = https://github.com/Neargye/nameof.git
