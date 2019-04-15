@@ -16,7 +16,7 @@ void gui::set_script_engine_ptr(script_system* s)
 
 void gui::console()
 {
-    if(show_console_)
+	if(show_console_)
 	{
 		//Acquire window geometry
 		int x, y;
@@ -27,7 +27,7 @@ void gui::console()
 		ImGui::SetNextWindowPos({ 0, 0 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
-        ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
+		ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
 		// Leave room for 1 separator + 1 InputText
 
 		ImGui::BeginChild("ScrollingRegion",
@@ -54,12 +54,12 @@ void gui::console()
 		bool reclaim_focus = false;
 
 		ImGui::PushFont(console_font);
-        ImGui::PushItemWidth(-1);
-        if(!last_frame_showed)
-        {
-            ImGui::SetKeyboardFocusHere(1);
-            last_frame_showed = true;
-        }
+		ImGui::PushItemWidth(-1);
+		if(!last_frame_showed)
+		{
+			ImGui::SetKeyboardFocusHere(1);
+			last_frame_showed = true;
+		}
 		if(ImGui::InputText(
 			   "##Input",
 			   console_input,
@@ -206,19 +206,19 @@ void gui::console()
 
 void gui::show_console()
 {
-    show_console_ = true;
-    last_frame_showed = false;
+	show_console_	 = true;
+	last_frame_showed = false;
 }
 
 void gui::hide_console()
 {
-    show_console_ = false;
-    last_frame_showed = false;
+	show_console_	 = false;
+	last_frame_showed = false;
 }
 
 bool gui::is_console_showed()
 {
-    return show_console_;
+	return show_console_;
 }
 
 gui::gui(SDL_Window* window, SDL_GLContext gl_context)
@@ -275,38 +275,38 @@ gui::~gui()
 const char is_imgui[] = "ImGui code";
 void gui::frame()
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	if(glPushDebugGroup)
 		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
-	#endif
+#endif
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(w);
 	ImGui::NewFrame();
 
-    if(show_console_)
+	if(show_console_)
 		console();
 
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	if(glPopDebugGroup)
 		glPopDebugGroup();
-	#endif
+#endif
 }
 
 void gui::render() const
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	if(glPushDebugGroup)
 		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
-	#endif
+#endif
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	if(glPopDebugGroup)
 		glPopDebugGroup();
-	#endif
+#endif
 }
 
 void gui::handle_event(sdl::Event e) const

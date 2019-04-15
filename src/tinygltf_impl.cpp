@@ -1,6 +1,10 @@
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
+#ifdef USING_JETLIVE
+#define TINYGLTF_NO_INCLUDE_JSON
+#include "../third_party/jet-live/libs/json/json.hpp"
+#endif
 #include <tiny_gltf.h>
 #include "FreeImage.h"
 #include "resource_system.hpp"
@@ -40,7 +44,7 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 	//FreeImage's API inst const correct. Need to cast const away to give the pointer
 	//Opening a memory stream in freeimage doesn't change the bytes given to it in our usage
 	//But you could write to the opened memory stream...
-	freeimage_memory image_stream(FreeImage_OpenMemory(const_cast<unsigned char*>(bytes), size));
+	freeimage_memory image_stream(FreeImage_OpenMemory(const_cast<unsigned char*>(bytes), DWORD(size)));
 	if(!image_stream.get())
 	{
 		if(error)

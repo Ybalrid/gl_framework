@@ -7,23 +7,23 @@ input_command* input_handler::event(const sdl::Event& e)
 	switch(e.type)
 	{
 		case SDL_KEYDOWN:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) 
+			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
 				break;
 			break;
 		case SDL_KEYUP:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput)) 
+			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
 				break;
 			break;
 		case SDL_MOUSEMOTION:
-			if(imgui && imgui->WantCaptureMouse) 
+			if(imgui && imgui->WantCaptureMouse)
 				break;
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-			if(imgui && imgui->WantCaptureMouse) 
+			if(imgui && imgui->WantCaptureMouse)
 				break;
 			break;
 		case SDL_MOUSEBUTTONUP:
-			if(imgui && imgui->WantCaptureMouse) 
+			if(imgui && imgui->WantCaptureMouse)
 				break;
 			break;
 		case SDL_CONTROLLERAXISMOTION:

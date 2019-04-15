@@ -33,10 +33,10 @@
 class jet_live_log_listener : public jet::ILiveListener
 {
 public:
-    void onLog(jet::LogSeverity severity, const std::string& message) override
-    {
-        std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl;//I'll accept the slow flush here
-    }
+	void onLog(jet::LogSeverity severity, const std::string& message) override
+	{
+		std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl; //I'll accept the slow flush here
+	}
 };
 #endif
 #endif
@@ -48,7 +48,7 @@ class application
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
-    jet::Live liveInstance{std::make_unique<jet_live_log_listener>()};
+	jet::Live liveInstance { std::make_unique<jet_live_log_listener>() };
 #endif
 #endif
 

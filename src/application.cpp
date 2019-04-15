@@ -46,33 +46,41 @@ void application::activate_vsync()
 
 void application::draw_debug_ui()
 {
-	static bool show_demo_window = false;
+	static bool show_demo_window  = false;
+	static bool show_style_editor = false;
 
 	if(debug_ui)
 	{
 		if(ImGui::Begin("Debug Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
-            ImGui::Checkbox("Show demo window ?", &show_demo_window);
+			ImGui::Checkbox("Show demo window ?", &show_demo_window);
+			ImGui::Checkbox("Show style editor?", &show_style_editor);
 
 			if(show_demo_window)
 				ImGui::ShowDemoWindow(&show_demo_window);
 		}
 		ImGui::End();
-    }
+		if(show_style_editor)
+		{
+			ImGui::Begin("Style Editor", &show_style_editor);
+			ImGui::ShowStyleEditor();
+			ImGui::End();
+		}
+	}
 
 #ifndef NON_NAGGING_DEBUG
 #ifdef _DEBUG
-    ImGui::Begin("Developement build", nullptr, ImGuiWindowFlags_NoCollapse);
-    ImGui::Text("This is a deveolpement debug build");
+	ImGui::Begin("Developement build", nullptr, ImGuiWindowFlags_NoCollapse);
+	ImGui::Text("This is a deveolpement debug build");
 #ifdef USING_JETLIVE
-    ImGui::Text("Dynamic recompilation is available.");
-    ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
+	ImGui::Text("Dynamic recompilation is available.");
+	ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
 #elif defined(WIN32)
-    ImGui::Text("Dynamic hot-reload of code is available via blink.");
-    ImGui::Text("Attach blink to pid %d to hotreload changed code", _getpid());
+	ImGui::Text("Dynamic hot-reload of code is available via blink.");
+	ImGui::Text("Attach blink to pid %d to hotreload changed code", _getpid());
 #endif
-    ImGui::End();
+	ImGui::End();
 #endif
 #endif
 }
@@ -202,7 +210,7 @@ void application::initialize_gui()
 
 void application::render_frame()
 {
-    ui.frame();
+	ui.frame();
 
 	scripts.update(last_frame_delta_sec);
 
@@ -320,7 +328,7 @@ void application::run_events()
 					case SDL_SCANCODE_W:
 						up = false;
 						break;
-                    case SDL_SCANCODE_S:
+					case SDL_SCANCODE_S:
 						down = false;
 						break;
 					case SDL_SCANCODE_A:
@@ -387,14 +395,14 @@ void application::run()
 
 	//TODO refactor renderloop
 	while(running)
-    {
+	{
 #ifdef _DEBUG
 #ifdef USING_JETLIVE
 		liveInstance.update();
 #endif
 #endif
 		update_timing();
-        run_events();
+		run_events();
 		render_frame();
 	}
 }

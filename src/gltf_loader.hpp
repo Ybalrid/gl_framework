@@ -1,6 +1,10 @@
 #pragma once
 #define TINYGLTF_NO_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
+#ifdef USING_JETLIVE
+#define TINYGLTF_NO_INCLUDE_JSON
+#include "../third_party/jet-live/libs/json/json.hpp"
+#endif
 #include <tiny_gltf.h>
 
 #include "renderable.hpp"
