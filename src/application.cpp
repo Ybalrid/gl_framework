@@ -265,7 +265,9 @@ void application::run_events()
 		//For ImGui
 		ui.handle_event(event);
 
-		inputs.event(event);
+		auto command = inputs.event(event);
+		if(command)
+			command->execute(cam_node);
 
 		//Maybe move this thing too... xD
 		switch(event.type)
