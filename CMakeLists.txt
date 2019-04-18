@@ -6,13 +6,13 @@ SET (CMAKE_CXX_STANDARD 17)
 
 IF (MSVC)
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
-	add_definitions(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
-        add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+	ADD_DEFINITIONS(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
+    ADD_DEFINITIONS(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
 ELSE()
         IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-                add_definitions(-D_DEBUG -DDEBUG)
+            ADD_DEFINITIONS(-D_DEBUG -DDEBUG)
         ENDIF()
-ENDIF ()
+ENDIF()
 
 IF (UNIX)
   SET(JET_LIVE_BUILD_EXAMPLE OFF)
@@ -47,19 +47,19 @@ FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/glm/")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
-TARGET_COMPILE_DEFINITIONS (test_project_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
-TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
-TARGET_LINK_LIBRARIES (test_project_exe
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/physfs/src/")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/glm/")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/tinygltf/")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
+TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
+TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
                        PRIVATE Threads::Threads
                                ${CMAKE_DL_LIBS}
                                physfs-static
@@ -71,16 +71,16 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                ${FREEIMAGE_LIBRARIES}
                                ${SNDFILE_LIBRARY})
 IF(UNIX)
-	TARGET_LINK_LIBRARIES(test_project_exe PUBLIC jet-live)
+	TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PUBLIC jet-live)
 ENDIF()
 
 IF (APPLE)
     FIND_LIBRARY (IOKit IOKit)
-    TARGET_LINK_LIBRARIES (test_project_exe PRIVATE ${IOKit})
+    TARGET_LINK_LIBRARIES (${GAME_NAME}_exe PRIVATE ${IOKit})
 ENDIF (APPLE)
 
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
-                   COMMAND # add_custom_command(TARGET test_project_exe POST_BUILD
+                   COMMAND # add_custom_command(TARGET ${GAME_NAME}_exe POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res
                            ${CMAKE_BINARY_DIR}/unpacked_res)
