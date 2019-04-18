@@ -1,9 +1,6 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
-PROJECT (test_project)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -falign-functions=16 ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -falign-functions=16 ")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-export-dynamic ")
+set(GAME_NAME "test_project")
+PROJECT (${GAME_NAME})
 
 SET (CMAKE_CXX_STANDARD 17)
 
@@ -20,7 +17,7 @@ ENDIF ()
 IF (UNIX)
         SET(JET_LIVE_BUILD_EXAMPLE OFF)
         ADD_SUBDIRECTORY(third_party/jet-live)
-	MESSAGE("we are using jet-live")
+		MESSAGE("we are using jet-live")
         ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
 ENDIF()
 
@@ -48,7 +45,7 @@ FIND_PACKAGE (FreeImage REQUIRED)
 FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
-ADD_EXECUTABLE (test_project_exe ${sources})
+ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 TARGET_INCLUDE_DIRECTORIES (test_project_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
@@ -72,7 +69,9 @@ TARGET_LINK_LIBRARIES (test_project_exe
                                ${OPENAL_LIBRARY}
                                ${FREEIMAGE_LIBRARIES}
                                ${SNDFILE_LIBRARY})
-
+IF(UNIX)
+	TARGET_LINK_LIBRARIES(test_project_exe PUBLIC jet-live)
+ENDIF()
 
 IF (APPLE)
     FIND_LIBRARY (IOKit IOKit)
@@ -84,5 +83,3 @@ ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res
                            ${CMAKE_BINARY_DIR}/unpacked_res)
-
-TARGET_LINK_LIBRARIES(test_project_exe PUBLIC jet-live)
