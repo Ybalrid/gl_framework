@@ -149,7 +149,7 @@ void application::install_opengl_debug_callback() const
 	}
 }
 
-void application::configure_and_create_window()
+void application::configure_and_create_window(const std::string& application_name)
 {
 	//load config
 	auto configuration_data = resource_system::get_file("/config.toml");
@@ -175,7 +175,7 @@ void application::configure_and_create_window()
 	window_size.y				 = int(window_size_array->at(1));
 
 	//create window
-	window = sdl::Window("application window",
+	window = sdl::Window(application_name,
 						 window_size,
 						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
@@ -503,7 +503,7 @@ void application::setup_scene()
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 }
 
-application::application(int argc, char** argv) :
+application::application(int argc, char** argv, const std::string& application_name) :
  resources(argc > 0 ? argv[0] : nullptr)
 {
 	std::cout << "Hello there, this is only to test things!\n";
@@ -514,7 +514,7 @@ application::application(int argc, char** argv) :
 		resource_system::add_location(pak);
 	}
 
-	configure_and_create_window();
+	configure_and_create_window(application_name);
 	create_opengl_context();
 	initialize_modern_opengl();
 	initialize_gui();

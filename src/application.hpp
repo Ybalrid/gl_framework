@@ -58,7 +58,7 @@ class application
 	void set_opengl_attribute_configuration(bool multisampling, int samples, bool srgb_framebuffer) const;
 	void initialize_glew() const;
 	void install_opengl_debug_callback() const;
-	void configure_and_create_window();
+	void configure_and_create_window(const std::string& application_name);
 	void create_opengl_context();
 
 	freeimage free_img;
@@ -111,6 +111,6 @@ public:
 	void run_events();
 	void run();
 	void setup_scene();
-	application(int argc, char** argv);
+	application(int argc, char** argv, const std::string& application_name);
 	static std::vector<std::string> resource_paks;
 };
