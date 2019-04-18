@@ -15,31 +15,31 @@
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
 
-void application::activate_vsync()
+void application::activate_vsync() const
 {
 	try
 	{
 		sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::adaptive_vsync);
 	}
-	catch(const sdl::Exception& e)
+	catch(const sdl::Exception& cannot_adaptive)
 	{
-		std::cerr << e.what() << '\n';
+		std::cerr << cannot_adaptive.what() << '\n';
 		std::cerr << "Using standard vsync instead of adaptive vsync\n";
 		try
 		{
 			sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::vsync);
 		}
-		catch(const sdl::Exception& ee)
+		catch(const sdl::Exception& cannot_standard_vsync)
 		{
-			std::cerr << ee.what() << '\n';
+			std::cerr << cannot_standard_vsync.what() << '\n';
 			std::cerr << "Cannot set vsync for this driver.\n";
 			try
 			{
 				sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
 			}
-			catch(const sdl::Exception& eee)
+			catch(const sdl::Exception& cannot_vsync_at_all)
 			{
-				std::cerr << eee.what() << '\n';
+				std::cerr << cannot_vsync_at_all.what() << '\n';
 			}
 		}
 	}
@@ -47,8 +47,8 @@ void application::activate_vsync()
 
 void application::draw_debug_ui()
 {
-	static bool show_demo_window  = false;
-	static bool show_style_editor = false;
+	static auto show_demo_window  = false;
+	static auto show_style_editor = false;
 
 	if(debug_ui)
 	{
@@ -72,14 +72,14 @@ void application::draw_debug_ui()
 
 #ifndef NON_NAGGING_DEBUG
 #ifdef _DEBUG
-	ImGui::Begin("Developement build", nullptr, ImGuiWindowFlags_NoCollapse);
-	ImGui::Text("This is a deveolpement debug build");
+	ImGui::Begin("Development build", nullptr, ImGuiWindowFlags_NoCollapse);
+	ImGui::Text("This is a development debug build");
 #ifdef USING_JETLIVE
 	ImGui::Text("Dynamic recompilation is available via jet-live.");
 	ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
 #elif defined(WIN32)
 	ImGui::Text("Dynamic hot-reload of code is available via blink.");
-	ImGui::Text("Attach blink to pid %d to hotreload changed code", _getpid());
+	ImGui::Text("Attach blink to pid %d to hot-reload changed code", _getpid());
 #endif
 	ImGui::End();
 #endif
@@ -107,9 +107,11 @@ void application::update_timing()
 
 void application::set_opengl_attribute_configuration(const bool multisampling, const int samples, const bool srgb_framebuffer) const
 {
-	int major = 4, minor = 3;
-#ifdef __APPLE__
-	minor = 1; //Apple actively </3 OpenGL :'-(
+	const auto major = 4;
+#ifndef __APPLE__
+	const auto minor = 3;
+#else
+	const auto minor = 1; //Apple actively </3 OpenGL :'-(
 #endif
 
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
@@ -161,13 +163,13 @@ void application::configure_and_create_window(const std::string& application_nam
 	const auto configuration_table = loaded_config->get_table("configuration");
 
 	//extract config values
-	const bool multisampling	= configuration_table->get_as<bool>("multisampling").value_or(true);
-	const int samples			= configuration_table->get_as<int>("samples").value_or(8);
-	const bool srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
+	const auto multisampling	= configuration_table->get_as<bool>("multisampling").value_or(true);
+	const auto samples			= configuration_table->get_as<int>("samples").value_or(8);
+	const auto srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
 
 	//extract window config
 	set_opengl_attribute_configuration(multisampling, samples, srgb_framebuffer);
-	const bool fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
+	const auto fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
 	sdl::Vec2i window_size;
 
 	const auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
@@ -194,7 +196,7 @@ scene* application::get_main_scene()
 	return main_scene;
 }
 
-void application::initialize_modern_opengl()
+void application::initialize_modern_opengl() const
 {
 	initialize_glew();
 	install_opengl_debug_callback();
@@ -390,13 +392,12 @@ void application::run_events()
 
 void application::run()
 {
-	auto buffer  = audio_system::get_buffer("/sounds/rubber_duck.wav");
-	auto* source = s.scene_root->push_child(create_node())->assign(audio_source());
+	const auto buffer = audio_system::get_buffer("/sounds/rubber_duck.wav");
+	auto* source	  = s.scene_root->push_child(create_node())->assign(audio_source());
 	source->set_buffer(buffer);
 	source->set_looping();
 	//	source->play();
 
-	//TODO refactor renderloop
 	while(running)
 	{
 #ifdef _DEBUG
@@ -413,17 +414,17 @@ void application::run()
 void application::setup_scene()
 {
 	//TODO everything about this sould be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
-	main_scene							   = &s;
-	texture_handle polutropon_logo_texture = texture_manager::create_texture();
+	main_scene									 = &s;
+	const texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
-		auto img							 = image("/polutropon.png");
+		const auto img						 = image("/polutropon.png");
 		auto& polutropon_logo_texture_object = texture_manager::get_from_handle(polutropon_logo_texture);
 		polutropon_logo_texture_object.load_from(img);
 		polutropon_logo_texture_object.generate_mipmaps();
 	}
 
 	// clang-format off
-	std::vector<float> plane =
+	const std::vector<float> plane =
 	{
 		//x=	y=		 z=			u=	v=		normal=
 		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,
@@ -432,7 +433,7 @@ void application::setup_scene()
 		0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,
 	};
 
-	std::vector<unsigned int> plane_indices =
+	const std::vector<unsigned int> plane_indices =
 	{
 		0, 1, 2, //triangle 0
 		1, 3, 2  //triangle 1
@@ -440,8 +441,8 @@ void application::setup_scene()
 	// clang-format on
 
 	//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
-	shader_handle simple_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	const shader_handle simple_shader	  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 	//set opengl clear color
 
@@ -460,11 +461,11 @@ void application::setup_scene()
 		cam_node->push_child(create_node())->assign(listener_marker());
 	}
 
-	auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
-	auto plane0			 = s.scene_root->push_child(create_node());
-	auto plane1			 = s.scene_root->push_child(create_node());
-	auto duck_root		 = s.scene_root->push_child(create_node());
-	auto duck			 = duck_root->push_child(create_node());
+	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
+	auto plane0				   = s.scene_root->push_child(create_node());
+	auto plane1				   = s.scene_root->push_child(create_node());
+	auto duck_root			   = s.scene_root->push_child(create_node());
+	auto duck				   = duck_root->push_child(create_node());
 	duck->assign(scene_object(duck_renderable));
 	duck->local_xform.set_scale(0.01f * transform::UNIT_SCALE);
 	plane0->assign(scene_object(textured_plane));

@@ -52,7 +52,7 @@ class application
 #endif
 #endif
 
-	void activate_vsync();
+	void activate_vsync() const;
 	void draw_debug_ui();
 	void update_timing();
 	void set_opengl_attribute_configuration(bool multisampling, int samples, bool srgb_framebuffer) const;
@@ -105,7 +105,7 @@ class application
 
 public:
 	static scene* get_main_scene();
-	void initialize_modern_opengl();
+	void initialize_modern_opengl() const;
 	void initialize_gui();
 	void render_frame();
 	void run_events();
