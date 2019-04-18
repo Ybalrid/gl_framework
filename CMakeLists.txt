@@ -15,8 +15,9 @@ ELSE()
 ENDIF ()
 
 IF (UNIX)
-        SET(JET_LIVE_BUILD_EXAMPLE OFF)
-        ADD_SUBDIRECTORY(third_party/jet-live)
+  SET(JET_LIVE_BUILD_EXAMPLE OFF)
+  INCLUDE(third_party/jet-live/cmake/jet_live_setup.cmake)
+        ADD_SUBDIRECTORY(third_party/jet-live/)
 		MESSAGE("we are using jet-live")
         ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
 ENDIF()

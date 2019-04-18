@@ -11,6 +11,7 @@
 
 #include "light.hpp"
 
+//The statics
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
 
@@ -74,7 +75,7 @@ void application::draw_debug_ui()
 	ImGui::Begin("Developement build", nullptr, ImGuiWindowFlags_NoCollapse);
 	ImGui::Text("This is a deveolpement debug build");
 #ifdef USING_JETLIVE
-	ImGui::Text("Dynamic recompilation is available.");
+	ImGui::Text("Dynamic recompilation is available via jet-live.");
 	ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
 #elif defined(WIN32)
 	ImGui::Text("Dynamic hot-reload of code is available via blink.");
@@ -505,6 +506,8 @@ void application::setup_scene()
 application::application(int argc, char** argv) :
  resources(argc > 0 ? argv[0] : nullptr)
 {
+	std::cout << "Hello there, this is only to test things!\n";
+
 	for(const auto& pak : resource_paks)
 	{
 		std::cerr << "Adding to resources " << pak << '\n';
