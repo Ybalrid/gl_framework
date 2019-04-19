@@ -52,13 +52,13 @@ class application
 #endif
 #endif
 
-	void activate_vsync();
+	void activate_vsync() const;
 	void draw_debug_ui();
 	void update_timing();
 	void set_opengl_attribute_configuration(bool multisampling, int samples, bool srgb_framebuffer) const;
 	void initialize_glew() const;
 	void install_opengl_debug_callback() const;
-	void configure_and_create_window();
+	void configure_and_create_window(const std::string& application_name);
 	void create_opengl_context();
 
 	freeimage free_img;
@@ -105,12 +105,12 @@ class application
 
 public:
 	static scene* get_main_scene();
-	void initialize_modern_opengl();
+	void initialize_modern_opengl() const;
 	void initialize_gui();
 	void render_frame();
 	void run_events();
 	void run();
 	void setup_scene();
-	application(int argc, char** argv);
+	application(int argc, char** argv, const std::string& application_name);
 	static std::vector<std::string> resource_paks;
 };
