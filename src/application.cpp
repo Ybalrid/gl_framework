@@ -506,8 +506,6 @@ void application::setup_scene()
 application::application(int argc, char** argv) :
  resources(argc > 0 ? argv[0] : nullptr)
 {
-	std::cout << "Hello there, this is only to test things!\n";
-
 	for(const auto& pak : resource_paks)
 	{
 		std::cerr << "Adding to resources " << pak << '\n';
