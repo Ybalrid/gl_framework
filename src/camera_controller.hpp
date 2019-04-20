@@ -51,5 +51,7 @@ public:
 	input_command* press(camera_controller_command::movement_type type) const;
 	input_command* release(camera_controller_command::movement_type type) const;
 
-	void apply_movement() const;
+	void apply_movement(float delta_frame_second) const;
+
+	float walk_speed = 3.0f; // m.s^-1
 };

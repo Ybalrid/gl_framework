@@ -1,4 +1,6 @@
 #include "camera_controller.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
 
 camera_controller::camera_controller(node* camera_node) : controlled_camera_node{camera_node}
 {
@@ -22,18 +24,30 @@ input_command* camera_controller::release(camera_controller_command::movement_ty
 	return command_objects[size_t(type) + size_t(camera_controller_command::movement_type::count)].get();
 }
 
-void camera_controller::apply_movement() const
+void camera_controller::apply_movement(float delta_frame_second) const
 {
-	std::cerr << "current states : " << left << right << up << down << '\n';
+	glm::vec3 movement_direction { 0.f };
+
+	if(down)
+		movement_direction.z += 1;
+	if(up)
+		movement_direction.z -= 1;
+	if(left)
+		movement_direction.x -= 1;
+	if(right)
+		movement_direction.x += 1;
+
+	if(glm::distance2(glm::vec3 { 0 }, movement_direction) > 0)
+	{
+		movement_direction = glm::normalize(movement_direction);
+		movement_direction *= (delta_frame_second * walk_speed);
+		controlled_camera_node->local_xform.translate(movement_direction);
+	}
 }
 
 void camera_controller_command::execute()
 {
 	const bool new_state = action_type_ == action_type::pressed;
-
-	#ifdef _DEBUG
-	std::cerr << __func__ << ' ' << new_state << '\n';
-	#endif
 
 	switch(movement_type_)
 	{

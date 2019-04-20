@@ -317,18 +317,7 @@ void application::run_events()
 					case SDL_SCANCODE_TAB:
 						debug_ui = !debug_ui;
 						break;
-					case SDL_SCANCODE_W:
-						up = true;
-						break;
-					case SDL_SCANCODE_S:
-						down = true;
-						break;
-					case SDL_SCANCODE_A:
-						left = true;
-						break;
-					case SDL_SCANCODE_D:
-						right = true;
-						break;
+
 					default: break;
 				}
 				break;
@@ -337,18 +326,6 @@ void application::run_events()
 				if(event.key.repeat) break;
 				switch(event.key.keysym.scancode)
 				{
-					case SDL_SCANCODE_W:
-						up = false;
-						break;
-					case SDL_SCANCODE_S:
-						down = false;
-						break;
-					case SDL_SCANCODE_A:
-						left = false;
-						break;
-					case SDL_SCANCODE_D:
-						right = false;
-						break;
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -367,27 +344,6 @@ void application::run_events()
 		}
 	}
 
-	//TODO build real input system for this
-	if(up)
-		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-										   + cam_node->local_xform.get_orientation()
-											   * last_frame_delta_sec
-											   * (glm::vec3(0, 0, -0.3f)));
-	if(down)
-		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-										   + cam_node->local_xform.get_orientation()
-											   * last_frame_delta_sec
-											   * (glm::vec3(0, 0, 0.3f)));
-	if(left)
-		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-										   + cam_node->local_xform.get_orientation()
-											   * last_frame_delta_sec
-											   * (glm::vec3(-0.3f, 0, 0)));
-	if(right)
-		cam_node->local_xform.set_position(cam_node->local_xform.get_position()
-										   + cam_node->local_xform.get_orientation()
-											   * last_frame_delta_sec
-											   * (glm::vec3(0.3f, 0, 0)));
 	if(mouse)
 	{
 		auto q = cam_node->local_xform.get_orientation();
@@ -396,7 +352,7 @@ void application::run_events()
 		cam_node->local_xform.set_orientation(q);
 	}
 
-	fps_camera_controller->apply_movement();
+	fps_camera_controller->apply_movement(last_frame_delta_sec);
 }
 
 void application::run()

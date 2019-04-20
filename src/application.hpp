@@ -103,7 +103,7 @@ class application
 	std::array<point_light*, 4> p_lights { nullptr, nullptr, nullptr, nullptr };
 
 	//key states
-	bool up = false, down = false, left = false, right = false, mouse = false;
+	bool mouse = false;
 	float mousex = 0, mousey = 0;
 
 	audio_system audio;
