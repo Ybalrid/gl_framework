@@ -1,19 +1,30 @@
 #include "input_handler.hpp"
 #include <iostream>
 
+#include "nameof.hpp"
+
+input_command* input_handler::keypress(SDL_Scancode code)
+{
+	return keypress_commands[code];
+}
+
+input_command* input_handler::keyrelease(SDL_Scancode code)
+{
+	return keyrelease_commands[code];
+}
+
 input_command* input_handler::event(const sdl::Event& e)
 {
-	using std::cout;
 	switch(e.type)
 	{
 		case SDL_KEYDOWN:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
+			if(e.key.repeat || imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
 				break;
-			break;
+			return keypress(e.key.keysym.scancode);
 		case SDL_KEYUP:
-			if(imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
+			if(e.key.repeat || imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
 				break;
-			break;
+			return keyrelease(e.key.keysym.scancode);
 		case SDL_MOUSEMOTION:
 			if(imgui && imgui->WantCaptureMouse)
 				break;
@@ -42,6 +53,20 @@ input_command* input_handler::event(const sdl::Event& e)
 input_handler::input_handler() :
  controllers(sdl::GameController::open_all_available_controllers())
 {
+	std::generate(keypress_commands.begin(), keypress_commands.end(), []{return nullptr;});
+	std::generate(keyrelease_commands.begin(), keyrelease_commands.end(), []{return nullptr;});
+}
+
+void input_handler::register_keypress(SDL_Scancode code, input_command* command)
+{
+	assert(code < SDL_NUM_SCANCODES);
+	keypress_commands[code] = command;
+}
+
+void input_handler::register_keyrelease(SDL_Scancode code, input_command* command)
+{
+	assert(code < SDL_NUM_SCANCODES);
+	keyrelease_commands[code] = command;
 }
 
 void input_handler::setup_imgui()

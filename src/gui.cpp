@@ -231,6 +231,8 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
+	ImVec4* colors			 = ImGui::GetStyle().Colors;
+	colors[ImGuiCol_FrameBg] = ImVec4(0.52f, 0.52f, 0.52f, 0.20f);
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 330");
 

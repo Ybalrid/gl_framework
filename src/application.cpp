@@ -52,38 +52,44 @@ void application::draw_debug_ui()
 
 	if(debug_ui)
 	{
-		if(ImGui::Begin("Debug Window", &debug_ui))
+		if(ImGui::Begin("Debugger Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
-			ImGui::Checkbox("Show demo window ?", &show_demo_window);
-			ImGui::Checkbox("Show style editor?", &show_style_editor);
+			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
+			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
 
 			if(show_demo_window)
 				ImGui::ShowDemoWindow(&show_demo_window);
 		}
 		ImGui::End();
+
 		if(show_style_editor)
 		{
-			ImGui::Begin("Style Editor", &show_style_editor);
-			ImGui::ShowStyleEditor();
+			if(ImGui::Begin("Style Editor", &show_style_editor))
+				ImGui::ShowStyleEditor();
 			ImGui::End();
 		}
 	}
 
 #ifndef NON_NAGGING_DEBUG
 #ifdef _DEBUG
-	ImGui::Begin("Development build", nullptr, ImGuiWindowFlags_NoCollapse);
-	ImGui::Text("This is a development debug build");
-#ifdef USING_JETLIVE
-	ImGui::Text("Dynamic recompilation is available via jet-live.");
-	ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
+	const int x = 400, y = 75;
+	ImGui::SetNextWindowPos({ 0, float(window.size().y - y) });
+	ImGui::SetNextWindowSize({ float(x), float(y) });
+	if(ImGui::Begin("Development build", nullptr, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
+	{
+		ImGui::Text("This program is a development Debug Build.");
+#if defined(USING_JETLIVE)
+		ImGui::Text("Dynamic recompilation is available via jet-live.");
+		ImGui::Text("Change a source file, and hit Ctrl+R to hotload.");
 #elif defined(WIN32)
-	ImGui::Text("Dynamic hot-reload of code is available via blink.");
-	ImGui::Text("Attach blink to pid %d to hot-reload changed code", _getpid());
-#endif
+		ImGui::Text("Dynamic hot-reload of code is available via blink.");
+		ImGui::Text("Attach blink to pid %d to hot-reload changed code.", _getpid());
+#endif //dynamic hotreloader
+	}
 	ImGui::End();
-#endif
-#endif
+#endif //_DEBUG
+#endif //NON_NAGGING_DEBUG
 }
 
 void application::update_timing()
@@ -127,9 +133,10 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 
 void application::initialize_glew() const
 {
-	if(glewInit() != GLEW_OK)
+	if(const auto state = glewInit(); state != GLEW_OK)
 	{
 		std::cerr << "cannot init glew\n";
+		std::cerr << glewGetErrorString(state);
 		abort();
 	}
 	std::cout << "Initialized GLEW " << glewGetString(GLEW_VERSION) << '\n';
@@ -270,7 +277,7 @@ void application::run_events()
 
 		auto command = inputs.event(event);
 		if(command)
-			command->execute(cam_node);
+			command->execute();
 
 		//Maybe move this thing too... xD
 		switch(event.type)
@@ -388,6 +395,8 @@ void application::run_events()
 		q	  = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
 		cam_node->local_xform.set_orientation(q);
 	}
+
+	fps_camera_controller->apply_movement();
 }
 
 void application::run()
@@ -460,7 +469,18 @@ void application::setup_scene()
 
 		cam_node->push_child(create_node())->assign(listener_marker());
 	}
+	fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
+	inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
+	inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
+	inputs.register_keypress(SDL_SCANCODE_W, fps_camera_controller->press(camera_controller_command::movement_type::up));
+	inputs.register_keypress(SDL_SCANCODE_S, fps_camera_controller->press(camera_controller_command::movement_type::down));
+	inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
+	inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
+	inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
+	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
+
+	//TODO build a real level system!
 	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
 	auto plane0				   = s.scene_root->push_child(create_node());
 	auto plane1				   = s.scene_root->push_child(create_node());

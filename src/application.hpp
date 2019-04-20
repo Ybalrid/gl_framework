@@ -27,6 +27,7 @@
 #include "renderable_manager.hpp"
 #include "audio_system.hpp"
 #include "input_handler.hpp"
+#include "camera_controller.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -60,6 +61,11 @@ class application
 	void install_opengl_debug_callback() const;
 	void configure_and_create_window(const std::string& application_name);
 	void create_opengl_context();
+	void initialize_modern_opengl() const;
+	void initialize_gui();
+	void render_frame();
+	void run_events();
+	void setup_scene();
 
 	freeimage free_img;
 	resource_system resources;
@@ -102,15 +108,11 @@ class application
 
 	audio_system audio;
 	input_handler inputs;
+	std::unique_ptr<camera_controller> fps_camera_controller = nullptr;
 
 public:
 	static scene* get_main_scene();
-	void initialize_modern_opengl() const;
-	void initialize_gui();
-	void render_frame();
-	void run_events();
 	void run();
-	void setup_scene();
 	application(int argc, char** argv, const std::string& application_name);
 	static std::vector<std::string> resource_paks;
 };
