@@ -19,7 +19,7 @@ class input_handler
 	std::array<input_command*, SDL_Scancode::SDL_NUM_SCANCODES> keypress_commands, keyrelease_commands;
 
 public:
-	input_command* event(const sdl::Event& e);
+	input_command* process_input_event(const sdl::Event& e);
 	void setup_imgui();
 	input_handler();
 

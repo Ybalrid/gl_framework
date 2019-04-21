@@ -2,7 +2,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 
-camera_controller::camera_controller(node* camera_node) : controlled_camera_node{camera_node}
+camera_controller::camera_controller(node* camera_node) :
+ controlled_camera_node { camera_node }
 {
 	command_objects[0] = std::make_unique<camera_controller_command>(this, camera_controller_command::movement_type::left, camera_controller_command::action_type::pressed);
 	command_objects[1] = std::make_unique<camera_controller_command>(this, camera_controller_command::movement_type::right, camera_controller_command::action_type::pressed);
@@ -27,7 +28,6 @@ input_command* camera_controller::release(camera_controller_command::movement_ty
 void camera_controller::apply_movement(float delta_frame_second) const
 {
 	glm::vec3 movement_direction { 0.f };
-
 	if(down)
 		movement_direction.z += 1;
 	if(up)
@@ -37,11 +37,10 @@ void camera_controller::apply_movement(float delta_frame_second) const
 	if(right)
 		movement_direction.x += 1;
 
-	if(glm::distance2(glm::vec3 { 0 }, movement_direction) > 0)
+	if(transform::VEC_ZERO != movement_direction)
 	{
-		movement_direction = glm::normalize(movement_direction);
-		movement_direction *= (delta_frame_second * walk_speed);
-		controlled_camera_node->local_xform.translate(movement_direction);
+		movement_direction = glm::normalize(movement_direction) * (delta_frame_second * walk_speed);
+		controlled_camera_node->local_xform.translate(movement_direction); //TODO use the node orientation to rotate the movement_direction vector
 	}
 }
 
@@ -53,16 +52,16 @@ void camera_controller_command::execute()
 	{
 		case movement_type::left:
 			owner_->left = new_state;
-		break;
+			break;
 		case movement_type::right:
 			owner_->right = new_state;
-		break;
+			break;
 		case movement_type::up:
 			owner_->up = new_state;
-		break;
+			break;
 		case movement_type::down:
 			owner_->down = new_state;
-		break;
+			break;
 
 		default:
 			break;

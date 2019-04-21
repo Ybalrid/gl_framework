@@ -24,7 +24,7 @@ public:
 	enum class action_type { pressed,
 							 released };
 	camera_controller_command(camera_controller* owner, movement_type mvmt, action_type act) :
-	 owner_ { owner }, movement_type_ {mvmt}, action_type_ { act } {}
+	 owner_ { owner }, movement_type_ { mvmt }, action_type_ { act } {}
 
 	void execute() override;
 

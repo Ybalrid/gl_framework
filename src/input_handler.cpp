@@ -13,7 +13,7 @@ input_command* input_handler::keyrelease(SDL_Scancode code)
 	return keyrelease_commands[code];
 }
 
-input_command* input_handler::event(const sdl::Event& e)
+input_command* input_handler::process_input_event(const sdl::Event& e)
 {
 	switch(e.type)
 	{
@@ -51,10 +51,8 @@ input_command* input_handler::event(const sdl::Event& e)
 }
 
 input_handler::input_handler() :
- controllers(sdl::GameController::open_all_available_controllers())
+ controllers(sdl::GameController::open_all_available_controllers()), keypress_commands{nullptr}, keyrelease_commands{nullptr}
 {
-	std::generate(keypress_commands.begin(), keypress_commands.end(), []{return nullptr;});
-	std::generate(keyrelease_commands.begin(), keyrelease_commands.end(), []{return nullptr;});
 }
 
 void input_handler::register_keypress(SDL_Scancode code, input_command* command)

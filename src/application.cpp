@@ -275,8 +275,7 @@ void application::run_events()
 		//For ImGui
 		ui.handle_event(event);
 
-		auto command = inputs.event(event);
-		if(command)
+		if(auto command { inputs.process_input_event(event) }; command)
 			command->execute();
 
 		//Maybe move this thing too... xD
