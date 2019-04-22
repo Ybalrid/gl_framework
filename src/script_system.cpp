@@ -57,46 +57,35 @@ void script_system::register_imgui_library(gui* ui)
 	imgui_registered = true;
 
 	//Pipe the console I/O to this
-	//Declare a chaiscript function that pipe text output to the imgui console. Override the `print()` function to use it
+	//Declare a chaiscript function that pipe text output to the imgui console. Then override the `print()` function to use it
 	chai.add(fun([=](const std::string& str) { gui_ptr->push_to_console(str); }), "handle_output");
 	chai.eval("global print = fun(x) { handle_output (to_string(x)); }");
+	//After declaring a global (print) function here, any printing made by chaiscript will be sent to handle_output.
+	//Handle output will systematically take advantage of a "to_string" function. All built-in chaiscript types have one.
+	//Anything that can be written in the form of `object.to_string()` or `to_string(object)` will automatically work with this system.
+
 	//add a function to clear the console
 	chai.add(fun([=] { gui_ptr->clear_console(); }), "clear");
-
-	//TODO move this boolean to C++ land
-	chai.eval("var chai_window_is_open = true");
 }
 
 void script_system::update(float delta)
 {
+	//TODO run update on "scriptable entities" whatever they are
 	(void)delta;
 	auto& chai = pimpl->get();
-
-	//This is just to show that ChaiScript can use the immediate mode gui
-	chai.eval(R"chai(
-if(chai_window_is_open)
-{
-	ImGui_Begin("From Chai", chai_window_is_open);
-	ImGui_Text("The content of this window is generated from\n the `script_system::update()` method");
-	ImGui_Text("This just flexes the bindings of ChaiScript to ImGui.");
-	ImGui_Text("This is controlled by the value of the `chai_window_is_open` boolean");
-	ImGui_End();
-}
-)chai");
-
-	//TODO run update on "scriptable entities" whatever they are
+	(void)chai;
 }
 
 //This is our entry point to run chaiscript code from outside
 //TODO manage chaiscript exceptions that way
-void script_system::eval_string(const std::string& input)
+void script_system::eval_string(const std::string& input) const
 {
 	auto& chai = pimpl->get();
 	chai.eval(input);
 }
 
 #include <algorithm>
-std::vector<std::string> script_system::global_scope_object_names()
+std::vector<std::string> script_system::global_scope_object_names() const
 {
 	auto& chai = pimpl->get();
 
@@ -205,7 +194,7 @@ void script_system::install_additional_api()
 	                 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, listener_marker>)
 	                    type = "audio_listener_marker";
 					 else
-						 type = "???????? :O";
+						 type = std::string("???????? :O TODO add missing node type in ") + __FILE__ + " " + std::to_string(__LINE__);
 				 });
 				 return "node : " + std::to_string(n->get_id())
 					 + (n->get_parent() ? "\nchild of :" + std::to_string(n->get_parent()->get_id()) : "") + "\n"
@@ -229,6 +218,8 @@ void script_system::install_additional_api()
 			 }),
 			 "to_string");
 	// clang-format on
+
+	chai.add(fun(&sdl::Mouse::set_relative), "set_mouse_relative");
 
 	//TODO light integration
 	//TODO physicsfs exploration?

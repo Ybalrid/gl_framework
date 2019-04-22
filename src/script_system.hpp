@@ -16,7 +16,7 @@ public:
 
 	void register_imgui_library(gui* ui);
 	void update(float delta);
-	void eval_string(const std::string& input);
+	void eval_string(const std::string& input) const;
 
 	bool operator()(const std::string& str) override
 	{
@@ -33,7 +33,7 @@ public:
 		return true;
 	}
 
-	std::vector<std::string> global_scope_object_names();
+	std::vector<std::string> global_scope_object_names() const;
 
 private:
 	//ChaiScript is HUGE.

@@ -52,6 +52,7 @@ void application::draw_debug_ui()
 
 	if(debug_ui)
 	{
+		sdl::Mouse::set_relative(false);
 		if(ImGui::Begin("Debugger Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
@@ -267,9 +268,7 @@ void application::render_frame()
 
 void application::run_events()
 {
-	//TODO move this thing to somewhere else
 	//event polling
-	mousex = mousey = 0;
 	while(event.poll())
 	{
 		//For ImGui
@@ -278,24 +277,10 @@ void application::run_events()
 		if(auto command { inputs.process_input_event(event) }; command)
 			command->execute();
 
-		//Maybe move this thing too... xD
 		switch(event.type)
 		{
-			case SDL_QUIT:
+			case SDL_QUIT: //quit program when window is closed
 				running = false;
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if(ImGui::GetIO().WantCaptureMouse) break;
-				mouse = true;
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if(ImGui::GetIO().WantCaptureMouse) break;
-				mouse = false;
-				break;
-			case SDL_MOUSEMOTION:
-				if(ImGui::GetIO().WantCaptureMouse) break;
-				mousex = float(event.motion.xrel);
-				mousey = float(event.motion.yrel);
 				break;
 
 			case SDL_KEYDOWN:
@@ -307,10 +292,12 @@ void application::run_events()
 						if(!ui.is_console_showed())
 						{
 							ui.show_console();
+							sdl::Mouse::set_relative(false);
 						}
 						else
 						{
 							ui.hide_console();
+							sdl::Mouse::set_relative(true);
 						}
 						break;
 					case SDL_SCANCODE_TAB:
@@ -343,25 +330,11 @@ void application::run_events()
 		}
 	}
 
-	if(mouse)
-	{
-		auto q = cam_node->local_xform.get_orientation();
-		q	  = glm::rotate(q, glm::radians(mousex * last_frame_delta_sec * -5), transform::Y_AXIS);
-		q	  = glm::rotate(q, glm::radians(mousey * last_frame_delta_sec * -5), transform::X_AXIS);
-		cam_node->local_xform.set_orientation(q);
-	}
-
 	fps_camera_controller->apply_movement(last_frame_delta_sec);
 }
 
 void application::run()
 {
-	const auto buffer = audio_system::get_buffer("/sounds/rubber_duck.wav");
-	auto* source	  = s.scene_root->push_child(create_node())->assign(audio_source());
-	source->set_buffer(buffer);
-	source->set_looping();
-	//	source->play();
-
 	while(running)
 	{
 #ifdef _DEBUG
@@ -434,6 +407,8 @@ void application::setup_scene()
 	inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
 	inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
 	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
+	inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
+	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
 
 	//TODO build a real level system!
 	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
@@ -493,4 +468,6 @@ application::application(int argc, char** argv, const std::string& application_n
 	initialize_modern_opengl();
 	initialize_gui();
 	setup_scene();
+
+	sdl::Mouse::set_relative(true);
 }

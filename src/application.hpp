@@ -102,10 +102,6 @@ class application
 	directional_light sun;
 	std::array<point_light*, 4> p_lights { nullptr, nullptr, nullptr, nullptr };
 
-	//key states
-	bool mouse = false;
-	float mousex = 0, mousey = 0;
-
 	audio_system audio;
 	input_handler inputs;
 	std::unique_ptr<camera_controller> fps_camera_controller = nullptr;
