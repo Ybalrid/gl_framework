@@ -36,16 +36,16 @@ input_command* input_handler::process_input_event(const sdl::Event& e)
 	switch(e.type)
 	{
 		case SDL_KEYDOWN:
-			if(e.key.repeat || imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
+			if(e.key.repeat || imgui && ((imgui->WantCaptureKeyboard || imgui->WantTextInput) && e.key.keysym.scancode != SDL_SCANCODE_GRAVE))
 				break;
-			if(auto command = keypress(e.key.keysym.scancode, e.key.keysym.mod); command)
+			if(const auto command = keypress(e.key.keysym.scancode, e.key.keysym.mod); command)
 				return command;
 			return keyany(e.key.keysym.scancode, e.key.keysym.mod);
 
 		case SDL_KEYUP:
 			if(e.key.repeat || imgui && (imgui->WantCaptureKeyboard || imgui->WantTextInput))
 				break;
-			if(auto command = keyrelease(e.key.keysym.scancode, e.key.keysym.mod); command)
+			if(const auto command = keyrelease(e.key.keysym.scancode, e.key.keysym.mod); command)
 				return command;
 			return keyany(e.key.keysym.scancode, e.key.keysym.mod);
 		case SDL_MOUSEMOTION:
@@ -78,7 +78,8 @@ input_handler::input_handler() :
  controllers(sdl::GameController::open_all_available_controllers()),
  keypress_commands { nullptr },
  keyrelease_commands { nullptr },
- keyany_commands { nullptr }
+ keyany_commands { nullptr },
+ mouse_motion_command { nullptr }
 {
 }
 

@@ -63,6 +63,7 @@ class camera_controller
 	bool up		= false;
 	bool down   = false;
 	bool running = false;
+	bool fly = false;
 	float scaled_yaw = 0;
 	float scaled_pitch = 0;
 	float scaler = 0.001f;

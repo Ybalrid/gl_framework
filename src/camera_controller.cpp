@@ -57,7 +57,7 @@ void camera_controller::apply_movement(float delta_frame_second)
 	if(transform::VEC_ZERO != movement_vector)
 	{
 		movement_vector = controlled_camera_node->local_xform.get_orientation() * movement_vector;
-		movement_vector.y = 0; //Doing this is actually the only difference between walking and flying.
+		if(!fly) movement_vector.y = 0; //Doing this is actually the only difference between walking and flying.
 		movement_vector = glm::normalize(movement_vector) * (delta_frame_second * (running? run_speed : walk_speed));
 		controlled_camera_node->local_xform.translate(movement_vector);
 	}

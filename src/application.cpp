@@ -271,63 +271,16 @@ void application::run_events()
 	//event polling
 	while(event.poll())
 	{
+		//Check windowing events
+		if(event.type == SDL_QUIT)
+			running = false;
+
 		//For ImGui
 		ui.handle_event(event);
 
-		if(auto command { inputs.process_input_event(event) }; command)
+		//Process input events
+		if(const auto command { inputs.process_input_event(event) }; command)
 			command->execute();
-
-		switch(event.type)
-		{
-			case SDL_QUIT: //quit program when window is closed
-				running = false;
-				break;
-
-			case SDL_KEYDOWN:
-				if(ImGui::GetIO().WantCaptureKeyboard && event.key.keysym.scancode != SDL_SCANCODE_GRAVE) break;
-				if(event.key.repeat) break;
-				switch(event.key.keysym.scancode)
-				{
-					case SDL_SCANCODE_GRAVE:
-						if(!ui.is_console_showed())
-						{
-							ui.show_console();
-							sdl::Mouse::set_relative(false);
-						}
-						else
-						{
-							ui.hide_console();
-							sdl::Mouse::set_relative(true);
-						}
-						break;
-					case SDL_SCANCODE_TAB:
-						debug_ui = !debug_ui;
-						break;
-
-					default: break;
-				}
-				break;
-			case SDL_KEYUP:
-				if(ImGui::GetIO().WantCaptureKeyboard) break;
-				if(event.key.repeat) break;
-				switch(event.key.keysym.scancode)
-				{
-
-#ifdef USING_JETLIVE
-#ifdef _DEBUG
-					case SDL_SCANCODE_R:
-						if(event.key.keysym.mod & SDL_Keymod::KMOD_LCTRL)
-							liveInstance.tryReload();
-						break;
-#endif
-#endif
-
-					default: break;
-				}
-				break;
-			default:
-				break;
-		}
 	}
 
 	fps_camera_controller->apply_movement(last_frame_delta_sec);
@@ -409,6 +362,9 @@ void application::setup_scene()
 	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
 	inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
 	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
+	inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
+	inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
+	inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reaload_command);
 
 	//TODO build a real level system!
 	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
@@ -470,4 +426,37 @@ application::application(int argc, char** argv, const std::string& application_n
 	setup_scene();
 
 	sdl::Mouse::set_relative(true);
+}
+
+void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()
+{
+	if(parent_->ui.is_console_showed())
+	{
+		parent_->ui.hide_console();
+		sdl::Mouse::set_relative(true);
+	}
+	else
+	{
+		parent_->ui.show_console();
+		sdl::Mouse::set_relative(false);
+	}
+}
+
+void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::execute()
+{
+	parent_->debug_ui = !parent_->debug_ui;
+}
+
+void application::keyboard_debug_utilities_::toggle_live_code_reaload_command_::execute()
+{
+	#ifdef _DEBUG
+	if(modifier & KMOD_LCTRL)
+	{
+		#ifdef USING_JETLIVE
+		parent_->liveInstance.tryReload();
+		#else
+		parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
+		#endif
+	}
+	#endif
 }
