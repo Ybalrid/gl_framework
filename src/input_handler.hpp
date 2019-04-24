@@ -16,9 +16,12 @@ class input_handler
 	input_command* keypress(SDL_Scancode code, uint16_t mod);
 	input_command* keyrelease(SDL_Scancode code, uint16_t mod);
 	input_command* keyany(SDL_Scancode code, uint16_t mod);
-	input_command* mouse_motion(sdl::Vec2i motion);
+	input_command* mouse_motion(sdl::Vec2i relative_motion, sdl::Vec2i absolute_position);
+	input_command* mouse_button_down(uint8_t button, sdl::Vec2i absolute_position);
+	input_command* mouse_button_up(uint8_t button, sdl::Vec2i absolute_position);
 
 	std::array<keyboard_input_command*, SDL_Scancode::SDL_NUM_SCANCODES> keypress_commands, keyrelease_commands, keyany_commands;
+	std::array<mouse_input_command*, 5> mouse_button_down_commands, mouse_button_up_commands;
 	mouse_input_command* mouse_motion_command;
 
 public:
@@ -30,4 +33,6 @@ public:
 	void register_keyrelease(SDL_Scancode code, keyboard_input_command* command);
 	void register_keyany(SDL_Scancode code, keyboard_input_command* command);
 	void register_mouse_motion_command(mouse_input_command* command);
+	void register_mouse_button_down_command(uint8_t sdl_mouse_button_name, mouse_input_command* command);
+	void register_mouse_button_up_command(uint8_t sdl_mouse_button_name, mouse_input_command* command);
 };

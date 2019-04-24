@@ -93,8 +93,8 @@ void camera_controller_command::execute()
 
 void camera_controller_mouse_command::execute()
 {
-	owner_->scaled_yaw -= owner_->scaler * motion.x;
-	owner_->scaled_pitch -= owner_->scaler * motion.y;
+	owner_->scaled_yaw -= owner_->scaler * relative_motion.x;
+	owner_->scaled_pitch -= owner_->scaler * relative_motion.y;
 	owner_->scaled_pitch = glm::clamp(owner_->scaled_pitch, -glm::half_pi<float>(), glm::half_pi<float>());
 }
 

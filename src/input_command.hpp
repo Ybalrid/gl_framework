@@ -10,12 +10,13 @@ struct input_command
 
 struct mouse_input_command : input_command
 {
-	sdl::Vec2i motion;
+	sdl::Vec2i relative_motion { 0, 0 }, absolute_position { 0, 0 };
+	uint8_t click = 0;
 };
 
 struct keyboard_input_command : input_command
 {
-	uint16_t modifier;
+	uint16_t modifier = 0;
 };
 
 struct gamepad_button_command : input_command //this one exist for API consistency.
@@ -24,5 +25,5 @@ struct gamepad_button_command : input_command //this one exist for API consisten
 
 struct gamepad_axis_command : input_command
 {
-	int16_t value;
+	int16_t value = 0;
 };
