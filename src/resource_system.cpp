@@ -56,10 +56,10 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
 	PHYSFS_Stat stat;
 
 	//List files
-	const auto list = PHYSFS_enumerateFiles(root.c_str());
+	const auto list = PHYSFS_enumerateFiles(root.c_str()); //returns an array of char*
 	for(auto strptr = list; *strptr != nullptr; strptr++)
-		output.emplace_back(*strptr);
-	PHYSFS_freeList(list);
+		output.emplace_back(*strptr); //construct std::strings on the fly
+	PHYSFS_freeList(list);			  //do not forget to free the array!
 
 	//Recurse on subdirectories if this is true
 	if(recursive)
@@ -70,8 +70,8 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
 			//Get full path of (pontential) subdirectory
 			const auto file = output[i];
 			auto path		= root;
-			if(path[path.size() - 1] != '/') path += "/";
-			path += file;
+			if(path[path.size() - 1] != '/') path += "/"; //in case root doesn't end with "/"
+			path += file;								  //This file may, or may not be a directory. path is a full path form root to it
 
 			//Check if file is a directory
 			if(PHYSFS_stat(path.c_str(), &stat) != 0 && stat.filetype == PHYSFS_FILETYPE_DIRECTORY)
@@ -97,5 +97,5 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
 
 	//Sort them
 	std::sort(output.begin(), output.end());
-	return output;
+	return output; //should benefit from rvo
 }
