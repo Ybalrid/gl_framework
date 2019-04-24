@@ -419,6 +419,12 @@ application::application(int argc, char** argv, const std::string& application_n
 		resource_system::add_location(pak);
 	}
 
+	const auto files = resource_system::list_files("/", true);
+	for(auto file : files)
+	{
+		std::cout << file << '\n';
+	}
+
 	configure_and_create_window(application_name);
 	create_opengl_context();
 	initialize_modern_opengl();
@@ -449,14 +455,14 @@ void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::exe
 
 void application::keyboard_debug_utilities_::toggle_live_code_reaload_command_::execute()
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	if(modifier & KMOD_LCTRL)
 	{
-		#ifdef USING_JETLIVE
+#ifdef USING_JETLIVE
 		parent_->liveInstance.tryReload();
-		#else
+#else
 		parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
-		#endif
+#endif
 	}
-	#endif
+#endif
 }

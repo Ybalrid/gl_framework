@@ -13,4 +13,5 @@ public:
 	~resource_system();
 	static void add_location(const std::string& real_path, bool last = true);
 	static std::vector<uint8_t> get_file(const std::string& virtual_path);
+	static std::vector<std::string> list_files(const std::string& root = "/", bool recursive = false);
 };
