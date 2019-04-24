@@ -341,7 +341,7 @@ void application::setup_scene()
 	{
 		camera cam_obj;
 		cam_obj.fov = 45;
-		cam_node->local_xform.set_position({ 0, 5, 5 });
+		cam_node->local_xform.set_position({ 0, 1.75f, 5 });
 		cam_node->local_xform.set_orientation(glm::angleAxis(glm::radians(-45.f), transform::X_AXIS));
 		cam_node->assign(std::move(cam_obj));
 		main_camera = cam_node->get_if_is<camera>();
@@ -411,7 +411,7 @@ application::application(int argc, char** argv, const std::string& application_n
 {
 	inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
 	inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
-	inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reaload_command);
+	inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reload_command);
 
 	for(const auto& pak : resource_paks)
 	{
@@ -419,11 +419,11 @@ application::application(int argc, char** argv, const std::string& application_n
 		resource_system::add_location(pak);
 	}
 
-	const auto files = resource_system::list_files("/", true);
-	for(auto file : files)
-	{
-		std::cout << file << '\n';
-	}
+	//const auto files = resource_system::list_files("/", true);
+	//for(const auto& file : files)
+	//{
+	//	std::cout << file << '\n';
+	//}
 
 	configure_and_create_window(application_name);
 	create_opengl_context();
@@ -453,7 +453,7 @@ void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::exe
 	parent_->debug_ui = !parent_->debug_ui;
 }
 
-void application::keyboard_debug_utilities_::toggle_live_code_reaload_command_::execute()
+void application::keyboard_debug_utilities_::toggle_live_code_reload_command_::execute()
 {
 #ifdef _DEBUG
 	if(modifier & KMOD_LCTRL)
@@ -461,7 +461,10 @@ void application::keyboard_debug_utilities_::toggle_live_code_reaload_command_::
 #ifdef USING_JETLIVE
 		parent_->liveInstance.tryReload();
 #else
-		parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
+		static bool first_print = false;
+		if(!first_print)
+			parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
+		first_print = true;
 #endif
 	}
 #endif

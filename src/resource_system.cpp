@@ -58,8 +58,8 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
 	//List files
 	const auto list = PHYSFS_enumerateFiles(root.c_str()); //returns an array of char*
 	for(auto strptr = list; *strptr != nullptr; strptr++)
-		output.emplace_back(*strptr); //construct std::strings on the fly
-	PHYSFS_freeList(list);			  //do not forget to free the array!
+		output.emplace_back(*strptr); //Construct std::strings on the fly
+	PHYSFS_freeList(list);			  //Do not forget to free the array!
 
 	//Recurse on subdirectories if this is true
 	if(recursive)
@@ -67,20 +67,20 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
 		//Cannot use an iterator that would be invalidated, iterate by index
 		for(size_t i = 0; i < output.size(); ++i)
 		{
-			//Get full path of (pontential) subdirectory
+			//Get full path of (potential) subdirectories
 			const auto file = output[i];
 			auto path		= root;
-			if(path[path.size() - 1] != '/') path += "/"; //in case root doesn't end with "/"
+			if(path[path.size() - 1] != '/') path += "/"; //In case root doesn't end with "/"
 			path += file;								  //This file may, or may not be a directory. path is a full path form root to it
 
 			//Check if file is a directory
 			if(PHYSFS_stat(path.c_str(), &stat) != 0 && stat.filetype == PHYSFS_FILETYPE_DIRECTORY)
 			{
-				//append to the output all the files from the subdirectory
-				const auto recursed = list_files(path, true);
-				for(const auto& recursed_file : recursed)
+				//Append to the output all the files from the subdirectory
+				const auto files_in_subdir = list_files(path, true);
+				for(const auto& file_in_subdir : files_in_subdir)
 				{
-					output.push_back(path + recursed_file); //as path starting from root
+					output.push_back(path + file_in_subdir); //as path starting from root
 				}
 			}
 		}

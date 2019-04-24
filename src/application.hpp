@@ -42,8 +42,6 @@ public:
 #endif
 #endif
 
-//class gltf_loader;
-
 class application
 {
 
@@ -111,35 +109,26 @@ class application
 		application* parent_;
 		struct toggle_console_keyboard_command_ : keyboard_input_command
 		{
-			
 			application* parent_;
-
 			void execute() override;
-
 			toggle_console_keyboard_command_(application* parent): parent_{parent}{}
 		}toggle_console_keyboard_command{parent_};
 
 		struct toggle_debug_keyboard_command_ : keyboard_input_command
 		{
 			application* parent_;
-
 			void execute() override;
-
 			toggle_debug_keyboard_command_(application* parent) : parent_{parent}{};
-
 		}toggle_debug_keyboard_command{parent_};
 
-		struct toggle_live_code_reaload_command_ : keyboard_input_command
+		struct toggle_live_code_reload_command_ : keyboard_input_command
 		{
 			application* parent_;
-
 			void execute() override;
-
-			toggle_live_code_reaload_command_(application* parent) : parent_{parent}{};
-		}toggle_live_code_reaload_command{parent_};
+			toggle_live_code_reload_command_(application* parent) : parent_{parent}{};
+		}toggle_live_code_reload_command{parent_};
 
 		keyboard_debug_utilities_(application* parent):parent_{parent}{}
-
 	} keyboard_debug_utilities{this};
 
 public:
