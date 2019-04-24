@@ -163,7 +163,7 @@ void application::configure_and_create_window(const std::string& application_nam
 {
 	//load config
 	auto configuration_data = resource_system::get_file("/config.toml");
-	configuration_data.push_back('\0');
+	configuration_data.push_back('\0'); //add a string terminator
 	const std::string configuration_text(reinterpret_cast<const char*>(configuration_data.data()));
 	std::istringstream configuration_stream(configuration_text);
 	auto config_toml			   = cpptoml::parser(configuration_stream);
@@ -330,7 +330,6 @@ void application::setup_scene()
 	};
 	// clang-format on
 
-	//	shader_handle unlit_shader		 = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
 	const shader_handle simple_shader	  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
 	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
@@ -362,9 +361,6 @@ void application::setup_scene()
 	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
 	inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
 	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
-	inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
-	inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
-	inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reaload_command);
 
 	//TODO build a real level system!
 	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
@@ -413,6 +409,10 @@ void application::setup_scene()
 application::application(int argc, char** argv, const std::string& application_name) :
  resources(argc > 0 ? argv[0] : nullptr)
 {
+	inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
+	inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
+	inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reaload_command);
+
 	for(const auto& pak : resource_paks)
 	{
 		std::cerr << "Adding to resources " << pak << '\n';

@@ -17,7 +17,6 @@ camera_controller::camera_controller(node* camera_node) :
 	command_objects[7] = std::make_unique<camera_controller_command>(this, camera_controller_command::movement_type::down, camera_controller_command::action_type::released);
 	mouse_command_object = std::make_unique<camera_controller_mouse_command>(this);
 	running_state_command = std::make_unique<camera_controller_run_modifier>(this);
-
 }
 
 keyboard_input_command* camera_controller::press(camera_controller_command::movement_type type) const
@@ -88,7 +87,6 @@ void camera_controller_command::execute()
 		default:
 			break;
 	}
-
 }
 
 void camera_controller_mouse_command::execute()
