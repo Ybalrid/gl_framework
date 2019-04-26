@@ -235,7 +235,7 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 	std::vector<float> vertex;
 	std::vector<unsigned int> index;
 
-	//TODO, should be an array of rendeables from an array of primitives, or should combine them
+	//TODO, should be an array of renderables from an array of primitives, or should combine them
 	const auto primitive = mesh.primitives[0];
 	const auto draw_mode = mode(primitive.mode);
 
@@ -254,7 +254,13 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 		const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
 		const auto color_image   = model.images[color_texture.source];
 		GLuint tex				 = load_to_gl_texture(color_image);
-		auto diffuse_texture	 = texture_manager::create_texture(tex);
+		auto diffuse_texture_handle	 = texture_manager::create_texture(tex);
+		{
+			auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
+			diffuse_texture_object.generate_mipmaps();
+			diffuse_texture_object.set_filtering_parameters();
+		}
+
 		renderable_handle r		 = renderable_manager::create_renderable(dshader,
 																	 vertex,
 																	 index,
@@ -264,7 +270,7 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 																	 3,
 																	 5,
 																	 draw_mode);
-		renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture);
+		renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture_handle);
 		return r;
 	}
 

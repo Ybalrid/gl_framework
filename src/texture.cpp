@@ -2,6 +2,8 @@
 #include <algorithm>
 
 std::vector<texture*> texture::texture_list {};
+GLuint texture::last_bound_texture = 0;
+GLint texture::last_bound_texture_index = 0;
 
 void texture::gen()
 {
@@ -79,8 +81,14 @@ texture& texture::operator=(texture&& o) noexcept
 
 void texture::bind(int index, GLenum target) const
 {
-	glActiveTexture(GL_TEXTURE0 + index);
-	glBindTexture(target, name);
+	//Avoid redundant opengl call
+	if(last_bound_texture != name || last_bound_texture_index != index)
+	{
+		glActiveTexture(GL_TEXTURE0 + index);
+		glBindTexture(target, name);
+		last_bound_texture = name;
+		last_bound_texture_index = index;
+	}
 }
 
 void texture::load_from(const image& img, bool is_sRGB, GLenum target) const
@@ -99,11 +107,33 @@ void texture::load_from(const image& img, bool is_sRGB, GLenum target) const
 
 void texture::generate_mipmaps(GLenum target) const
 {
-	bind();
+	bind(0, target);
 	glGenerateMipmap(target);
+}
+
+void texture::set_filtering_parameters(GLenum target)
+{
+	bind(0, target);
+
+	//Can we set an anisotropic filtering on texture?
+	if(GLEW_EXT_texture_filter_anisotropic) //Just be prudent, this extension is only from 1999...
+	{
+		float anisotropy = 0;
+		//querry driver for maximum anisotropy
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy);
+
+		//apply if value sucessfully acquired
+		if(anisotropy != 0)
+			glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+	}
+
+	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 void texture::bind_0(GLenum target)
 {
 	glBindTexture(target, 0);
+	last_bound_texture = 0;
+	last_bound_texture_index = 0;
 }

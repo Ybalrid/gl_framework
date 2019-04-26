@@ -311,6 +311,7 @@ void application::setup_scene()
 		auto& polutropon_logo_texture_object = texture_manager::get_from_handle(polutropon_logo_texture);
 		polutropon_logo_texture_object.load_from(img);
 		polutropon_logo_texture_object.generate_mipmaps();
+		polutropon_logo_texture_object.set_filtering_parameters();
 	}
 
 	// clang-format off
