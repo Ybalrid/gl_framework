@@ -48,6 +48,7 @@ public:
 	gui() = default;
 	gui(SDL_Window* window, SDL_GLContext gl_context);
 	~gui();
+
 	void frame();
 	void render() const;
 	void handle_event(sdl::Event e) const;

@@ -8,6 +8,7 @@
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
 #include <iostream>
+#include "application.hpp"
 
 void gui::set_script_engine_ptr(script_system* s)
 {
@@ -275,12 +276,11 @@ gui::~gui()
 }
 
 const char is_imgui[] = "ImGui code";
+
+
 void gui::frame()
 {
-#ifdef _DEBUG
-	if(glPushDebugGroup)
-		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
-#endif
+	const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(w);
@@ -288,27 +288,14 @@ void gui::frame()
 
 	if(show_console_)
 		console();
-
-#ifdef _DEBUG
-	if(glPopDebugGroup)
-		glPopDebugGroup();
-#endif
 }
 
 void gui::render() const
 {
-#ifdef _DEBUG
-	if(glPushDebugGroup)
-		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(is_imgui), is_imgui);
-#endif
-
+	const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
+	
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-#ifdef _DEBUG
-	if(glPopDebugGroup)
-		glPopDebugGroup();
-#endif
 }
 
 void gui::handle_event(sdl::Event e) const

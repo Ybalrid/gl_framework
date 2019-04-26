@@ -15,6 +15,8 @@
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
 
+glm::vec4 application::clear_color{0.4f, 0.5f, 0.6f, 1.f};
+
 void application::activate_vsync() const
 {
 	try
@@ -219,11 +221,9 @@ void application::initialize_gui()
 	inputs.setup_imgui();
 }
 
-void application::render_frame()
+void application::frame_prepare()
 {
-	ui.frame();
-
-	scripts.update(last_frame_delta_sec);
+	const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
 
 	s.scene_root->update_world_matrix();
 	//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
@@ -238,11 +238,15 @@ void application::render_frame()
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
 	shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
 
-	glClearColor(0.4f, 0.5f, 0.6f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	const auto size = window.size();
 	main_camera->update_projection(size.x, size.y);
+}
+
+void application::draw_full_scene_from_main_camera()
+{
+	const auto opengl_debug_tag = opengl_debug_group("application::draw_full_scene_from_main_camera()");
 
 	glEnable(GL_DEPTH_TEST);
 	s.run_on_whole_graph([=](node* current_node) {
@@ -256,7 +260,15 @@ void application::render_frame()
 			}
 		});
 	});
+}
 
+void application::render_frame()
+{
+	ui.frame();
+	scripts.update(last_frame_delta_sec);
+
+	frame_prepare();
+	draw_full_scene_from_main_camera();
 	draw_debug_ui();
 	ui.render();
 
@@ -332,9 +344,8 @@ void application::setup_scene()
 	// clang-format on
 
 	const shader_handle simple_shader	  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::aabb { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } }, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
-	//set opengl clear color
 
 	gltf = gltf_loader(simple_shader);
 
@@ -405,6 +416,17 @@ void application::setup_scene()
 	lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
+
+	glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+}
+
+void application::set_clear_color(glm::vec4 color)
+{
+	if(clear_color != color)
+	{
+		clear_color = color;
+		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+	}
 }
 
 application::application(int argc, char** argv, const std::string& application_name) :

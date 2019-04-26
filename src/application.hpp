@@ -61,6 +61,8 @@ class application
 	void create_opengl_context();
 	void initialize_modern_opengl() const;
 	void initialize_gui();
+	void frame_prepare();
+	void draw_full_scene_from_main_camera();
 	void render_frame();
 	void run_events();
 	void setup_scene();
@@ -104,6 +106,8 @@ class application
 	input_handler inputs;
 	std::unique_ptr<camera_controller> fps_camera_controller = nullptr;
 
+	static glm::vec4 clear_color;
+
 	struct keyboard_debug_utilities_
 	{
 		application* parent_;
@@ -111,29 +115,64 @@ class application
 		{
 			application* parent_;
 			void execute() override;
-			toggle_console_keyboard_command_(application* parent): parent_{parent}{}
-		}toggle_console_keyboard_command{parent_};
+			toggle_console_keyboard_command_(application* parent) :
+			 parent_ { parent } {}
+		} toggle_console_keyboard_command { parent_ };
 
 		struct toggle_debug_keyboard_command_ : keyboard_input_command
 		{
 			application* parent_;
 			void execute() override;
-			toggle_debug_keyboard_command_(application* parent) : parent_{parent}{};
-		}toggle_debug_keyboard_command{parent_};
+			toggle_debug_keyboard_command_(application* parent) :
+			 parent_ { parent } {};
+		} toggle_debug_keyboard_command { parent_ };
 
 		struct toggle_live_code_reload_command_ : keyboard_input_command
 		{
 			application* parent_;
 			void execute() override;
-			toggle_live_code_reload_command_(application* parent) : parent_{parent}{};
-		}toggle_live_code_reload_command{parent_};
+			toggle_live_code_reload_command_(application* parent) :
+			 parent_ { parent } {};
+		} toggle_live_code_reload_command { parent_ };
 
-		keyboard_debug_utilities_(application* parent):parent_{parent}{}
-	} keyboard_debug_utilities{this};
+		keyboard_debug_utilities_(application* parent) :
+		 parent_ { parent } {}
+	} keyboard_debug_utilities { this };
 
 public:
 	static scene* get_main_scene();
 	void run();
 	application(int argc, char** argv, const std::string& application_name);
 	static std::vector<std::string> resource_paks;
+	static void set_clear_color(glm::vec4 color);
+
+	static void push_opengl_debug_group(const char* name)
+	{
+#ifdef _DEBUG
+		if(glPushDebugGroup) //likely to fail on macos without this test, as opengl 4.1 shouldn't have access to this
+			glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(name), name);
+#else
+		(void)name;
+#endif
+	}
+
+	static void pop_opengl_debug_group()
+	{
+		if(glPopDebugGroup) 
+			glPopDebugGroup();
+	}
+
+	struct opengl_debug_group
+	{
+		const char* name_;
+		opengl_debug_group(const char* name) : name_{name}
+		{
+			push_opengl_debug_group(name_);
+		}
+
+		~opengl_debug_group()
+		{
+			pop_opengl_debug_group();
+		}
+	};
 };

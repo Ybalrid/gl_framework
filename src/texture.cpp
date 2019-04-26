@@ -114,7 +114,6 @@ void texture::generate_mipmaps(GLenum target) const
 void texture::set_filtering_parameters(GLenum target)
 {
 	bind(0, target);
-
 	//Can we set an anisotropic filtering on texture?
 	if(GLEW_EXT_texture_filter_anisotropic) //Just be prudent, this extension is only from 1999...
 	{

@@ -16,13 +16,15 @@ void renderable::steal_guts(renderable& other)
 	view			 = other.view;
 	normal			 = other.normal;
 	mat				 = other.mat;
+	bounds			 = other.bounds;
 
 	other.VAO = other.VBO = other.EBO = 0;
 }
 
-renderable::renderable(shader_handle program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage) :
+renderable::renderable(shader_handle program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, aabb min_max, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage) :
  shader_program(program),
- draw_mode(draw_operation)
+ draw_mode(draw_operation),
+ bounds { min_max }
 {
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -136,4 +138,9 @@ void renderable::set_model_matrix(const glm::mat4& matrix)
 void renderable::set_view_matrix(const glm::mat4& matrix)
 {
 	view = matrix;
+}
+
+renderable::aabb renderable::get_aabb() const
+{
+	return aabb();
 }

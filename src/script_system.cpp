@@ -220,6 +220,7 @@ void script_system::install_additional_api()
 	// clang-format on
 
 	chai.add(fun(&sdl::Mouse::set_relative), "set_mouse_relative");
+	chai.add(fun(&application::set_clear_color), "set_clear_color");
 
 	//TODO light integration
 	//TODO physicsfs exploration?

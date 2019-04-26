@@ -11,6 +11,13 @@
 
 class renderable
 {
+public:
+	struct aabb
+	{
+		glm::vec3 min, max;
+	};
+
+private:
 	shader_handle shader_program	= shader_program_manager::invalid_shader;
 	texture_handle diffuse_texture  = texture_manager::invalid_texture;
 	texture_handle specular_texture = texture_manager::invalid_texture;
@@ -28,6 +35,8 @@ class renderable
 
 	void steal_guts(renderable& other);
 
+	aabb bounds;
+
 public:
 	material mat;
 
@@ -43,6 +52,7 @@ public:
 	renderable(shader_handle program,
 			   const std::vector<float>& vertex_buffer,
 			   const std::vector<unsigned int>& index_buffer,
+		       aabb min_max_vpos,
 			   configuration vertex_config,
 			   size_t vertex_buffer_stride,
 			   size_t vertex_coord_offset  = 0,
@@ -64,4 +74,6 @@ public:
 	void set_mvp_matrix(const glm::mat4& matrix);
 	void set_model_matrix(const glm::mat4& matrix);
 	void set_view_matrix(const glm::mat4& matrix);
+
+	aabb get_aabb() const;
 };

@@ -111,7 +111,7 @@ GLenum gltf_loader::mode(GLenum input)
 	}
 }
 
-std::vector<float> gltf_loader::get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
+std::tuple<std::vector<float>, renderable::aabb> gltf_loader::get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
 {
 	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/;
 	std::vector<float> vertex_buffer;
@@ -177,7 +177,9 @@ std::vector<float> gltf_loader::get_vertices(const tinygltf::Model& model, int v
 			}
 	}
 
-	return vertex_buffer;
+	glm::vec3 min { float(vertex_accessor.minValues[0]), float(vertex_accessor.minValues[1]), float(vertex_accessor.minValues[2]) };
+	glm::vec3 max { float(vertex_accessor.maxValues[0]), float(vertex_accessor.maxValues[1]), float(vertex_accessor.maxValues[2]) };
+	return { vertex_buffer, { min, max } };
 }
 
 std::vector<unsigned> gltf_loader::get_indices(const tinygltf::Model& model, int indices_accessor)
@@ -232,9 +234,6 @@ GLuint gltf_loader::load_to_gl_texture(const tinygltf::Image& color_image, bool 
 
 renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
 {
-	std::vector<float> vertex;
-	std::vector<unsigned int> index;
-
 	//TODO, should be an array of renderables from an array of primitives, or should combine them
 	const auto primitive = mesh.primitives[0];
 	const auto draw_mode = mode(primitive.mode);
@@ -244,32 +243,33 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 	const auto texture_coord_accessor_index = primitive.attributes.at("TEXCOORD_0");
 	const auto normal_accessor_index		= primitive.attributes.at("NORMAL");
 
-	vertex = get_vertices(model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index);
-	index  = get_indices(model, indices_accessor_index);
+	auto [vertex, aabb] = get_vertices(model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index);
+	auto index			= get_indices(model, indices_accessor_index);
 
 	if(mesh.primitives[0].material >= 0)
 	{
 
-		const auto material		 = model.materials[mesh.primitives[0].material];
-		const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
-		const auto color_image   = model.images[color_texture.source];
-		GLuint tex				 = load_to_gl_texture(color_image);
-		auto diffuse_texture_handle	 = texture_manager::create_texture(tex);
+		const auto material			= model.materials[mesh.primitives[0].material];
+		const auto color_texture	= model.textures[material.values.at("baseColorTexture").TextureIndex()];
+		const auto color_image		= model.images[color_texture.source];
+		GLuint tex					= load_to_gl_texture(color_image);
+		auto diffuse_texture_handle = texture_manager::create_texture(tex);
 		{
 			auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
 			diffuse_texture_object.generate_mipmaps();
 			diffuse_texture_object.set_filtering_parameters();
 		}
 
-		renderable_handle r		 = renderable_manager::create_renderable(dshader,
-																	 vertex,
-																	 index,
-																	 renderable::configuration { true, true, true },
-																	 8,
-																	 0,
-																	 3,
-																	 5,
-																	 draw_mode);
+		renderable_handle r = renderable_manager::create_renderable(dshader,
+																	vertex,
+																	index,
+																	aabb,
+																	renderable::configuration { true, true, true },
+																	8,
+																	0,
+																	3,
+																	5,
+																	draw_mode);
 		renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture_handle);
 		return r;
 	}
@@ -277,6 +277,7 @@ renderable_handle gltf_loader::build_renderable(const tinygltf::Mesh& mesh, cons
 	return renderable_manager::create_renderable(dshader,
 												 vertex,
 												 index,
+												 aabb,
 												 renderable::configuration { true, true, true },
 												 8,
 												 0,
