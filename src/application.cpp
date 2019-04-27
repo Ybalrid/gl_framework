@@ -15,7 +15,10 @@
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
 
-glm::vec4 application::clear_color{0.4f, 0.5f, 0.6f, 1.f};
+glm::vec4 application::clear_color { 0.4f, 0.5f, 0.6f, 1.f };
+
+GLuint bbox_drawer_vbo, bbox_drawer_vao;
+shader_handle white_debug_shader = shader_program_manager::invalid_shader;
 
 void application::activate_vsync() const
 {
@@ -255,7 +258,24 @@ void application::draw_full_scene_from_main_camera()
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
 				//TODO instead of drawing, accumulate a buffer of thing that passes a frustum culling test
-				auto& object = static_cast<scene_object&>(node_attached_object);
+				auto& object			   = static_cast<scene_object&>(node_attached_object);
+				const auto oriented_points = object.get_obb(current_node->get_world_matrix());
+
+				//for(const auto& point : oriented_points)
+				//	std::cout << "bounding box " << point.x << ' ' << point.y << ' ' << point.z << '\n';
+
+				glBindVertexArray(bbox_drawer_vao);
+				glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), oriented_points.data(), GL_STREAM_DRAW);
+				const auto& debug_shader_object = shader_manager.get_from_handle(white_debug_shader);
+				debug_shader_object.use();
+				debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
+				debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
+				glPointSize(5);
+				glLineWidth(5);
+				const unsigned short int lines[] {0,1,1,2,2,3,3,0,4,5,5,6,6,7,7,4,0,4,1,5,2,6,3,7};
+				glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, &lines);
+				glBindVertexArray(0);
+
 				object.draw(*main_camera, current_node->get_world_matrix());
 			}
 		});
@@ -455,6 +475,27 @@ application::application(int argc, char** argv, const std::string& application_n
 	setup_scene();
 
 	sdl::Mouse::set_relative(true);
+
+	//shader that draws everything in white
+	try
+	{
+		white_debug_shader = shader_manager.create_shader("/shaders/debug.vert.glsl", "/shaders/debug.frag.glsl");
+		glGenBuffers(1, &bbox_drawer_vbo);
+		glGenVertexArrays(1, &bbox_drawer_vao);
+		glBindVertexArray(bbox_drawer_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, bbox_drawer_vbo);
+		float empty[8 * 3] {0};
+		glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), empty, GL_STREAM_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+		
+	}
+	catch(const std::exception& e)
+	{
+		sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "No debug shader", e.what());
+	}
+
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

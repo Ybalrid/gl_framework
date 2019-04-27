@@ -140,7 +140,27 @@ void renderable::set_view_matrix(const glm::mat4& matrix)
 	view = matrix;
 }
 
-renderable::aabb renderable::get_aabb() const
+renderable::aabb renderable::get_bounds() const
 {
-	return aabb();
+	return bounds;
+}
+
+std::array<glm::vec3, 8> renderable::get_aabb() const
+{
+	return { { { bounds.min.x, bounds.min.y, bounds.max.z },
+			   { bounds.min.x, bounds.max.y, bounds.max.z },
+			   { bounds.min.x, bounds.max.y, bounds.min.z },
+			   { bounds.min.x, bounds.min.y, bounds.min.z },
+			   { bounds.max.x, bounds.min.y, bounds.max.z },
+			   { bounds.max.x, bounds.max.y, bounds.max.z },
+			   { bounds.max.x, bounds.max.y, bounds.min.z },
+			   { bounds.max.x, bounds.min.y, bounds.min.z } } };
+}
+
+std::array<glm::vec3, 8> renderable::get_obb(const glm::mat4& world_transform) const
+{
+	auto obb { get_aabb() };
+	std::transform(obb.begin(), obb.end(), obb.begin(), [&](const glm::vec3& v) -> glm::vec3 { return world_transform * glm::vec4(v, 1.f); });
+
+	return obb;
 }

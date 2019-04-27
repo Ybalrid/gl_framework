@@ -25,4 +25,9 @@ public:
 
 		mesh_object.draw();
 	}
+
+	bounding_box get_obb(const glm::mat4 model)
+	{
+		return renderable_manager::get_from_handle(mesh).get_obb(model);
+	}
 };

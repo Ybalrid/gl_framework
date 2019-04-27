@@ -4,6 +4,7 @@
 #include <vector>
 
 using renderable_handle = std::vector<renderable>::size_type;
+using bounding_box = std::array<glm::vec3, 8>;
 
 class renderable_manager
 {
