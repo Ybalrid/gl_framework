@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #ifdef USING_JETLIVE
 #include "jet/live/Live.hpp"
 #include "jet/live/ILiveListener.hpp"
@@ -106,6 +108,11 @@ class application
 	input_handler inputs;
 	std::unique_ptr<camera_controller> fps_camera_controller = nullptr;
 
+	std::vector<node*> draw_list;
+
+
+	bool debug_draw_bbox = false;
+
 	static glm::vec4 clear_color;
 
 	struct keyboard_debug_utilities_
@@ -158,8 +165,10 @@ public:
 
 	static void pop_opengl_debug_group()
 	{
-		if(glPopDebugGroup) 
+#ifdef _DEBUG
+		if(glPopDebugGroup)
 			glPopDebugGroup();
+#endif
 	}
 
 	struct opengl_debug_group

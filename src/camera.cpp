@@ -75,4 +75,5 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 		}
 		break;
 	}
+
 }

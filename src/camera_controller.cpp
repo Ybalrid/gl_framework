@@ -1,6 +1,5 @@
 #include <cpp-sdl2/sdl.hpp>
 #include "camera_controller.hpp"
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 
 

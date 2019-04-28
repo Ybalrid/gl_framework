@@ -61,6 +61,7 @@ void application::draw_debug_ui()
 		if(ImGui::Begin("Debugger Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
+			ImGui::Checkbox("Show all object's bounding boxes?", &debug_draw_bbox);
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
 
@@ -247,39 +248,76 @@ void application::frame_prepare()
 	main_camera->update_projection(size.x, size.y);
 }
 
+inline bool frustum_cull(camera* cam, node* n)
+{
+	const auto obj				  = n->get_if_is<scene_object>();
+	const auto obb_points		  = obj->get_obb(n->get_world_matrix());
+	const glm::mat4 to_clip_space = cam->get_view_projection_matrix();
+
+	//project the oriented bounding box to clip space
+	std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
+	for(int i = 0; i < 8; ++i)
+		clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
+
+	//Start assuming object is visible
+	bool outside = false;
+	for(size_t direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+	{
+		//One boolean per frustum plane, represent if a point is inside or outside
+		std::array<bool, 6> frustum_states { false };
+		for(size_t obb_point = 0; obb_point < 8; obb_point++)
+		{
+			frustum_states[direction]	 = frustum_states[direction] && clip_space_obb[obb_point][direction] > clip_space_obb[obb_point].w;
+			frustum_states[3 + direction] = frustum_states[3 + direction] && clip_space_obb[obb_point][direction] < -clip_space_obb[obb_point].w;
+		}
+		outside = outside || frustum_states[direction] || frustum_states[3 + direction];
+	}
+
+	return outside;
+}
+
 void application::draw_full_scene_from_main_camera()
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::draw_full_scene_from_main_camera()");
 
+	draw_list.clear();
+
 	glEnable(GL_DEPTH_TEST);
-	s.run_on_whole_graph([=](node* current_node) {
-		current_node->visit([=](auto&& node_attached_object) {
-			using T = std::decay_t<decltype(node_attached_object)>;
-			if constexpr(std::is_same_v<T, scene_object>)
+	s.run_on_whole_graph([&](node* current_node) {
+		current_node->visit([&](auto&& node_attached_object) {
+			if constexpr(std::is_same_v<std::decay_t<decltype(node_attached_object)>, scene_object>)
 			{
-				//TODO instead of drawing, accumulate a buffer of thing that passes a frustum culling test
-				auto& object			   = static_cast<scene_object&>(node_attached_object);
-				const auto oriented_points = object.get_obb(current_node->get_world_matrix());
+				//object.draw(*main_camera, current_node->get_world_matrix());
+				if(!frustum_cull(main_camera, current_node))
+					draw_list.push_back(current_node);
 
-				//for(const auto& point : oriented_points)
-				//	std::cout << "bounding box " << point.x << ' ' << point.y << ' ' << point.z << '\n';
-
-				glBindVertexArray(bbox_drawer_vao);
-				glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), oriented_points.data(), GL_STREAM_DRAW);
-				const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
-				debug_shader_object.use();
-				debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
-				debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
-				debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1,1,1,1));
-				glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
-				debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4,0.4,1,1));
-				glDrawArrays(GL_POINTS, 0, 8);
-				glBindVertexArray(0);
-
-				object.draw(*main_camera, current_node->get_world_matrix());
+				if(debug_draw_bbox)
+				{
+					auto& scene_obj					 = static_cast<scene_object>(node_attached_object);
+					const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+					glBindVertexArray(bbox_drawer_vao);
+					glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), scene_obj.get_obb(current_node->get_world_matrix()).data(), GL_STREAM_DRAW);
+					const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
+					debug_shader_object.use();
+					debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
+					debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
+					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
+					glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
+					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
+					glDrawArrays(GL_POINTS, 0, 8);
+					glBindVertexArray(0);
+				}
 			}
 		});
 	});
+
+	for(auto object : draw_list)
+	{
+		const auto scene_obj = object->get_if_is<scene_object>();
+		scene_obj->draw(*main_camera, object->get_world_matrix());
+
+
+	}
 }
 
 void application::render_frame()
@@ -485,23 +523,21 @@ application::application(int argc, char** argv, const std::string& application_n
 		glGenVertexArrays(1, &bbox_drawer_vao);
 		glBindVertexArray(bbox_drawer_vao);
 		glBindBuffer(GL_ARRAY_BUFFER, bbox_drawer_vbo);
-		float empty[8 * 3] {0};
+		float empty[8 * 3] { 0 };
 		glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), empty, GL_STREAM_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
 		glEnableVertexAttribArray(0);
-		const unsigned short int lines[] {0,1,1,2,2,3,3,0,4,5,5,6,6,7,7,4,0,4,1,5,2,6,3,7}; //see renderable.hpp about renderable bounds to check what these indices are
+		const unsigned short int lines[] { 0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 }; //see renderable.hpp about renderable bounds to check what these indices are
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bbox_drawer_ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(lines), lines, GL_STATIC_DRAW);
 		glPointSize(10);
 		glLineWidth(5);
 		glBindVertexArray(0);
-		
 	}
 	catch(const std::exception& e)
 	{
 		sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "No debug shader", e.what());
 	}
-
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

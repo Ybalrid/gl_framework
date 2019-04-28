@@ -36,14 +36,14 @@ private:
 
 	glm::mat4 mvp = glm::mat4(1.f), model = glm::mat4(1.f), view = glm::mat4(1.f);
 	glm::mat3 normal = glm::mat3(1.f);
+	
+	vertex_buffer_extrema bounds{};
 
 	static constexpr GLuint vertex_position_location = 0;
 	static constexpr GLuint vertex_texture_location  = 1;
 	static constexpr GLuint vertex_normal_location   = 2;
 
 	void steal_guts(renderable& other);
-
-	vertex_buffer_extrema bounds{};
 
 public:
 	material mat;
@@ -119,6 +119,6 @@ public:
 
 	 */
 
-	bounding_box get_model_aabb() const;
+	inline bounding_box calculate_model_aabb() const;
 	bounding_box get_world_obb(const glm::mat4& world_transform) const;
 };

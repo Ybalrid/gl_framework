@@ -2,9 +2,12 @@
 
 #include "transform.hpp"
 
+#include <array>
+
 class camera
 {
 public:
+
 	//parameters that can be changed at will
 	enum projection_mode { perspective,
 						   ortho,
