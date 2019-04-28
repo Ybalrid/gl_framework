@@ -11,14 +11,18 @@
 
 #include <array>
 
+
+using bounding_box = std::array<glm::vec3, 8>;
+
 class renderable
 {
 public:
-	struct aabb
+	struct vertex_buffer_extrema
 	{
 		glm::vec3 min, max;
-		aabb() : min{0}, max{0}{}
-		aabb(const glm::vec3& minimal, const glm::vec3& maximal) : min{minimal}, max{maximal} {}
+		vertex_buffer_extrema() : min{0}, max{0}{}
+		vertex_buffer_extrema(const glm::vec3& minimal, const glm::vec3& maximal) : min{minimal}, max{maximal} {}
+		vertex_buffer_extrema(const vertex_buffer_extrema&) = default;
 	};
 
 private:
@@ -39,7 +43,7 @@ private:
 
 	void steal_guts(renderable& other);
 
-	aabb bounds{};
+	vertex_buffer_extrema bounds{};
 
 public:
 	material mat;
@@ -56,7 +60,7 @@ public:
 	renderable(shader_handle program,
 			   const std::vector<float>& vertex_buffer,
 			   const std::vector<unsigned int>& index_buffer,
-			   aabb min_max_vpos,
+			   vertex_buffer_extrema min_max_vpos,
 			   configuration vertex_config,
 			   size_t vertex_buffer_stride,
 			   size_t vertex_coord_offset  = 0,
@@ -79,7 +83,7 @@ public:
 	void set_model_matrix(const glm::mat4& matrix);
 	void set_view_matrix(const glm::mat4& matrix);
 
-	aabb get_bounds() const;
+	vertex_buffer_extrema get_bounds() const;
 
 	/*                              
 							    2---Y-----6
@@ -115,6 +119,6 @@ public:
 
 	 */
 
-	std::array<glm::vec3, 8> get_aabb() const;
-	std::array<glm::vec3, 8> get_obb(const glm::mat4& world_transform) const;
+	bounding_box get_model_aabb() const;
+	bounding_box get_world_obb(const glm::mat4& world_transform) const;
 };

@@ -21,7 +21,7 @@ void renderable::steal_guts(renderable& other)
 	other.VAO = other.VBO = other.EBO = 0;
 }
 
-renderable::renderable(shader_handle program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, aabb min_max, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage) :
+renderable::renderable(shader_handle program, const std::vector<float>& vertex_buffer, const std::vector<unsigned>& index_buffer, vertex_buffer_extrema min_max, configuration vertex_config, size_t vertex_buffer_stride, size_t vertex_coord_offset, size_t texture_coord_offset, size_t normal_coord_offset, GLenum draw_operation, GLenum buffer_usage) :
  shader_program(program),
  draw_mode(draw_operation),
  bounds { min_max }
@@ -140,12 +140,12 @@ void renderable::set_view_matrix(const glm::mat4& matrix)
 	view = matrix;
 }
 
-renderable::aabb renderable::get_bounds() const
+renderable::vertex_buffer_extrema renderable::get_bounds() const
 {
 	return bounds;
 }
 
-std::array<glm::vec3, 8> renderable::get_aabb() const
+std::array<glm::vec3, 8> renderable::get_model_aabb() const
 {
 	return { { { bounds.min.x, bounds.min.y, bounds.max.z },
 			   { bounds.min.x, bounds.max.y, bounds.max.z },
@@ -157,9 +157,9 @@ std::array<glm::vec3, 8> renderable::get_aabb() const
 			   { bounds.max.x, bounds.min.y, bounds.min.z } } };
 }
 
-std::array<glm::vec3, 8> renderable::get_obb(const glm::mat4& world_transform) const
+std::array<glm::vec3, 8> renderable::get_world_obb(const glm::mat4& world_transform) const
 {
-	auto obb { get_aabb() };
+	auto obb { get_model_aabb() };
 	std::transform(obb.begin(), obb.end(), obb.begin(), [&](const glm::vec3& v) -> glm::vec3 { return world_transform * glm::vec4(v, 1.f); });
 
 	return obb;

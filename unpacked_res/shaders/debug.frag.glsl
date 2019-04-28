@@ -2,8 +2,10 @@
 
 out vec4 color_output;
 
+uniform vec4 debug_color;
+
 //just draw white
 void main()
 {
-	color_output = vec4(1.0, 1.0, 1.0, 1.0);
+	color_output = debug_color;
 }

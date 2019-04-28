@@ -72,6 +72,7 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	uniform_indices[int(uniform::projection)]	  = glGetUniformLocation(program, "projection");
 	uniform_indices[int(uniform::gamma)]		   = glGetUniformLocation(program, "gamma");
 	uniform_indices[int(uniform::time)]			   = glGetUniformLocation(program, "time");
+	uniform_indices[int(uniform::debug_color)]	 = glGetUniformLocation(program, "debug_color");
 
 	//one directional lights
 	main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
@@ -154,6 +155,12 @@ void shader::set_uniform(uniform type, const glm::vec3& v) const
 {
 	shader_valid_check;
 	glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
+}
+
+void shader::set_uniform(uniform type, const glm::vec4& v) const
+{
+	shader_valid_check;
+	glUniform4f(uniform_indices[int(type)], v.r, v.g, v.b, v.a);
 }
 
 void shader::set_uniform(uniform type, float v) const

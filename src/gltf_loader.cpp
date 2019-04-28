@@ -111,7 +111,7 @@ GLenum gltf_loader::mode(GLenum input)
 	}
 }
 
-std::tuple<std::vector<float>, renderable::aabb> gltf_loader::get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
+std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index)
 {
 	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/;
 	std::vector<float> vertex_buffer;

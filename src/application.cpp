@@ -17,8 +17,8 @@ scene* application::main_scene = nullptr;
 
 glm::vec4 application::clear_color { 0.4f, 0.5f, 0.6f, 1.f };
 
-GLuint bbox_drawer_vbo, bbox_drawer_vao;
-shader_handle white_debug_shader = shader_program_manager::invalid_shader;
+GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
+shader_handle color_debug_shader = shader_program_manager::invalid_shader;
 
 void application::activate_vsync() const
 {
@@ -266,14 +266,14 @@ void application::draw_full_scene_from_main_camera()
 
 				glBindVertexArray(bbox_drawer_vao);
 				glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), oriented_points.data(), GL_STREAM_DRAW);
-				const auto& debug_shader_object = shader_manager.get_from_handle(white_debug_shader);
+				const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
 				debug_shader_object.use();
 				debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
 				debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
-				glPointSize(5);
-				glLineWidth(5);
-				const unsigned short int lines[] {0,1,1,2,2,3,3,0,4,5,5,6,6,7,7,4,0,4,1,5,2,6,3,7};
-				glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, &lines);
+				debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1,1,1,1));
+				glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
+				debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4,0.4,1,1));
+				glDrawArrays(GL_POINTS, 0, 8);
 				glBindVertexArray(0);
 
 				object.draw(*main_camera, current_node->get_world_matrix());
@@ -364,7 +364,7 @@ void application::setup_scene()
 	// clang-format on
 
 	const shader_handle simple_shader	  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::aabb { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } }, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } }, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 
 	gltf = gltf_loader(simple_shader);
@@ -479,8 +479,9 @@ application::application(int argc, char** argv, const std::string& application_n
 	//shader that draws everything in white
 	try
 	{
-		white_debug_shader = shader_manager.create_shader("/shaders/debug.vert.glsl", "/shaders/debug.frag.glsl");
+		color_debug_shader = shader_manager.create_shader("/shaders/debug.vert.glsl", "/shaders/debug.frag.glsl");
 		glGenBuffers(1, &bbox_drawer_vbo);
+		glGenBuffers(1, &bbox_drawer_ebo);
 		glGenVertexArrays(1, &bbox_drawer_vao);
 		glBindVertexArray(bbox_drawer_vao);
 		glBindBuffer(GL_ARRAY_BUFFER, bbox_drawer_vbo);
@@ -488,6 +489,11 @@ application::application(int argc, char** argv, const std::string& application_n
 		glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), empty, GL_STREAM_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
 		glEnableVertexAttribArray(0);
+		const unsigned short int lines[] {0,1,1,2,2,3,3,0,4,5,5,6,6,7,7,4,0,4,1,5,2,6,3,7}; //see renderable.hpp about renderable bounds to check what these indices are
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bbox_drawer_ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(lines), lines, GL_STATIC_DRAW);
+		glPointSize(10);
+		glLineWidth(5);
 		glBindVertexArray(0);
 		
 	}

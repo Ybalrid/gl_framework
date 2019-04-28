@@ -33,6 +33,7 @@ public:
 		point_light_1,
 		point_light_2,
 		point_light_3,
+		debug_color,
 
 		// Add uniforms on top of this one, and do not forget to glGetUniformLocation
 		// at the end of the constructor of the shader class
@@ -83,6 +84,7 @@ public:
 	void set_uniform(uniform type, const glm::mat4& matrix) const;
 	void set_uniform(uniform type, const glm::mat3& matrix) const;
 	void set_uniform(uniform type, const glm::vec3& v) const;
+	void set_uniform(uniform type, const glm::vec4& v) const;
 	void set_uniform(uniform type, float v) const;
 	void set_uniform(uniform type, int i) const;
 	void set_uniform(uniform type, const directional_light& light) const;
