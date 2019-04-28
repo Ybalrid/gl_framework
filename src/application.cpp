@@ -267,8 +267,8 @@ inline bool frustum_cull(camera* cam, node* n)
 		std::array<bool, 6> frustum_states { false };
 		for(size_t obb_point = 0; obb_point < 8; obb_point++)
 		{
-			frustum_states[direction]	 = frustum_states[direction] && clip_space_obb[obb_point][direction] > clip_space_obb[obb_point].w;
-			frustum_states[3 + direction] = frustum_states[3 + direction] && clip_space_obb[obb_point][direction] < -clip_space_obb[obb_point].w;
+			frustum_states[direction]	 = frustum_states[direction] && clip_space_obb[obb_point][glm::vec4::length_type(direction)] > clip_space_obb[glm::vec4::length_type(obb_point)].w;
+			frustum_states[3 + direction] = frustum_states[3 + direction] && clip_space_obb[obb_point][glm::vec4::length_type(direction)] < -clip_space_obb[glm::vec4::length_type(obb_point)].w;
 		}
 		outside = outside || frustum_states[direction] || frustum_states[3 + direction];
 	}

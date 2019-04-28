@@ -24,7 +24,7 @@ void gui::console()
 		SDL_GetWindowSize(w, &x, &y);
 
 		//Configure window styling
-		ImGui::SetNextWindowSize(ImVec2(x, std::max(y / 3, 300)));
+		ImGui::SetNextWindowSize(ImVec2(float(x), float(std::max(y / 3, 300))));
 		ImGui::SetNextWindowPos({ 0, 0 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
@@ -84,7 +84,7 @@ void gui::console()
 							   std::string current_input = (ui->console_input);
 
 							   //point where the last word shoud start
-							   auto last_word_start_char = current_input.find_last_of(" .()[]-+-/<>~=\"");
+							   int last_word_start_char = int(current_input.find_last_of(" .()[]-+-/<>~=\"'"));
 							   std::string last_word	 = "";
 							   if(last_word_start_char != std::string::npos)
 							   {
@@ -121,7 +121,7 @@ void gui::console()
 									   if(matches.size() == 1)
 									   {
 										   //Delete everythign up to the one character after the found delimiter
-										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, current_input.size() - last_word_start_char - (last_word_start_char > 0 ? 1 : 0));
+										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, int(current_input.size()) - last_word_start_char - (last_word_start_char > 0 ? 1 : 0));
 										   //Write the match at the end of the string
 										   data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
 										   ui->scroll_console_to_bottom = true;
@@ -217,7 +217,7 @@ void gui::hide_console()
 	last_frame_showed = false;
 }
 
-bool gui::is_console_showed()
+bool gui::is_console_showed() const
 {
 	return show_console_;
 }

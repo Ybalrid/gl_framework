@@ -61,7 +61,7 @@ public:
 
 	void show_console();
 	void hide_console();
-	bool is_console_showed();
+	bool is_console_showed() const;
 
 	gui(const gui&) = delete;
 	gui& operator=(const gui&) = delete;

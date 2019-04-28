@@ -157,7 +157,7 @@ public:
 	{
 #ifdef _DEBUG
 		if(glPushDebugGroup) //likely to fail on macos without this test, as opengl 4.1 shouldn't have access to this
-			glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, strlen(name), name);
+			glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, GLsizei(0), GLsizei(strlen(name)), name);
 #else
 		(void)name;
 #endif
