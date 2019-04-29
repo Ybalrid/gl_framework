@@ -65,8 +65,8 @@ class application
 	void initialize_modern_opengl() const;
 	void initialize_gui();
 	void frame_prepare();
-	void render_draw_list();
-	void build_draw_list_from_camera();
+	void render_draw_list(camera* render_camera);
+	void build_draw_list_from_camera(camera* render_camera);
 	void render_frame();
 	void run_events();
 	void setup_scene();
@@ -169,9 +169,13 @@ public:
 
 	struct opengl_debug_group
 	{
+#ifdef _DEBUG
 		const char* name_;
 		opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
 
 		~opengl_debug_group() { pop_opengl_debug_group(); }
+#else
+		opengl_debug_group(const char* name) { (void)name };
+#endif
 	};
 };

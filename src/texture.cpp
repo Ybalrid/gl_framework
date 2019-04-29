@@ -1,14 +1,12 @@
 #include "texture.hpp"
 #include <algorithm>
 
-std::vector<texture*> texture::texture_list {};
-GLuint texture::last_bound_texture = 0;
-GLint texture::last_bound_texture_index = 0;
+std::array<GLuint, 16> texture::texture_bound_state { 0 };
+GLint texture::last_bound_texture_index = -1;
 
-void texture::gen()
-{
-	glGenTextures(1, &name);
-}
+std::vector<texture*> texture::texture_list {};
+
+void texture::gen() { glGenTextures(1, &name); }
 
 void texture::steal_guts(texture& o)
 {
@@ -21,10 +19,7 @@ void texture::steal_guts(texture& o)
 		}
 	}
 
-	if(name)
-	{
-		glDeleteTextures(1, &name);
-	}
+	if(name) { glDeleteTextures(1, &name); }
 
 	name   = o.name;
 	o.name = 0;
@@ -44,17 +39,12 @@ texture::texture()
 	texture_list.push_back(this);
 }
 
-texture::texture(GLuint id) :
- name(id)
+texture::texture(GLuint id) : name(id)
 {
-	const auto texture_iterator = std::find_if(texture_list.begin(), texture_list.end(), [=](texture* t_ptr) {
-		return t_ptr->name == id;
-	});
+	const auto texture_iterator
+		= std::find_if(texture_list.begin(), texture_list.end(), [=](texture* t_ptr) { return t_ptr->name == id; });
 
-	if(texture_iterator != texture_list.end())
-	{
-		throw std::runtime_error("Texutre " + std::to_string(id) + " already exist!");
-	}
+	if(texture_iterator != texture_list.end()) { throw std::runtime_error("Texture " + std::to_string(id) + " already exist!"); }
 
 	texture_list.push_back(this);
 }
@@ -68,10 +58,7 @@ texture::~texture()
 	}
 }
 
-texture::texture(texture&& o) noexcept
-{
-	steal_guts(o);
-}
+texture::texture(texture&& o) noexcept { steal_guts(o); }
 
 texture& texture::operator=(texture&& o) noexcept
 {
@@ -82,12 +69,15 @@ texture& texture::operator=(texture&& o) noexcept
 void texture::bind(int index, GLenum target) const
 {
 	//Avoid redundant opengl call
-	if(last_bound_texture != name || last_bound_texture_index != index)
+	if(texture_bound_state[index] != name)
 	{
-		glActiveTexture(GL_TEXTURE0 + index);
+		texture_bound_state[index] = name;
+		if(index != last_bound_texture_index)
+		{
+			last_bound_texture_index = index;
+			glActiveTexture(GL_TEXTURE0 + index);
+		}
 		glBindTexture(target, name);
-		last_bound_texture = name;
-		last_bound_texture_index = index;
 	}
 }
 
@@ -122,17 +112,16 @@ void texture::set_filtering_parameters(GLenum target)
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy);
 
 		//apply if value sucessfully acquired
-		if(anisotropy != 0)
-			glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		if(anisotropy != 0) glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void texture::bind_0(GLenum target)
+void texture::bind_0(GLenum target) { glBindTexture(target, 0); }
+
+void texture::new_frame()
 {
-	glBindTexture(target, 0);
-	last_bound_texture = 0;
-	last_bound_texture_index = 0;
+	for(auto& bound_state : texture_bound_state) bound_state = 0;
 }

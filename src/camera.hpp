@@ -7,12 +7,9 @@
 class camera
 {
 public:
-
+	static int last_w, last_h, last_x, last_y;
 	//parameters that can be changed at will
-	enum projection_mode { perspective,
-						   ortho,
-						   hud,
-						   eye_vr };
+	enum projection_mode { perspective, ortho, hud, eye_vr };
 
 	projection_mode projection_type { perspective };
 	void (*vr_eye_projection_callback)(glm::mat4& projection_output, float near_clip, float far_clip) = nullptr;
@@ -34,4 +31,6 @@ private:
 	//enclosed projection matrix
 	glm::mat4 projection { 1.f };
 	glm::mat4 world_model_matrix { 1.f };
+
+	void set_gl_viewport(int x, int y, int w, int h);
 };

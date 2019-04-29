@@ -9,6 +9,7 @@
 
 class shader
 {
+	static GLuint last_used_program;
 
 public:
 	static float gamma;

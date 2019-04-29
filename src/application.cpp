@@ -257,22 +257,23 @@ void application::frame_prepare()
 	main_camera->update_projection(size.x, size.y);
 }
 
-void application::render_draw_list()
+void application::render_draw_list(camera* render_camera)
 {
+	const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list");
 	for(auto object : draw_list)
 	{
 		const auto scene_obj = object->get_if_is<scene_object>();
-		scene_obj->draw(*main_camera, object->get_world_matrix());
+		assert(scene_obj != nullptr);
+		scene_obj->draw(*render_camera, object->get_world_matrix());
 	}
 }
 
-void application::build_draw_list_from_camera()
+void application::build_draw_list_from_camera(camera* render_camera)
 {
-	const auto opengl_debug_tag = opengl_debug_group("application::draw_full_scene_from_main_camera()");
+	const auto opengl_debug_tag = opengl_debug_group("application::build_draw_list_from_camera()");
 
 	draw_list.clear();
 
-	glEnable(GL_DEPTH_TEST);
 	s.run_on_whole_graph([&](node* current_node) {
 		current_node->visit([&](auto&& node_attached_object) {
 			using T = std::decay_t<decltype(node_attached_object)>;
@@ -280,7 +281,7 @@ void application::build_draw_list_from_camera()
 			{
 				auto& object				  = static_cast<scene_object&>(node_attached_object);
 				const auto obb_points		  = object.get_obb(current_node->get_world_matrix());
-				const glm::mat4 to_clip_space = main_camera->get_view_projection_matrix();
+				const glm::mat4 to_clip_space = render_camera->get_view_projection_matrix();
 				std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
 
 				//project the oriented bounding box to clip space
@@ -318,6 +319,8 @@ void application::build_draw_list_from_camera()
 				{
 					auto scene_obj					 = static_cast<scene_object>(node_attached_object);
 					const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+					GLint bind_back;
+					glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &bind_back);
 					glBindVertexArray(bbox_drawer_vao);
 					glBufferData(GL_ARRAY_BUFFER,
 								 8 * 3 * sizeof(float),
@@ -325,13 +328,13 @@ void application::build_draw_list_from_camera()
 								 GL_STREAM_DRAW);
 					const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
 					debug_shader_object.use();
-					debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
-					debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
+					debug_shader_object.set_uniform(shader::uniform::view, render_camera->get_view_matrix());
+					debug_shader_object.set_uniform(shader::uniform::projection, render_camera->get_projection_matrix());
 					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
 					glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
 					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
 					glDrawArrays(GL_POINTS, 0, 8);
-					glBindVertexArray(0);
+					glBindVertexArray(bind_back);
 				}
 			}
 		});
@@ -344,8 +347,9 @@ void application::render_frame()
 	scripts.update(last_frame_delta_sec);
 
 	frame_prepare();
-	build_draw_list_from_camera();
-	render_draw_list();
+	build_draw_list_from_camera(main_camera);
+	render_draw_list(main_camera);
+
 	draw_debug_ui();
 	ui.render();
 
@@ -535,6 +539,7 @@ application::application(int argc, char** argv, const std::string& application_n
 	configure_and_create_window(application_name);
 	create_opengl_context();
 	initialize_modern_opengl();
+	texture_manager::initialize_dummy_texture();
 	initialize_gui();
 	setup_scene();
 
@@ -543,7 +548,7 @@ application::application(int argc, char** argv, const std::string& application_n
 	//shader that draws everything in white
 	try
 	{
-		color_debug_shader = shader_manager.create_shader("/shaders/debug.vert.glsl", "/shaders/debug.frag.glsl");
+		color_debug_shader = shader_program_manager::create_shader("/shaders/debug.vert.glsl", "/shaders/debug.frag.glsl");
 		glGenBuffers(1, &bbox_drawer_vbo);
 		glGenBuffers(1, &bbox_drawer_ebo);
 		glGenVertexArrays(1, &bbox_drawer_vao);
@@ -564,8 +569,11 @@ application::application(int argc, char** argv, const std::string& application_n
 	}
 	catch(const std::exception& e)
 	{
-		sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "No debug shader", e.what());
+		sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "Could not initialize the debug shader", e.what());
+		color_debug_shader = shader_program_manager::invalid_shader;
 	}
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

@@ -6,35 +6,31 @@
 //We are using a pimpl idiom here. This limit chaiscript to be compiled only in this compilation unit
 struct script_system::impl
 {
+	impl(const impl&) = delete;
+	impl(impl&&)	  = delete;
+	impl& operator=(const impl&) = delete;
+	impl& operator=(impl&&) = delete;
+
 	//The chaiscript interpreter instance is created here
 	chaiscript::ChaiScript chai;
 
 	//Printing
 	impl()
 	{
-		std::cout << "Initialized scripting system using ChaiScript "
-				  << chaiscript::version_major << '.'
-				  << chaiscript::version_minor << '.'
-				  << chaiscript::version_patch << '\n';
+		std::cout << "Initialized scripting system using ChaiScript " << chaiscript::version_major << '.'
+				  << chaiscript::version_minor << '.' << chaiscript::version_patch << '\n';
 	}
 
-	~impl()
-	{
-		std::cout << "Deinitialized scripting system\n";
-	}
+	~impl() { std::cout << "Deinitialized scripting system\n"; }
 
 	//Get ref
-	chaiscript::ChaiScript& get()
-	{
-		return chai;
-	}
+	chaiscript::ChaiScript& get() { return chai; }
 };
 
 #include "ImGui__ChaiScript.h"
 #include "chaiscript_glm.hpp"
 
-script_system::script_system() :
- pimpl(new script_system::impl(), [](script_system::impl* ptr) { delete ptr; })
+script_system::script_system() : pimpl(new script_system::impl(), [](script_system::impl* ptr) { delete ptr; })
 {
 	auto& chai = pimpl->get();
 
@@ -59,7 +55,7 @@ void script_system::register_imgui_library(gui* ui)
 	//Pipe the console I/O to this
 	//Declare a chaiscript function that pipe text output to the imgui console. Then override the `print()` function to use it
 	chai.add(fun([=](const std::string& str) { gui_ptr->push_to_console(str); }), "handle_output");
-	chai.eval("global print = fun(x) { handle_output (to_string(x)); }");
+	(void)chai.eval("global print = fun(x) { handle_output (to_string(x)); }");
 	//After declaring a global (print) function here, any printing made by chaiscript will be sent to handle_output.
 	//Handle output will systematically take advantage of a "to_string" function. All built-in chaiscript types have one.
 	//Anything that can be written in the form of `object.to_string()` or `to_string(object)` will automatically work with this system.
@@ -81,7 +77,7 @@ void script_system::update(float delta)
 void script_system::eval_string(const std::string& input) const
 {
 	auto& chai = pimpl->get();
-	chai.eval(input);
+	(void)chai.eval(input);
 }
 
 #include <algorithm>
@@ -89,10 +85,10 @@ std::vector<std::string> script_system::global_scope_object_names() const
 {
 	auto& chai = pimpl->get();
 
-	const auto& state	 = chai.get_state().engine_state;
+	const auto& state	  = chai.get_state().engine_state;
 	const auto& functions = state.m_function_objects;
-	const auto& globals   = state.m_global_objects;
-	const auto& locals	= chai.get_locals();
+	const auto& globals	  = state.m_global_objects;
+	const auto& locals	  = chai.get_locals();
 
 	const auto size = functions.size() + globals.size() + locals.size() + 2;
 
@@ -141,6 +137,9 @@ void script_system::install_additional_api()
 	using namespace chaiscript;
 	using namespace glm;
 	using namespace std;
+
+	//Standard library input
+	chai.add(bootstrap::standard_library::vector_type<std::vector<std::string>>("vector_string"));
 
 	//Object transform
 	chai.add(user_type<::transform>(), "transform");
@@ -224,4 +223,21 @@ void script_system::install_additional_api()
 
 	//TODO light integration
 	//TODO physicsfs exploration?
+
+	chai.add(fun([](const std::string& root) { return resource_system::list_files(root, true); }), "list_files");
+
+	chai.add(fun([](const std::string& root, bool recursive) { return resource_system::list_files(root, recursive); }),
+			 "list_files");
+
+	//add a "to_string" method to std::vector<std::string>
+	chai.add(fun([](const std::vector<std::string>& vector_of_strings) -> std::string {
+				 std::string output;
+				 for(const auto string : vector_of_strings)
+				 {
+					 output.append(string);
+					 output.append("\n");
+				 }
+				 return output;
+			 }),
+			 "to_string");
 }

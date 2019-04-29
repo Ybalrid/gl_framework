@@ -10,10 +10,7 @@
 #include <iostream>
 #include "application.hpp"
 
-void gui::set_script_engine_ptr(script_system* s)
-{
-	scripting_engine = s;
-}
+void gui::set_script_engine_ptr(script_system* s) { scripting_engine = s; }
 
 void gui::console()
 {
@@ -24,27 +21,22 @@ void gui::console()
 		SDL_GetWindowSize(w, &x, &y);
 
 		//Configure window styling
-		ImGui::SetNextWindowSize(ImVec2(float(x), float(std::max(y / 3, 300))));
+		ImGui::SetNextWindowSize(ImVec2(float(x), float(std::min(int(y * 0.75f), 900))));
 		ImGui::SetNextWindowPos({ 0, 0 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
 		ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
 		// Leave room for 1 separator + 1 InputText
 
-		ImGui::BeginChild("ScrollingRegion",
-						  ImVec2(0, -30),
-						  false,
-						  ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -30), false, ImGuiWindowFlags_HorizontalScrollbar);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
 		ImGui::PushFont(console_font);
-		for(const auto& log_line : console_content)
-			ImGui::TextUnformatted(log_line.c_str());
+		for(const auto& log_line : console_content) ImGui::TextUnformatted(log_line.c_str());
 		ImGui::PopFont();
 
-		if(scroll_console_to_bottom)
-			ImGui::SetScrollHereY(1.f);
+		if(scroll_console_to_bottom) ImGui::SetScrollHereY(1.f);
 		scroll_console_to_bottom = false;
 
 		ImGui::PopStyleVar();
@@ -65,8 +57,7 @@ void gui::console()
 			   "##Input",
 			   console_input,
 			   sizeof(console_input),
-			   ImGuiInputTextFlags_EnterReturnsTrue
-				   | ImGuiInputTextFlags_CallbackCompletion
+			   ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion
 				   | ImGuiInputTextFlags_CallbackHistory,
 			   [](ImGuiInputTextCallbackData* data) -> int {
 				   gui* ui = static_cast<gui*>(data->UserData);
@@ -85,11 +76,9 @@ void gui::console()
 
 							   //point where the last word shoud start
 							   int last_word_start_char = int(current_input.find_last_of(" .()[]-+-/<>~=\"'"));
-							   std::string last_word	 = "";
+							   std::string last_word	= "";
 							   if(last_word_start_char != std::string::npos)
-							   {
-								   last_word = current_input.substr(1 + last_word_start_char);
-							   }
+							   { last_word = current_input.substr(1 + last_word_start_char); }
 							   else // try to use the whole input?
 							   {
 								   last_word			= current_input;
@@ -107,11 +96,9 @@ void gui::console()
 									   it = std::find_if(it, list_of_words.end(), [&](const std::string& str) {
 										   return str.rfind(last_word, 0) == 0; //this return true if str starts with last_word
 									   });
-									   if(it != list_of_words.end())
-										   matches.emplace_back(*it);
+									   if(it != list_of_words.end()) matches.emplace_back(*it);
 									   //Escape the loop now if we haven't found anything
-									   if(it == list_of_words.end())
-										   break;
+									   if(it == list_of_words.end()) break;
 									   ++it;
 								   }
 								   //if something matches
@@ -121,9 +108,12 @@ void gui::console()
 									   if(matches.size() == 1)
 									   {
 										   //Delete everythign up to the one character after the found delimiter
-										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, int(current_input.size()) - last_word_start_char - (last_word_start_char > 0 ? 1 : 0));
+										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
+															 int(current_input.size()) - last_word_start_char
+																 - (last_word_start_char > 0 ? 1 : 0));
 										   //Write the match at the end of the string
-										   data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
+										   data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
+															 matches[0].c_str());
 										   ui->scroll_console_to_bottom = true;
 									   }
 									   else
@@ -138,28 +128,29 @@ void gui::console()
 							   }
 						   }
 						   break;
-					   case ImGuiInputTextFlags_CallbackHistory:
-					   {
-						   const char* text				  = nullptr;
-						   const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
+					   case ImGuiInputTextFlags_CallbackHistory: {
+						   const char* text = nullptr;
+						   const auto console_history_max
+							   = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
 
 						   if(data->EventKey == ImGuiKey_UpArrow)
 						   {
 							   if(!ui->console_history.empty())
-								   text = ui->console_history
-											  [size_t(console_history_max
-													  - std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++)))]
-												  .c_str();
+								   text = ui
+											  ->console_history[size_t(
+												  console_history_max
+												  - std::max<int>(0, std::min<int>(console_history_max, ui->history_counter++)))]
+											  .c_str();
 							   ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
 						   }
 
 						   else if(data->EventKey == ImGuiKey_DownArrow)
 						   {
 							   if(!ui->console_history.empty())
-								   text = ui->console_history
-											  [size_t(console_history_max
-													  - std::min<int>(console_history_max, std::max<int>(0, ui->history_counter--)))]
-												  .c_str();
+								   text = ui->console_history[size_t(console_history_max
+																	 - std::min<int>(console_history_max,
+																					 std::max<int>(0, ui->history_counter--)))]
+											  .c_str();
 							   ui->history_counter = std::max<int>(0, ui->history_counter);
 						   }
 
@@ -171,8 +162,7 @@ void gui::console()
 					   }
 					   break;
 
-					   default:
-						   break;
+					   default: break;
 				   }
 
 				   return 0;
@@ -184,8 +174,7 @@ void gui::console()
 			history_counter = 0;
 
 			//do something with text here :
-			if(cis_ptr)
-				(*cis_ptr)(std::string(console_input));
+			if(cis_ptr) (*cis_ptr)(std::string(console_input));
 
 			//erase text
 			console_input[0] = 0;
@@ -197,8 +186,7 @@ void gui::console()
 		ImGui::PopFont();
 
 		ImGui::SetItemDefaultFocus();
-		if(reclaim_focus)
-			ImGui::SetKeyboardFocusHere(-1);
+		if(reclaim_focus) ImGui::SetKeyboardFocusHere(-1);
 		ImGui::End();
 		ImGui::PopStyleColor();
 		ImGui::PopStyleVar();
@@ -207,20 +195,17 @@ void gui::console()
 
 void gui::show_console()
 {
-	show_console_	 = true;
+	show_console_	  = true;
 	last_frame_showed = false;
 }
 
 void gui::hide_console()
 {
-	show_console_	 = false;
+	show_console_	  = false;
 	last_frame_showed = false;
 }
 
-bool gui::is_console_showed() const
-{
-	return show_console_;
-}
+bool gui::is_console_showed() const { return show_console_; }
 
 gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 {
@@ -228,7 +213,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io	= ImGui::GetIO();
+	ImGuiIO& io	   = ImGui::GetIO();
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
@@ -257,8 +242,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 
 	ugly_font = io.Fonts->AddFontDefault();
 
-	if(!console_font)
-		std::cerr << "console font is null\n";
+	if(!console_font) std::cerr << "console font is null\n";
 
 	std::cout << "Initialized ImGui " << IMGUI_VERSION << " based gui system\n";
 }
@@ -277,7 +261,6 @@ gui::~gui()
 
 const char is_imgui[] = "ImGui code";
 
-
 void gui::frame()
 {
 	const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
@@ -286,47 +269,34 @@ void gui::frame()
 	ImGui_ImplSDL2_NewFrame(w);
 	ImGui::NewFrame();
 
-	if(show_console_)
-		console();
+	if(show_console_) console();
 }
 
 void gui::render() const
 {
 	const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
-	
+
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void gui::handle_event(sdl::Event e) const
-{
-	ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<SDL_Event*>(&e));
-}
+void gui::handle_event(sdl::Event e) const { ImGui_ImplSDL2_ProcessEvent(reinterpret_cast<SDL_Event*>(&e)); }
 
-void gui::push_to_console(const std::string& text)
-{
-	console_content.push_back(text);
-}
+void gui::push_to_console(const std::string& text) { console_content.push_back(text); }
 
-void gui::clear_console()
-{
-	console_content.clear();
-}
+void gui::clear_console() { console_content.clear(); }
 
 void gui::move_from(gui& o)
 {
-	w   = o.w;
+	w	= o.w;
 	o.w = nullptr;
 
 	console_font = o.console_font;
 	default_font = o.default_font;
-	ugly_font	= o.ugly_font;
+	ugly_font	 = o.ugly_font;
 }
 
-gui::gui(gui&& o) noexcept
-{
-	move_from(o);
-}
+gui::gui(gui&& o) noexcept { move_from(o); }
 
 gui& gui::operator=(gui&& o) noexcept
 {
@@ -334,7 +304,4 @@ gui& gui::operator=(gui&& o) noexcept
 	return *this;
 }
 
-void gui::set_console_input_consumer(console_input_consumer* cis)
-{
-	cis_ptr = cis;
-}
+void gui::set_console_input_consumer(console_input_consumer* cis) { cis_ptr = cis; }

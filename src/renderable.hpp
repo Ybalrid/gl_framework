@@ -11,23 +11,24 @@
 
 #include <array>
 
-
 using bounding_box = std::array<glm::vec3, 8>;
 
 class renderable
 {
+	static GLint last_bound_vao;
+
 public:
 	struct vertex_buffer_extrema
 	{
 		glm::vec3 min, max;
-		vertex_buffer_extrema() : min{0}, max{0}{}
-		vertex_buffer_extrema(const glm::vec3& minimal, const glm::vec3& maximal) : min{minimal}, max{maximal} {}
+		vertex_buffer_extrema() : min { 0 }, max { 0 } {}
+		vertex_buffer_extrema(const glm::vec3& minimal, const glm::vec3& maximal) : min { minimal }, max { maximal } {}
 		vertex_buffer_extrema(const vertex_buffer_extrema&) = default;
 	};
 
 private:
 	shader_handle shader_program	= shader_program_manager::invalid_shader;
-	texture_handle diffuse_texture  = texture_manager::invalid_texture;
+	texture_handle diffuse_texture	= texture_manager::invalid_texture;
 	texture_handle specular_texture = texture_manager::invalid_texture;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
@@ -36,12 +37,12 @@ private:
 
 	glm::mat4 mvp = glm::mat4(1.f), model = glm::mat4(1.f), view = glm::mat4(1.f);
 	glm::mat3 normal = glm::mat3(1.f);
-	
-	vertex_buffer_extrema bounds{};
+
+	vertex_buffer_extrema bounds {};
 
 	static constexpr GLuint vertex_position_location = 0;
-	static constexpr GLuint vertex_texture_location  = 1;
-	static constexpr GLuint vertex_normal_location   = 2;
+	static constexpr GLuint vertex_texture_location	 = 1;
+	static constexpr GLuint vertex_normal_location	 = 2;
 
 	void steal_guts(renderable& other);
 

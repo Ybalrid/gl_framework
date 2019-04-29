@@ -2,12 +2,12 @@
 
 #include <GL/glew.h>
 #include "image.hpp"
-
+#include <array>
 class texture
 {
-	GLuint name = 0;
-	static GLuint last_bound_texture;
+	static std::array<GLuint, 16> texture_bound_state;
 	static GLint last_bound_texture_index;
+	GLuint name = 0;
 	void gen();
 	void steal_guts(texture& o);
 	static std::vector<texture*> texture_list;
@@ -27,4 +27,6 @@ public:
 	void generate_mipmaps(GLenum target = GL_TEXTURE_2D) const;
 	void set_filtering_parameters(GLenum target = GL_TEXTURE_2D);
 	static void bind_0(GLenum target = GL_TEXTURE_2D);
+
+	static void new_frame();
 };

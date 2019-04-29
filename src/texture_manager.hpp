@@ -7,7 +7,7 @@ using texture_handle = std::vector<texture>::size_type;
 class texture_manager
 {
 	static texture_manager* manager;
-
+	static texture_handle dummy_texture;
 	std::vector<texture> textures;
 	std::vector<texture_handle> unallocated_textures;
 
@@ -18,6 +18,9 @@ public:
 
 	static texture& get_from_handle(texture_handle t);
 	static void get_rid_of(texture_handle t);
+
+	static void initialize_dummy_texture();
+	static texture_handle get_dummy_texture() { return dummy_texture; }
 
 	template <typename... ConstructorArgs>
 	static texture_handle create_texture(ConstructorArgs... args)
