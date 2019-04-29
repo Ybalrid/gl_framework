@@ -248,34 +248,6 @@ void application::frame_prepare()
 	main_camera->update_projection(size.x, size.y);
 }
 
-inline bool frustum_cull(camera* cam, node* n)
-{
-	const auto obj				  = n->get_if_is<scene_object>();
-	const auto obb_points		  = obj->get_obb(n->get_world_matrix());
-	const glm::mat4 to_clip_space = cam->get_view_projection_matrix();
-
-	//project the oriented bounding box to clip space
-	std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
-	for(int i = 0; i < 8; ++i)
-		clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
-
-	//Start assuming object is visible
-	bool outside = false;
-	for(size_t direction = 0; direction < 3; direction++) //testing 2 planes at the same time
-	{
-		//One boolean per frustum plane, represent if a point is inside or outside
-		std::array<bool, 6> frustum_states { false };
-		for(size_t obb_point = 0; obb_point < 8; obb_point++)
-		{
-			frustum_states[direction]	 = frustum_states[direction] && clip_space_obb[obb_point][glm::vec4::length_type(direction)] > clip_space_obb[glm::vec4::length_type(obb_point)].w;
-			frustum_states[3 + direction] = frustum_states[3 + direction] && clip_space_obb[obb_point][glm::vec4::length_type(direction)] < -clip_space_obb[glm::vec4::length_type(obb_point)].w;
-		}
-		outside = outside || frustum_states[direction] || frustum_states[3 + direction];
-	}
-
-	return outside;
-}
-
 void application::draw_full_scene_from_main_camera()
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::draw_full_scene_from_main_camera()");
@@ -283,34 +255,54 @@ void application::draw_full_scene_from_main_camera()
 	draw_list.clear();
 
 	glEnable(GL_DEPTH_TEST);
-	s.run_on_whole_graph([&](node* current_node) {
-		current_node->visit([&](auto&& node_attached_object) {
-			if constexpr(std::is_same_v<std::decay_t<decltype(node_attached_object)>, scene_object>)
-			{
-				//object.draw(*main_camera, current_node->get_world_matrix());
-				if(!frustum_cull(main_camera, current_node))
-					draw_list.push_back(current_node);
+    s.run_on_whole_graph([&](node* current_node) {
+        current_node->visit([&](auto&& node_attached_object) {
+            using T = std::decay_t<decltype(node_attached_object)>;
+            if constexpr(std::is_same_v<T, scene_object>)
+            {
+                auto& object                  = static_cast<scene_object&>(node_attached_object);
+                const auto obb_points          = object.get_obb(current_node->get_world_matrix());
+                const glm::mat4 to_clip_space = main_camera->get_view_projection_matrix();
+                std::array<bool, 6> frustum_states { false };
+                std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
 
-				if(debug_draw_bbox)
-				{
-					auto& scene_obj					 = static_cast<scene_object>(node_attached_object);
-					const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
-					glBindVertexArray(bbox_drawer_vao);
-					glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), scene_obj.get_obb(current_node->get_world_matrix()).data(), GL_STREAM_DRAW);
-					const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
-					debug_shader_object.use();
-					debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
-					debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
-					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
-					glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
-					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
-					glDrawArrays(GL_POINTS, 0, 8);
-					glBindVertexArray(0);
-				}
-			}
-		});
-	});
+                //project the oriented bounding box to clip space
+                for(int i = 0; i < 8; ++i)
+                    clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
 
+                //Start assuming object is visible
+                bool outside = false;
+                for(int direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+                {
+                        frustum_states[direction]     =    (clip_space_obb[0][direction] > clip_space_obb[0].w) &&
+						(clip_space_obb[1][direction] > clip_space_obb[1].w) &&
+						(clip_space_obb[2][direction] > clip_space_obb[2].w) &&
+						(clip_space_obb[3][direction] > clip_space_obb[3].w) &&
+						(clip_space_obb[4][direction] > clip_space_obb[4].w) &&
+						(clip_space_obb[5][direction] > clip_space_obb[5].w) &&
+						(clip_space_obb[6][direction] > clip_space_obb[6].w) &&
+						(clip_space_obb[7][direction] > clip_space_obb[7].w);
+
+                       frustum_states[3+direction]     =    (clip_space_obb[0][direction] < -clip_space_obb[0].w) &&
+						(clip_space_obb[1][direction] < - clip_space_obb[1].w) &&
+						(clip_space_obb[2][direction] < - clip_space_obb[2].w) &&
+						(clip_space_obb[3][direction] < - clip_space_obb[3].w) &&
+						(clip_space_obb[4][direction] < - clip_space_obb[4].w) &&
+						(clip_space_obb[5][direction] < - clip_space_obb[5].w) &&
+						(clip_space_obb[6][direction] < - clip_space_obb[6].w) &&
+						(clip_space_obb[7][direction] < - clip_space_obb[7].w);
+                	
+                	outside = outside || frustum_states[direction] || frustum_states[3 + direction];
+                }
+
+                //object.draw(*main_camera, current_node->get_world_matrix());
+                if(!outside)
+                    draw_list.push_back(current_node);
+            }
+        });
+    });
+
+	std::cout << "there are " << draw_list.size() << " objects in draw list\n";
 	for(auto object : draw_list)
 	{
 		const auto scene_obj = object->get_if_is<scene_object>();
