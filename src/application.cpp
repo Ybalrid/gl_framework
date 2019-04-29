@@ -65,15 +65,13 @@ void application::draw_debug_ui()
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
 
-			if(show_demo_window)
-				ImGui::ShowDemoWindow(&show_demo_window);
+			if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 		}
 		ImGui::End();
 
 		if(show_style_editor)
 		{
-			if(ImGui::Begin("Style Editor", &show_style_editor))
-				ImGui::ShowStyleEditor();
+			if(ImGui::Begin("Style Editor", &show_style_editor)) ImGui::ShowStyleEditor();
 			ImGui::End();
 		}
 	}
@@ -83,7 +81,9 @@ void application::draw_debug_ui()
 	const int x = 400, y = 75;
 	ImGui::SetNextWindowPos({ 0, float(window.size().y - y) });
 	ImGui::SetNextWindowSize({ float(x), float(y) });
-	if(ImGui::Begin("Development build", nullptr, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
+	if(ImGui::Begin("Development build",
+					nullptr,
+					ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
 	{
 		ImGui::Text("This program is a development Debug Build.");
 #if defined(USING_JETLIVE)
@@ -118,7 +118,9 @@ void application::update_timing()
 	frames_in_current_sec++;
 }
 
-void application::set_opengl_attribute_configuration(const bool multisampling, const int samples, const bool srgb_framebuffer) const
+void application::set_opengl_attribute_configuration(const bool multisampling,
+													 const int samples,
+													 const bool srgb_framebuffer) const
 {
 	const auto major = 4;
 #ifndef __APPLE__
@@ -129,7 +131,8 @@ void application::set_opengl_attribute_configuration(const bool multisampling, c
 
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
 	sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);
-	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, srgb_framebuffer);		 //Fragment shaders will perform individual gamma correction
+	sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
+								  srgb_framebuffer); //Fragment shaders will perform individual gamma correction
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); //OpenGL core profile
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);						 //OpenGL 4+
 	sdl::Window::gl_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);						 //OpenGL 4.1 or 4.3
@@ -155,13 +158,21 @@ void application::install_opengl_debug_callback() const
 	{
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*user_param*/) {
-			if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
-			std::cerr << "-----\n";
-			std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id << ") message(" << std::string(message) << ")\n";
-			std::cerr << "-----" << std::endl; //flush here
-		},
-							   nullptr);
+		glDebugMessageCallback(
+			[](GLenum source,
+			   GLenum type,
+			   GLuint id,
+			   GLenum severity,
+			   GLsizei /*length*/,
+			   const GLchar* message,
+			   const void* /*user_param*/) {
+				if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
+				std::cerr << "-----\n";
+				std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id
+						  << ") message(" << std::string(message) << ")\n";
+				std::cerr << "-----" << std::endl; //flush here
+			},
+			nullptr);
 	}
 }
 
@@ -193,7 +204,8 @@ void application::configure_and_create_window(const std::string& application_nam
 	//create window
 	window = sdl::Window(application_name,
 						 window_size,
-						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+							 | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -205,10 +217,7 @@ void application::create_opengl_context()
 	glEnable(GL_MULTISAMPLE);
 }
 
-scene* application::get_main_scene()
-{
-	return main_scene;
-}
+scene* application::get_main_scene() { return main_scene; }
 
 void application::initialize_modern_opengl() const
 {
@@ -255,60 +264,75 @@ void application::draw_full_scene_from_main_camera()
 	draw_list.clear();
 
 	glEnable(GL_DEPTH_TEST);
-    s.run_on_whole_graph([&](node* current_node) {
-        current_node->visit([&](auto&& node_attached_object) {
-            using T = std::decay_t<decltype(node_attached_object)>;
-            if constexpr(std::is_same_v<T, scene_object>)
-            {
-                auto& object                  = static_cast<scene_object&>(node_attached_object);
-                const auto obb_points          = object.get_obb(current_node->get_world_matrix());
-                const glm::mat4 to_clip_space = main_camera->get_view_projection_matrix();
-                std::array<bool, 6> frustum_states { false };
-                std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
+	s.run_on_whole_graph([&](node* current_node) {
+		current_node->visit([&](auto&& node_attached_object) {
+			using T = std::decay_t<decltype(node_attached_object)>;
+			if constexpr(std::is_same_v<T, scene_object>)
+			{
+				auto& object				  = static_cast<scene_object&>(node_attached_object);
+				const auto obb_points		  = object.get_obb(current_node->get_world_matrix());
+				const glm::mat4 to_clip_space = main_camera->get_view_projection_matrix();
+				std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
 
-                //project the oriented bounding box to clip space
-                for(int i = 0; i < 8; ++i)
-                    clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
+				//project the oriented bounding box to clip space
+				for(size_t i = 0; i < 8; ++i) clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
 
-                //Start assuming object is visible
-                bool outside = false;
-                for(int direction = 0; direction < 3; direction++) //testing 2 planes at the same time
-                {
-                        frustum_states[direction]     =    (clip_space_obb[0][direction] > clip_space_obb[0].w) &&
-						(clip_space_obb[1][direction] > clip_space_obb[1].w) &&
-						(clip_space_obb[2][direction] > clip_space_obb[2].w) &&
-						(clip_space_obb[3][direction] > clip_space_obb[3].w) &&
-						(clip_space_obb[4][direction] > clip_space_obb[4].w) &&
-						(clip_space_obb[5][direction] > clip_space_obb[5].w) &&
-						(clip_space_obb[6][direction] > clip_space_obb[6].w) &&
-						(clip_space_obb[7][direction] > clip_space_obb[7].w);
+				//Start assuming object is visible
+				bool outside = false;
+				for(size_t direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+				{
+					const bool outside_positive_plane = (clip_space_obb[0][direction] > clip_space_obb[0].w)
+						&& (clip_space_obb[1][direction] > clip_space_obb[1].w)
+						&& (clip_space_obb[2][direction] > clip_space_obb[2].w)
+						&& (clip_space_obb[3][direction] > clip_space_obb[3].w)
+						&& (clip_space_obb[4][direction] > clip_space_obb[4].w)
+						&& (clip_space_obb[5][direction] > clip_space_obb[5].w)
+						&& (clip_space_obb[6][direction] > clip_space_obb[6].w)
+						&& (clip_space_obb[7][direction] > clip_space_obb[7].w);
 
-                       frustum_states[3+direction]     =    (clip_space_obb[0][direction] < -clip_space_obb[0].w) &&
-						(clip_space_obb[1][direction] < - clip_space_obb[1].w) &&
-						(clip_space_obb[2][direction] < - clip_space_obb[2].w) &&
-						(clip_space_obb[3][direction] < - clip_space_obb[3].w) &&
-						(clip_space_obb[4][direction] < - clip_space_obb[4].w) &&
-						(clip_space_obb[5][direction] < - clip_space_obb[5].w) &&
-						(clip_space_obb[6][direction] < - clip_space_obb[6].w) &&
-						(clip_space_obb[7][direction] < - clip_space_obb[7].w);
-                	
-                	outside = outside || frustum_states[direction] || frustum_states[3 + direction];
-                }
+					const bool outside_negative_plane = (clip_space_obb[0][direction] < -clip_space_obb[0].w)
+						&& (clip_space_obb[1][direction] < -clip_space_obb[1].w)
+						&& (clip_space_obb[2][direction] < -clip_space_obb[2].w)
+						&& (clip_space_obb[3][direction] < -clip_space_obb[3].w)
+						&& (clip_space_obb[4][direction] < -clip_space_obb[4].w)
+						&& (clip_space_obb[5][direction] < -clip_space_obb[5].w)
+						&& (clip_space_obb[6][direction] < -clip_space_obb[6].w)
+						&& (clip_space_obb[7][direction] < -clip_space_obb[7].w);
 
-                //object.draw(*main_camera, current_node->get_world_matrix());
-                if(!outside)
-                    draw_list.push_back(current_node);
-            }
-        });
-    });
+					outside = outside || outside_positive_plane || outside_negative_plane;
+				}
+
+				if(!outside) draw_list.push_back(current_node);
+
+				//independently of the frustum culling, draw the bouding box
+				if(debug_draw_bbox)
+				{
+					auto scene_obj					 = static_cast<scene_object>(node_attached_object);
+					const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+					glBindVertexArray(bbox_drawer_vao);
+					glBufferData(GL_ARRAY_BUFFER,
+								 8 * 3 * sizeof(float),
+								 scene_obj.get_obb(current_node->get_world_matrix()).data(),
+								 GL_STREAM_DRAW);
+					const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
+					debug_shader_object.use();
+					debug_shader_object.set_uniform(shader::uniform::view, main_camera->get_view_matrix());
+					debug_shader_object.set_uniform(shader::uniform::projection, main_camera->get_projection_matrix());
+					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
+					glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
+					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
+					glDrawArrays(GL_POINTS, 0, 8);
+					glBindVertexArray(0);
+				}
+			}
+		});
+	});
 
 	std::cout << "there are " << draw_list.size() << " objects in draw list\n";
 	for(auto object : draw_list)
 	{
 		const auto scene_obj = object->get_if_is<scene_object>();
 		scene_obj->draw(*main_camera, object->get_world_matrix());
-
-
 	}
 }
 
@@ -334,15 +358,13 @@ void application::run_events()
 	while(event.poll())
 	{
 		//Check windowing events
-		if(event.type == SDL_QUIT)
-			running = false;
+		if(event.type == SDL_QUIT) running = false;
 
 		//For ImGui
 		ui.handle_event(event);
 
 		//Process input events
-		if(const auto command { inputs.process_input_event(event) }; command)
-			command->execute();
+		if(const auto command { inputs.process_input_event(event) }; command) command->execute();
 	}
 
 	fps_camera_controller->apply_movement(last_frame_delta_sec);
@@ -393,8 +415,18 @@ void application::setup_scene()
 	};
 	// clang-format on
 
-	const shader_handle simple_shader	  = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	const renderable_handle textured_plane = renderable_manager::create_renderable(simple_shader, plane, plane_indices, renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } }, renderable::configuration { true, true, true }, 3 + 2 + 3, 0, 3, 5);
+	const shader_handle simple_shader
+		= shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+	const renderable_handle textured_plane = renderable_manager::create_renderable(
+		simple_shader,
+		plane,
+		plane_indices,
+		renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
+		renderable::configuration { true, true, true },
+		3 + 2 + 3,
+		0,
+		3,
+		5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 
 	gltf = gltf_loader(simple_shader);
@@ -413,14 +445,22 @@ void application::setup_scene()
 	}
 	fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
-	inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
-	inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
-	inputs.register_keypress(SDL_SCANCODE_W, fps_camera_controller->press(camera_controller_command::movement_type::up));
-	inputs.register_keypress(SDL_SCANCODE_S, fps_camera_controller->press(camera_controller_command::movement_type::down));
-	inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
-	inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
-	inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
-	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
+	inputs.register_keypress(SDL_SCANCODE_A,
+							 fps_camera_controller->press(camera_controller_command::movement_type::left));
+	inputs.register_keypress(SDL_SCANCODE_D,
+							 fps_camera_controller->press(camera_controller_command::movement_type::right));
+	inputs.register_keypress(SDL_SCANCODE_W,
+							 fps_camera_controller->press(camera_controller_command::movement_type::up));
+	inputs.register_keypress(SDL_SCANCODE_S,
+							 fps_camera_controller->press(camera_controller_command::movement_type::down));
+	inputs.register_keyrelease(SDL_SCANCODE_A,
+							   fps_camera_controller->release(camera_controller_command::movement_type::left));
+	inputs.register_keyrelease(SDL_SCANCODE_D,
+							   fps_camera_controller->release(camera_controller_command::movement_type::right));
+	inputs.register_keyrelease(SDL_SCANCODE_W,
+							   fps_camera_controller->release(camera_controller_command::movement_type::up));
+	inputs.register_keyrelease(SDL_SCANCODE_S,
+							   fps_camera_controller->release(camera_controller_command::movement_type::down));
 	inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
 	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
 
@@ -519,7 +559,9 @@ application::application(int argc, char** argv, const std::string& application_n
 		glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), empty, GL_STREAM_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
 		glEnableVertexAttribArray(0);
-		const unsigned short int lines[] { 0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 }; //see renderable.hpp about renderable bounds to check what these indices are
+		const unsigned short int lines[] {
+			0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7
+		}; //see renderable.hpp about renderable bounds to check what these indices are
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bbox_drawer_ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(lines), lines, GL_STATIC_DRAW);
 		glPointSize(10);
@@ -560,8 +602,7 @@ void application::keyboard_debug_utilities_::toggle_live_code_reload_command_::e
 		parent_->liveInstance.tryReload();
 #else
 		static bool first_print = false;
-		if(!first_print)
-			parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
+		if(!first_print) parent_->ui.push_to_console("If you are using blink, live reload is automatic.");
 		first_print = true;
 #endif
 	}
