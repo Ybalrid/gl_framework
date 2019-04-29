@@ -61,6 +61,7 @@ void application::draw_debug_ui()
 		if(ImGui::Begin("Debugger Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
+			ImGui::Text("draw list contains %d objects", draw_list.size());
 			ImGui::Checkbox("Show all object's bounding boxes?", &debug_draw_bbox);
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
@@ -104,7 +105,7 @@ void application::update_timing()
 	//calculate frame timing
 	last_frame_time		 = current_time;
 	current_time		 = SDL_GetTicks();
-	current_time_in_sec  = float(current_time) * .001f;
+	current_time_in_sec	 = float(current_time) * .001f;
 	last_frame_delta	 = current_time - last_frame_time;
 	last_frame_delta_sec = float(last_frame_delta) * .001f;
 
@@ -168,8 +169,8 @@ void application::install_opengl_debug_callback() const
 			   const void* /*user_param*/) {
 				if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
 				std::cerr << "-----\n";
-				std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id
-						  << ") message(" << std::string(message) << ")\n";
+				std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id << ") message("
+						  << std::string(message) << ")\n";
 				std::cerr << "-----" << std::endl; //flush here
 			},
 			nullptr);
@@ -204,8 +205,7 @@ void application::configure_and_create_window(const std::string& application_nam
 	//create window
 	window = sdl::Window(application_name,
 						 window_size,
-						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
-							 | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+						 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -257,7 +257,16 @@ void application::frame_prepare()
 	main_camera->update_projection(size.x, size.y);
 }
 
-void application::draw_full_scene_from_main_camera()
+void application::render_draw_list()
+{
+	for(auto object : draw_list)
+	{
+		const auto scene_obj = object->get_if_is<scene_object>();
+		scene_obj->draw(*main_camera, object->get_world_matrix());
+	}
+}
+
+void application::build_draw_list_from_camera()
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::draw_full_scene_from_main_camera()");
 
@@ -279,7 +288,7 @@ void application::draw_full_scene_from_main_camera()
 
 				//Start assuming object is visible
 				bool outside = false;
-				for(size_t direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+				for(glm::vec4::length_type direction = 0; direction < 3; direction++) //testing 2 planes at the same time
 				{
 					const bool outside_positive_plane = (clip_space_obb[0][direction] > clip_space_obb[0].w)
 						&& (clip_space_obb[1][direction] > clip_space_obb[1].w)
@@ -327,13 +336,6 @@ void application::draw_full_scene_from_main_camera()
 			}
 		});
 	});
-
-	std::cout << "there are " << draw_list.size() << " objects in draw list\n";
-	for(auto object : draw_list)
-	{
-		const auto scene_obj = object->get_if_is<scene_object>();
-		scene_obj->draw(*main_camera, object->get_world_matrix());
-	}
 }
 
 void application::render_frame()
@@ -342,7 +344,8 @@ void application::render_frame()
 	scripts.update(last_frame_delta_sec);
 
 	frame_prepare();
-	draw_full_scene_from_main_camera();
+	build_draw_list_from_camera();
+	render_draw_list();
 	draw_debug_ui();
 	ui.render();
 
@@ -417,16 +420,16 @@ void application::setup_scene()
 
 	const shader_handle simple_shader
 		= shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	const renderable_handle textured_plane = renderable_manager::create_renderable(
-		simple_shader,
-		plane,
-		plane_indices,
-		renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
-		renderable::configuration { true, true, true },
-		3 + 2 + 3,
-		0,
-		3,
-		5);
+	const renderable_handle textured_plane
+		= renderable_manager::create_renderable(simple_shader,
+												plane,
+												plane_indices,
+												renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
+												renderable::configuration { true, true, true },
+												3 + 2 + 3,
+												0,
+												3,
+												5);
 	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
 
 	gltf = gltf_loader(simple_shader);
@@ -445,22 +448,14 @@ void application::setup_scene()
 	}
 	fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
-	inputs.register_keypress(SDL_SCANCODE_A,
-							 fps_camera_controller->press(camera_controller_command::movement_type::left));
-	inputs.register_keypress(SDL_SCANCODE_D,
-							 fps_camera_controller->press(camera_controller_command::movement_type::right));
-	inputs.register_keypress(SDL_SCANCODE_W,
-							 fps_camera_controller->press(camera_controller_command::movement_type::up));
-	inputs.register_keypress(SDL_SCANCODE_S,
-							 fps_camera_controller->press(camera_controller_command::movement_type::down));
-	inputs.register_keyrelease(SDL_SCANCODE_A,
-							   fps_camera_controller->release(camera_controller_command::movement_type::left));
-	inputs.register_keyrelease(SDL_SCANCODE_D,
-							   fps_camera_controller->release(camera_controller_command::movement_type::right));
-	inputs.register_keyrelease(SDL_SCANCODE_W,
-							   fps_camera_controller->release(camera_controller_command::movement_type::up));
-	inputs.register_keyrelease(SDL_SCANCODE_S,
-							   fps_camera_controller->release(camera_controller_command::movement_type::down));
+	inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
+	inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
+	inputs.register_keypress(SDL_SCANCODE_W, fps_camera_controller->press(camera_controller_command::movement_type::up));
+	inputs.register_keypress(SDL_SCANCODE_S, fps_camera_controller->press(camera_controller_command::movement_type::down));
+	inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
+	inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
+	inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
+	inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
 	inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
 	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
 
@@ -483,7 +478,7 @@ void application::setup_scene()
 
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
-	sun.ambient   = glm::vec3(0);
+	sun.ambient	  = glm::vec3(0);
 	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
 
 	std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
@@ -519,8 +514,7 @@ void application::set_clear_color(glm::vec4 color)
 	}
 }
 
-application::application(int argc, char** argv, const std::string& application_name) :
- resources(argc > 0 ? argv[0] : nullptr)
+application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
 	inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
 	inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
@@ -588,10 +582,7 @@ void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::e
 	}
 }
 
-void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::execute()
-{
-	parent_->debug_ui = !parent_->debug_ui;
-}
+void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::execute() { parent_->debug_ui = !parent_->debug_ui; }
 
 void application::keyboard_debug_utilities_::toggle_live_code_reload_command_::execute()
 {

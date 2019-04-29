@@ -38,7 +38,8 @@ class jet_live_log_listener : public jet::ILiveListener
 public:
 	void onLog(jet::LogSeverity severity, const std::string& message) override
 	{
-		std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl; //I'll accept the slow flush here
+		std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message
+				  << std::endl; //I'll accept the slow flush here
 	}
 };
 #endif
@@ -64,7 +65,8 @@ class application
 	void initialize_modern_opengl() const;
 	void initialize_gui();
 	void frame_prepare();
-	void draw_full_scene_from_main_camera();
+	void render_draw_list();
+	void build_draw_list_from_camera();
 	void render_frame();
 	void run_events();
 	void setup_scene();
@@ -73,7 +75,7 @@ class application
 	resource_system resources;
 
 	bool debug_ui			   = false;
-	uint32_t current_time	  = 0;
+	uint32_t current_time	   = 0;
 	uint32_t last_frame_time   = 0;
 	uint32_t last_second_time  = 0;
 	uint32_t last_frame_delta  = 0;
@@ -110,7 +112,6 @@ class application
 
 	std::vector<node*> draw_list;
 
-
 	bool debug_draw_bbox = false;
 
 	static glm::vec4 clear_color;
@@ -122,28 +123,24 @@ class application
 		{
 			application* parent_;
 			void execute() override;
-			toggle_console_keyboard_command_(application* parent) :
-			 parent_ { parent } {}
+			toggle_console_keyboard_command_(application* parent) : parent_ { parent } {}
 		} toggle_console_keyboard_command { parent_ };
 
 		struct toggle_debug_keyboard_command_ : keyboard_input_command
 		{
 			application* parent_;
 			void execute() override;
-			toggle_debug_keyboard_command_(application* parent) :
-			 parent_ { parent } {};
+			toggle_debug_keyboard_command_(application* parent) : parent_ { parent } {};
 		} toggle_debug_keyboard_command { parent_ };
 
 		struct toggle_live_code_reload_command_ : keyboard_input_command
 		{
 			application* parent_;
 			void execute() override;
-			toggle_live_code_reload_command_(application* parent) :
-			 parent_ { parent } {};
+			toggle_live_code_reload_command_(application* parent) : parent_ { parent } {};
 		} toggle_live_code_reload_command { parent_ };
 
-		keyboard_debug_utilities_(application* parent) :
-		 parent_ { parent } {}
+		keyboard_debug_utilities_(application* parent) : parent_ { parent } {}
 	} keyboard_debug_utilities { this };
 
 public:
@@ -166,22 +163,15 @@ public:
 	static void pop_opengl_debug_group()
 	{
 #ifdef _DEBUG
-		if(glPopDebugGroup)
-			glPopDebugGroup();
+		if(glPopDebugGroup) glPopDebugGroup();
 #endif
 	}
 
 	struct opengl_debug_group
 	{
 		const char* name_;
-		opengl_debug_group(const char* name) : name_{name}
-		{
-			push_opengl_debug_group(name_);
-		}
+		opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
 
-		~opengl_debug_group()
-		{
-			pop_opengl_debug_group();
-		}
+		~opengl_debug_group() { pop_opengl_debug_group(); }
 	};
 };
