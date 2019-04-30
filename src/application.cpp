@@ -574,6 +574,9 @@ application::application(int argc, char** argv, const std::string& application_n
 	}
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	glFrontFace(GL_CW);
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

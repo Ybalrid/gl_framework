@@ -23,11 +23,11 @@ void texture::steal_guts(texture& o)
 
 	name   = o.name;
 	o.name = 0;
-	for(size_t i = 0; i < texture_list.size(); ++i)
+	for(auto& texture : texture_list)
 	{
-		if(texture_list[i]->name == o.name)
+		if(texture->name == o.name)
 		{
-			texture_list[i] = this;
+			texture = this;
 			break;
 		}
 	}
