@@ -17,10 +17,7 @@ std::string tinygltf_expand_file_path_callback(const std::string& filepath, void
 	return filepath;
 }
 
-bool tinygltf_file_exist_callback(const std::string& path, void*)
-{
-	return PHYSFS_exists(path.c_str()) != 0;
-}
+bool tinygltf_file_exist_callback(const std::string& path, void*) { return PHYSFS_exists(path.c_str()) != 0; }
 
 bool tinygltf_read_whole_file_callback(std::vector<unsigned char>* bytes, std::string* err, const std::string& path, void*)
 {
@@ -37,7 +34,15 @@ bool tinygltf_read_whole_file_callback(std::vector<unsigned char>* bytes, std::s
 	return true;
 }
 
-bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image_idx, std::string* error, std::string*, int req_width, int req_height, const unsigned char* bytes, int size, void* context)
+bool tinygltf_image_data_loader_callback(tinygltf::Image* image,
+										 const int image_idx,
+										 std::string* error,
+										 std::string*,
+										 int req_width,
+										 int req_height,
+										 const unsigned char* bytes,
+										 int size,
+										 void* context)
 {
 	(void)context; //We did not provide a ctx pointer
 
@@ -55,8 +60,7 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 	const auto type = FreeImage_GetFileTypeFromMemory(image_stream.get());
 	if(type == FIF_UNKNOWN)
 	{
-		if(error)
-			*error = "FreeImage " + std::to_string(image_idx) + " cannot understand the type of the image";
+		if(error) *error = "FreeImage " + std::to_string(image_idx) + " cannot understand the type of the image";
 		return false;
 	}
 
@@ -64,8 +68,7 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 
 	if(!loaded_image.get())
 	{
-		if(error)
-			*error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
+		if(error) *error = "FreeImage loading [" + std::to_string(image_idx) + "] couldn't load image from given binary data";
 		return false;
 	}
 
@@ -74,54 +77,50 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image, const int image
 
 	if(req_width && w != req_width)
 	{
-		if(error)
-			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image width doesn't match requested one";
+		if(error) *error = "FreeImage loading [" + std::to_string(image_idx) + "]: image width doesn't match requested one";
 		return false;
 	}
 
 	if(req_height && h != req_height)
 	{
-		if(error)
-			*error = "FreeImage loading [" + std::to_string(image_idx) + "]: image height doesn't match requested one";
+		if(error) *error = "FreeImage loading [" + std::to_string(image_idx) + "]: image height doesn't match requested one";
 		return false;
 	}
 
 	//Some drivers will only accept 32bit images apparently, convert everything.
 	image->width	 = w;
-	image->height	= h;
+	image->height	 = h;
 	image->component = 4;
 
-	if(FreeImage_GetBPP(loaded_image.get()) != 32)
-		loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
+	if(FreeImage_GetBPP(loaded_image.get()) != 32) loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
 
 	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
 	FreeImage_FlipVertical(loaded_image.get());
 
-	image->image.reserve(w * h * 4);
-	const auto bits = FreeImage_GetBits(loaded_image.get());
-	for(auto pixel = 0U; pixel < w * h; ++pixel)
+	const size_t pixel_size = w * h;
+	std::vector<uint8_t> image_bytes(pixel_size * 4);
+	const auto bits			= FreeImage_GetBits(loaded_image.get());
+	const auto pixels		= reinterpret_cast<uint32_t*>(bits);
+	const auto image_pixels = reinterpret_cast<uint32_t*>(image_bytes.data());
+	for(int pixel = 0; pixel < pixel_size; ++pixel)
 	{
-		image->image.push_back(bits[pixel * 4 + 2]); //R
-		image->image.push_back(bits[pixel * 4 + 1]); //G
-		image->image.push_back(bits[pixel * 4 + 0]); //B
-		image->image.push_back(bits[pixel * 4 + 3]); //A
+		const uint32_t original_pixel = pixels[pixel];
+		image_pixels[pixel]			  = (0x000000FF & original_pixel) << 16 //R
+			| (0x00FF0000 & original_pixel) >> 16							//B
+			| (0xFF00FF00 & original_pixel);								//G and A
 	}
-	image->image.shrink_to_fit();
-
+	image->image = std::move(image_bytes);
 	return true;
 }
 
-void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf)
-{
-	gltf.SetImageLoader(tinygltf_image_data_loader_callback, nullptr);
-}
+void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf) { gltf.SetImageLoader(tinygltf_image_data_loader_callback, nullptr); }
 
 void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 {
 	tinygltf::FsCallbacks callbacks {};
 
 	callbacks.FileExists	 = tinygltf_file_exist_callback;
-	callbacks.ReadWholeFile  = tinygltf_read_whole_file_callback;
+	callbacks.ReadWholeFile	 = tinygltf_read_whole_file_callback;
 	callbacks.ExpandFilePath = tinygltf_expand_file_path_callback;
 
 	//We are not writing glTF files from this application

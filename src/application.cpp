@@ -109,8 +109,12 @@ void application::draw_debug_ui()
 						const auto& texture = textures[i];
 						const GLuint id		= texture.get_glid();
 						ImGui::Text("Texture OpenGL ID = %d", id);
+						ImTextureID imtexture = nullptr;
 
-						const ImTextureID imtexture(reinterpret_cast<void*>(id));
+						//gracefully handle the widening of the value in 64bit
+						if constexpr(sizeof(void*) == 4) imtexture = reinterpret_cast<ImTextureID>(id);
+						if constexpr(sizeof(void*) == 8) imtexture = reinterpret_cast<ImTextureID>(uint64_t(id));
+
 						ImGui::Image(imtexture, ImVec2(256.f, 256.f));
 					}
 				}
