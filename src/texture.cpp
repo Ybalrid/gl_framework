@@ -101,7 +101,7 @@ void texture::generate_mipmaps(GLenum target) const
 	glGenerateMipmap(target);
 }
 
-void texture::set_filtering_parameters(GLenum target)
+void texture::set_filtering_parameters(GLenum target) const
 {
 	bind(0, target);
 	//Can we set an anisotropic filtering on texture?
@@ -111,7 +111,7 @@ void texture::set_filtering_parameters(GLenum target)
 		//querry driver for maximum anisotropy
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy);
 
-		//apply if value sucessfully acquired
+		//apply if value successfully acquired
 		if(anisotropy != 0) glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
