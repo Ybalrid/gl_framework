@@ -175,7 +175,7 @@ public:
 
 		~opengl_debug_group() { pop_opengl_debug_group(); }
 #else
-		opengl_debug_group(const char* name) { (void)name };
+		opengl_debug_group(const char* name) { (void)name; }
 #endif
 	};
 };

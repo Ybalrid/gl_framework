@@ -29,4 +29,6 @@ public:
 	static void bind_0(GLenum target = GL_TEXTURE_2D);
 
 	static void new_frame();
+
+	GLuint get_glid() const;
 };

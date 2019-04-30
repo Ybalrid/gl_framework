@@ -34,4 +34,6 @@ public:
 		manager->get_from_handle(handle) = std::move(renderable(args...));
 		return handle;
 	}
+
+	static std::vector<renderable> const& get_list() { return manager->renderables; }
 };

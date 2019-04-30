@@ -36,4 +36,6 @@ public:
 		get_from_handle(handle) = texture(args...);
 		return handle;
 	}
+
+	static std::vector<texture> const& get_list() { return manager->textures; }
 };

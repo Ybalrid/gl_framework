@@ -125,3 +125,5 @@ void texture::new_frame()
 {
 	for(auto& bound_state : texture_bound_state) bound_state = 0;
 }
+
+GLuint texture::get_glid() const { return name; }

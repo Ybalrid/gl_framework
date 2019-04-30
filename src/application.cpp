@@ -58,15 +58,64 @@ void application::draw_debug_ui()
 	if(debug_ui)
 	{
 		sdl::Mouse::set_relative(false);
-		if(ImGui::Begin("Debugger Window", &debug_ui))
+		if(ImGui::Begin("Debugger Window", &debug_ui, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			ImGui::Text("FPS: %d", fps);
 			ImGui::Text("draw list contains %d objects", draw_list.size());
 			ImGui::Checkbox("Show all object's bounding boxes?", &debug_draw_bbox);
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
+			ImGui::BeginChild(
+				"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+			if(ImGui::CollapsingHeader("Renderable Manager State"))
+			{
+				const auto& list			 = renderable_mgr.get_list();
+				const auto renderable_number = list.size();
+				ImGui::Text("Loaded %d renderables", renderable_number);
+				if(ImGui::CollapsingHeader("Content"))
+				{
+					for(int i = 0; i < renderable_number; i++)
+					{
+						const auto& renderable		  = list[i];
+						std::string renderable_header = "renderable[" + std::to_string(i) + "]";
+						if(ImGui::CollapsingHeader(renderable_header.c_str()))
+						{
+							ImGui::Text("Material : shinyness %f", renderable.mat.shininess);
+							ImGui::ColorEdit3("diffuse", (float*)renderable.mat.diffuse_color.data.data);
+							ImGui::ColorEdit3("specular", (float*)renderable.mat.specular_color.data.data);
+							const auto bounds = renderable.get_bounds();
+							ImGui::Text("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
+										bounds.min.x,
+										bounds.min.y,
+										bounds.min.z,
+										bounds.max.x,
+										bounds.max.y,
+										bounds.max.z);
+						}
+					}
+				}
+			}
+			if(ImGui::CollapsingHeader("Texture Manager state"))
+			{
+				const auto& textures	  = texture_manager::get_list();
+				const auto texture_number = textures.size();
+				ImGui::Text("Loaded %d textures", texture_number);
+				for(int i = 0; i < texture_number; ++i)
+				{
+					std::string header_name
+						= i == texture_manager::get_dummy_texture() ? "dummy texture" : "texture[" + std::to_string(i) + "]";
+					if(ImGui::CollapsingHeader(header_name.c_str()))
+					{
+						const auto& texture = textures[i];
+						const GLuint id		= texture.get_glid();
+						ImGui::Text("Texture OpenGL ID = %d", id);
 
-			if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
+						const ImTextureID imtexture(reinterpret_cast<void*>(id));
+						ImGui::Image(imtexture, ImVec2(256.f, 256.f));
+					}
+				}
+			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 
@@ -75,6 +124,8 @@ void application::draw_debug_ui()
 			if(ImGui::Begin("Style Editor", &show_style_editor)) ImGui::ShowStyleEditor();
 			ImGui::End();
 		}
+
+		if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 	}
 
 #ifndef NON_NAGGING_DEBUG
@@ -469,10 +520,11 @@ void application::setup_scene()
 	auto plane1				   = s.scene_root->push_child(create_node());
 	auto duck_root			   = s.scene_root->push_child(create_node());
 	auto duck				   = duck_root->push_child(create_node());
-	duck->assign(scene_object(duck_renderable));
+	duck->assign(scene_object(duck_renderable[0]));
 	duck->local_xform.set_scale(0.01f * transform::UNIT_SCALE);
 	plane0->assign(scene_object(textured_plane));
 	plane1->assign(scene_object(textured_plane));
+	plane1->local_xform.translate(glm::vec3(2.f, 0.f, 0));
 
 	auto other_plane = duck_root->push_child(create_node());
 	other_plane->local_xform.rotate(90, transform::X_AXIS);
@@ -506,6 +558,15 @@ void application::setup_scene()
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
+	auto sponza_root		 = s.scene_root->push_child(create_node());
+	const auto sponza_meshes = gltf.load_meshes("gltf/Sponza/Sponza.gltf");
+	for(auto sponza_mesh : sponza_meshes)
+	{
+		auto sponza = sponza_root->push_child(create_node());
+		sponza->assign(scene_object(sponza_mesh));
+	}
+
+	sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
 	glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 }
 

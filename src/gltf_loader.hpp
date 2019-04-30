@@ -37,13 +37,19 @@ public:
 	gltf_loader& operator=(gltf_loader&& other) noexcept;
 
 	bool load_model(const std::string& virtual_path, tinygltf::Model& model);
-	renderable_handle load_mesh(const std::string& virtual_path, int index);
-	renderable_handle load_mesh(const std::string& virtual_path, const std::string& name);
+	std::vector<renderable_handle> load_mesh(const std::string& virtual_path, int index);
+	std::vector<renderable_handle> load_mesh(const std::string& virtual_path, const std::string& name);
+	std::vector<renderable_handle> load_meshes(const std::string& virtual_path)
+	{
+		//TODO add meshes abstraction that contains multiple renderables
+		return load_mesh(virtual_path, 0);
+	}
 
 	//this is a bit unnecessary for OpenGL as theses identifier are the same
 	static GLenum mode(GLenum input);
-	static std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index);
+	static std::tuple<std::vector<float>, renderable::vertex_buffer_extrema>
+	get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index);
 	static std::vector<unsigned int> get_indices(const tinygltf::Model& model, int indices_accessor);
 	GLuint load_to_gl_texture(const tinygltf::Image& color_image, bool srgb = true) const;
-	renderable_handle build_renderable(const tinygltf::Mesh& mesh, const tinygltf::Model& model);
+	std::vector<renderable_handle> build_renderables(const tinygltf::Mesh& mesh, const tinygltf::Model& model);
 };
