@@ -570,17 +570,9 @@ void application::setup_scene()
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
-	const auto before_loading_timepoint = std::chrono::high_resolution_clock::now();
-	auto sponza_root					= s.scene_root->push_child(create_node());
-	const auto sponza_mesh				= gltf.load_mesh("gltf/Sponza/Sponza.gltf", 0);
+	auto sponza_root	   = s.scene_root->push_child(create_node());
+	const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf", 0);
 	sponza_root->assign(scene_object(sponza_mesh));
-
-	const auto after_loading_timepoint = std::chrono::high_resolution_clock::now();
-
-	std::cout << "loading took "
-			  << double(std::chrono::duration_cast<std::chrono::nanoseconds>(after_loading_timepoint - before_loading_timepoint)
-							.count())
-			/ (1000000000.0);
 
 	sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
 	glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
