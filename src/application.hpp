@@ -110,7 +110,13 @@ class application
 	input_handler inputs;
 	std::unique_ptr<camera_controller> fps_camera_controller = nullptr;
 
-	std::vector<node*> draw_list;
+	struct draw_operation
+	{
+		node* object_owner;
+		renderable_handle primitive;
+	};
+
+	std::vector<draw_operation> draw_list;
 
 	bool debug_draw_bbox = false;
 

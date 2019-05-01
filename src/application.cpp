@@ -10,6 +10,7 @@
 #include <cpptoml.h>
 
 #include "light.hpp"
+#include <chrono>
 
 //The statics
 std::vector<std::string> application::resource_paks;
@@ -61,28 +62,27 @@ void application::draw_debug_ui()
 		if(ImGui::Begin("Debugger Window", &debug_ui, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			ImGui::Text("FPS: %d", fps);
-			ImGui::Text("draw list contains %d objects", draw_list.size());
-			ImGui::Checkbox("Show all object's bounding boxes?", &debug_draw_bbox);
+			ImGui::Text("%3d objects passed frustum culling", draw_list.size());
+			ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
 			ImGui::BeginChild(
 				"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
 			if(ImGui::CollapsingHeader("Renderable Manager State"))
 			{
-				const auto& list			 = renderable_mgr.get_list();
+				const auto& list			 = renderable_manager::get_list();
 				const auto renderable_number = list.size();
 				ImGui::Text("Loaded %d renderables", renderable_number);
 				if(ImGui::CollapsingHeader("Content"))
-				{
-					for(int i = 0; i < renderable_number; i++)
+					for(size_t i = 0; i < renderable_number; i++)
 					{
 						const auto& renderable		  = list[i];
 						std::string renderable_header = "renderable[" + std::to_string(i) + "]";
 						if(ImGui::CollapsingHeader(renderable_header.c_str()))
 						{
 							ImGui::Text("Material : shinyness %f", renderable.mat.shininess);
-							ImGui::ColorEdit3("diffuse", (float*)renderable.mat.diffuse_color.data.data);
-							ImGui::ColorEdit3("specular", (float*)renderable.mat.specular_color.data.data);
+							ImGui::ColorEdit3("diffuse", const_cast<float*>(renderable.mat.diffuse_color.data.data));
+							ImGui::ColorEdit3("specular", const_cast<float*>(renderable.mat.specular_color.data.data));
 							const auto bounds = renderable.get_bounds();
 							ImGui::Text("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
 										bounds.min.x,
@@ -93,14 +93,13 @@ void application::draw_debug_ui()
 										bounds.max.z);
 						}
 					}
-				}
 			}
 			if(ImGui::CollapsingHeader("Texture Manager state"))
 			{
 				const auto& textures	  = texture_manager::get_list();
 				const auto texture_number = textures.size();
 				ImGui::Text("Loaded %d textures", texture_number);
-				for(int i = 0; i < texture_number; ++i)
+				for(size_t i = 0; i < texture_number; ++i)
 				{
 					std::string header_name
 						= i == texture_manager::get_dummy_texture() ? "dummy texture" : "texture[" + std::to_string(i) + "]";
@@ -109,13 +108,16 @@ void application::draw_debug_ui()
 						const auto& texture = textures[i];
 						const GLuint id		= texture.get_glid();
 						ImGui::Text("Texture OpenGL ID = %d", id);
-						ImTextureID imtexture = nullptr;
+						ImTextureID ImGuiTextureHandle = nullptr;
 
 						//gracefully handle the widening of the value in 64bit
-						if constexpr(sizeof(void*) == 4) imtexture = reinterpret_cast<ImTextureID>(id);
-						if constexpr(sizeof(void*) == 8) imtexture = reinterpret_cast<ImTextureID>(uint64_t(id));
+#if _WIN64 || __amd64__ || __X86_64__
+						ImGuiTextureHandle = reinterpret_cast<ImTextureID>(uint64_t(id));
+#else
+						ImGuiTextureHandle = reinterpret_cast<ImTextureID>(id);
+#endif
 
-						ImGui::Image(imtexture, ImVec2(256.f, 256.f));
+						ImGui::Image(ImGuiTextureHandle, ImVec2(256.f, 256.f));
 					}
 				}
 			}
@@ -292,6 +294,7 @@ void application::initialize_gui()
 void application::frame_prepare()
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
+	(void)opengl_debug_tag;
 
 	s.scene_root->update_world_matrix();
 	//The camera world matrix is stored inside the camera to permit to compute the camera view matrix
@@ -315,17 +318,20 @@ void application::frame_prepare()
 void application::render_draw_list(camera* render_camera)
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list");
-	for(auto object : draw_list)
+	(void)opengl_debug_tag;
+	for(auto [node, handle] : draw_list)
 	{
-		const auto scene_obj = object->get_if_is<scene_object>();
-		assert(scene_obj != nullptr);
-		scene_obj->draw(*render_camera, object->get_world_matrix());
+		auto& to_draw = renderable_manager::get_from_handle(handle);
+		to_draw.set_model_matrix(node->get_world_matrix());
+		to_draw.set_mvp_matrix(render_camera->get_view_projection_matrix() * node->get_world_matrix());
+		to_draw.draw();
 	}
 }
 
 void application::build_draw_list_from_camera(camera* render_camera)
 {
 	const auto opengl_debug_tag = opengl_debug_group("application::build_draw_list_from_camera()");
+	(void)opengl_debug_tag;
 
 	draw_list.clear();
 
@@ -335,61 +341,61 @@ void application::build_draw_list_from_camera(camera* render_camera)
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
 				auto& object				  = static_cast<scene_object&>(node_attached_object);
-				const auto obb_points		  = object.get_obb(current_node->get_world_matrix());
+				const auto obb_points_list	  = object.get_obb(current_node->get_world_matrix());
 				const glm::mat4 to_clip_space = render_camera->get_view_projection_matrix();
 				std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
-
-				//project the oriented bounding box to clip space
-				for(size_t i = 0; i < 8; ++i) clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
-
-				//Start assuming object is visible
-				bool outside = false;
-				for(glm::vec4::length_type direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+				for(size_t j = 0; j < obb_points_list.size(); ++j)
 				{
-					const bool outside_positive_plane = (clip_space_obb[0][direction] > clip_space_obb[0].w)
-						&& (clip_space_obb[1][direction] > clip_space_obb[1].w)
-						&& (clip_space_obb[2][direction] > clip_space_obb[2].w)
-						&& (clip_space_obb[3][direction] > clip_space_obb[3].w)
-						&& (clip_space_obb[4][direction] > clip_space_obb[4].w)
-						&& (clip_space_obb[5][direction] > clip_space_obb[5].w)
-						&& (clip_space_obb[6][direction] > clip_space_obb[6].w)
-						&& (clip_space_obb[7][direction] > clip_space_obb[7].w);
+					const auto& obb_points = obb_points_list[j];
+					//project the oriented bounding box to clip space
+					for(size_t i = 0; i < 8; ++i) clip_space_obb[i] = to_clip_space * glm::vec4(obb_points[i], 1.f);
 
-					const bool outside_negative_plane = (clip_space_obb[0][direction] < -clip_space_obb[0].w)
-						&& (clip_space_obb[1][direction] < -clip_space_obb[1].w)
-						&& (clip_space_obb[2][direction] < -clip_space_obb[2].w)
-						&& (clip_space_obb[3][direction] < -clip_space_obb[3].w)
-						&& (clip_space_obb[4][direction] < -clip_space_obb[4].w)
-						&& (clip_space_obb[5][direction] < -clip_space_obb[5].w)
-						&& (clip_space_obb[6][direction] < -clip_space_obb[6].w)
-						&& (clip_space_obb[7][direction] < -clip_space_obb[7].w);
+					//Start assuming object is visible
+					bool outside = false;
+					for(glm::vec4::length_type direction = 0; direction < 3; direction++) //testing 2 planes at the same time
+					{
+						const bool outside_positive_plane = (clip_space_obb[0][direction] > clip_space_obb[0].w)
+							&& (clip_space_obb[1][direction] > clip_space_obb[1].w)
+							&& (clip_space_obb[2][direction] > clip_space_obb[2].w)
+							&& (clip_space_obb[3][direction] > clip_space_obb[3].w)
+							&& (clip_space_obb[4][direction] > clip_space_obb[4].w)
+							&& (clip_space_obb[5][direction] > clip_space_obb[5].w)
+							&& (clip_space_obb[6][direction] > clip_space_obb[6].w)
+							&& (clip_space_obb[7][direction] > clip_space_obb[7].w);
 
-					outside = outside || outside_positive_plane || outside_negative_plane;
-				}
+						const bool outside_negative_plane = (clip_space_obb[0][direction] < -clip_space_obb[0].w)
+							&& (clip_space_obb[1][direction] < -clip_space_obb[1].w)
+							&& (clip_space_obb[2][direction] < -clip_space_obb[2].w)
+							&& (clip_space_obb[3][direction] < -clip_space_obb[3].w)
+							&& (clip_space_obb[4][direction] < -clip_space_obb[4].w)
+							&& (clip_space_obb[5][direction] < -clip_space_obb[5].w)
+							&& (clip_space_obb[6][direction] < -clip_space_obb[6].w)
+							&& (clip_space_obb[7][direction] < -clip_space_obb[7].w);
 
-				if(!outside) draw_list.push_back(current_node);
+						outside = outside || outside_positive_plane || outside_negative_plane;
+					}
 
-				//independently of the frustum culling, draw the bouding box
-				if(debug_draw_bbox)
-				{
-					auto scene_obj					 = static_cast<scene_object>(node_attached_object);
-					const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
-					GLint bind_back;
-					glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &bind_back);
-					glBindVertexArray(bbox_drawer_vao);
-					glBufferData(GL_ARRAY_BUFFER,
-								 8 * 3 * sizeof(float),
-								 scene_obj.get_obb(current_node->get_world_matrix()).data(),
-								 GL_STREAM_DRAW);
-					const auto& debug_shader_object = shader_manager.get_from_handle(color_debug_shader);
-					debug_shader_object.use();
-					debug_shader_object.set_uniform(shader::uniform::view, render_camera->get_view_matrix());
-					debug_shader_object.set_uniform(shader::uniform::projection, render_camera->get_projection_matrix());
-					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
-					glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
-					debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
-					glDrawArrays(GL_POINTS, 0, 8);
-					glBindVertexArray(bind_back);
+					if(!outside) draw_list.push_back({ current_node, object.get_mesh().get_submeshes()[j] });
+
+					//independently of the frustum culling, draw the bouding box
+					if(debug_draw_bbox)
+					{
+						auto scene_obj					 = static_cast<scene_object>(node_attached_object);
+						const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+						GLint bind_back;
+						glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &bind_back);
+						glBindVertexArray(bbox_drawer_vao);
+						glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), obb_points.data(), GL_STREAM_DRAW);
+						const auto& debug_shader_object = shader_program_manager::get_from_handle(color_debug_shader);
+						debug_shader_object.use();
+						debug_shader_object.set_uniform(shader::uniform::view, render_camera->get_view_matrix());
+						debug_shader_object.set_uniform(shader::uniform::projection, render_camera->get_projection_matrix());
+						debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(1, 1, 1, 1));
+						glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, nullptr);
+						debug_shader_object.set_uniform(shader::uniform::debug_color, glm::vec4(0.4, 0.4, 1, 1));
+						glDrawArrays(GL_POINTS, 0, 8);
+						glBindVertexArray(bind_back);
+					}
 				}
 			}
 		});
@@ -479,7 +485,7 @@ void application::setup_scene()
 
 	const shader_handle simple_shader
 		= shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-	const renderable_handle textured_plane
+	const renderable_handle textured_plane_primitive
 		= renderable_manager::create_renderable(simple_shader,
 												plane,
 												plane_indices,
@@ -489,7 +495,9 @@ void application::setup_scene()
 												0,
 												3,
 												5);
-	renderable_manager::get_from_handle(textured_plane).set_diffuse_texture(polutropon_logo_texture);
+	renderable_manager::get_from_handle(textured_plane_primitive).set_diffuse_texture(polutropon_logo_texture);
+	mesh textured_plane;
+	textured_plane.add_submesh(textured_plane_primitive);
 
 	gltf = gltf_loader(simple_shader);
 
@@ -524,7 +532,7 @@ void application::setup_scene()
 	auto plane1				   = s.scene_root->push_child(create_node());
 	auto duck_root			   = s.scene_root->push_child(create_node());
 	auto duck				   = duck_root->push_child(create_node());
-	duck->assign(scene_object(duck_renderable[0]));
+	duck->assign(scene_object(duck_renderable));
 	duck->local_xform.set_scale(0.01f * transform::UNIT_SCALE);
 	plane0->assign(scene_object(textured_plane));
 	plane1->assign(scene_object(textured_plane));
@@ -562,13 +570,17 @@ void application::setup_scene()
 	lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
 	lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
-	auto sponza_root		 = s.scene_root->push_child(create_node());
-	const auto sponza_meshes = gltf.load_meshes("gltf/Sponza/Sponza.gltf");
-	for(auto sponza_mesh : sponza_meshes)
-	{
-		auto sponza = sponza_root->push_child(create_node());
-		sponza->assign(scene_object(sponza_mesh));
-	}
+	const auto before_loading_timepoint = std::chrono::high_resolution_clock::now();
+	auto sponza_root					= s.scene_root->push_child(create_node());
+	const auto sponza_mesh				= gltf.load_mesh("gltf/Sponza/Sponza.gltf", 0);
+	sponza_root->assign(scene_object(sponza_mesh));
+
+	const auto after_loading_timepoint = std::chrono::high_resolution_clock::now();
+
+	std::cout << "loading took "
+			  << double(std::chrono::duration_cast<std::chrono::nanoseconds>(after_loading_timepoint - before_loading_timepoint)
+							.count())
+			/ (1000000000.0);
 
 	sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
 	glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);

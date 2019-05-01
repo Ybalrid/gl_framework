@@ -57,22 +57,24 @@ bool gltf_loader::load_model(const std::string& virtual_path, tinygltf::Model& m
 	return false;
 }
 
-std::vector<renderable_handle> gltf_loader::load_mesh(const std::string& virtual_path, int index)
+mesh gltf_loader::load_mesh(const std::string& virtual_path, int index)
 {
 	error.clear();
 	warning.clear();
+	model_texture_cache.clear();
 
 	//TODO create model cache
 	tinygltf::Model model;
 	if(!load_model(virtual_path, model)) { std::cerr << error; }
 
-	return build_renderables(model.meshes[size_t(index)], model);
+	return build_mesh(model.meshes[size_t(index)], model);
 }
 
-std::vector<renderable_handle> gltf_loader::load_mesh(const std::string& virtual_path, const std::string& name)
+mesh gltf_loader::load_mesh(const std::string& virtual_path, const std::string& name)
 {
 	error.clear();
 	warning.clear();
+	model_texture_cache.clear();
 
 	//TODO create model cache
 	tinygltf::Model model;
@@ -83,7 +85,7 @@ std::vector<renderable_handle> gltf_loader::load_mesh(const std::string& virtual
 	const auto iterator = std::find_if(
 		std::cbegin(model.meshes), std::cend(model.meshes), [&](const tinygltf::Mesh& mesh) { return name == mesh.name; });
 
-	if(iterator != std::cend(model.meshes)) return build_renderables(*iterator, model);
+	if(iterator != std::cend(model.meshes)) return build_mesh(*iterator, model);
 
 	throw std::runtime_error("Couldn't find " + name + " in " + virtual_path);
 }
@@ -252,15 +254,15 @@ GLuint gltf_loader::load_to_gl_texture(const tinygltf::Image& color_image, bool 
 	return tex;
 }
 
-std::vector<renderable_handle> gltf_loader::build_renderables(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
+mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Model& model)
 {
-	std::vector<renderable_handle> output;
-	const auto primitives_to_load = mesh.primitives.size();
-	output.reserve(primitives_to_load);
+	mesh output;
+	const auto primitives_to_load = gltf_mesh.primitives.size();
+	output.reserve_memory(primitives_to_load);
 	for(int i = 0; i < primitives_to_load; ++i)
 	{
-		output.push_back([&] {
-			const auto primitive = mesh.primitives[i];
+		output.add_submesh([&] {
+			const auto primitive = gltf_mesh.primitives[i];
 			const auto draw_mode = mode(primitive.mode);
 
 			const auto indices_accessor_index		= primitive.indices;
@@ -272,18 +274,31 @@ std::vector<renderable_handle> gltf_loader::build_renderables(const tinygltf::Me
 				= get_vertices(model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index);
 			auto index = get_indices(model, indices_accessor_index);
 
-			if(mesh.primitives[i].material >= 0)
+			if(gltf_mesh.primitives[i].material >= 0)
 			{
 
-				const auto material			= model.materials[mesh.primitives[i].material];
-				const auto color_texture	= model.textures[material.values.at("baseColorTexture").TextureIndex()];
-				const auto color_image		= model.images[color_texture.source];
-				GLuint tex					= load_to_gl_texture(color_image);
-				auto diffuse_texture_handle = texture_manager::create_texture(tex);
+				const auto material		 = model.materials[gltf_mesh.primitives[i].material];
+				const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
+				const auto color_image	 = model.images[color_texture.source];
+
+				texture_handle diffuse_texture_handle = texture_manager::invalid_texture;
 				{
-					auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
-					diffuse_texture_object.generate_mipmaps();
-					diffuse_texture_object.set_filtering_parameters();
+					const auto cached = model_texture_cache.find(color_texture.source);
+					if(cached == std::end(model_texture_cache))
+					{
+						GLuint tex			   = load_to_gl_texture(color_image);
+						diffuse_texture_handle = texture_manager::create_texture(tex);
+						{
+							auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
+							diffuse_texture_object.generate_mipmaps();
+							diffuse_texture_object.set_filtering_parameters();
+						}
+						model_texture_cache[color_texture.source] = diffuse_texture_handle;
+					}
+					else
+					{
+						diffuse_texture_handle = cached->second;
+					}
 				}
 
 				renderable_handle r = renderable_manager::create_renderable(

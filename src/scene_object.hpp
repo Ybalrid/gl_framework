@@ -3,31 +3,22 @@
 #include "renderable.hpp"
 #include "camera.hpp"
 #include "transform.hpp"
-#include "renderable_manager.hpp"
+#include "mesh.hpp"
 
 class scene_object
 {
-	renderable_handle mesh = renderable_manager::invalid_renderable;
+	mesh mesh_ {};
 
 public:
-	scene_object(renderable_handle r) :
-	 mesh { r }
+	scene_object(mesh m) : mesh_ { m } {}
+
+	std::vector<bounding_box> get_obb(const glm::mat4 model)
 	{
+		std::vector<bounding_box> output(mesh_.get_submeshes().size());
+		for(size_t i = 0; i < output.size(); ++i)
+			output[i] = (renderable_manager::get_from_handle(mesh_.get_submeshes()[i]).get_world_obb(model));
+		return output;
 	}
 
-	void draw(const camera& camera, const glm::mat4& model)
-	{
-		auto& mesh_object = renderable_manager::get_from_handle(mesh);
-		//Set this object's matrix
-		mesh_object.set_model_matrix(model);
-		//Set the model_view_projection matrix. These are specific to each camera/object couple
-		mesh_object.set_mvp_matrix(camera.get_view_projection_matrix() * model);
-
-		mesh_object.draw();
-	}
-
-	bounding_box get_obb(const glm::mat4 model)
-	{
-		return renderable_manager::get_from_handle(mesh).get_world_obb(model);
-	}
+	mesh const& get_mesh() const { return mesh_; }
 };
