@@ -625,7 +625,7 @@ application::application(int argc, char** argv, const std::string& application_n
 		glBindBuffer(GL_ARRAY_BUFFER, bbox_drawer_vbo);
 		float empty[8 * 3] { 0 };
 		glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), empty, GL_STREAM_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(0));
 		glEnableVertexAttribArray(0);
 		const unsigned short int lines[] {
 			0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7

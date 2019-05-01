@@ -56,8 +56,8 @@ vec4 apply_gamma(vec4 color, float gamma)
 	return vec4(pow(color.rgb, vec3(1.0/gamma)), color.a);
 }
 
-vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction);
-vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction);
+vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color);
+vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color);
 
 void main()
 {
@@ -65,16 +65,20 @@ void main()
 	vec3 normalized_normals = normalize(normal_direction);
 	vec3 view_direction = normalize(camera_position - world_position);
 
+	vec4 diffuse_sample_color = texture(material.diffuse, texture_coordinates);
+	if(diffuse_sample_color.a < 0.5) discard; //discard low alpha values
+	vec4 specular_sample_color = texture(material.specular, texture_coordinates);
+
 	//Accumulate each light contribution to shading
-	vec3 color_result =  calculate_directional_light(main_directional_light, normalized_normals, view_direction);
+	vec3 color_result =  calculate_directional_light(main_directional_light, normalized_normals, view_direction, diffuse_sample_color.rgb, specular_sample_color.rgb);
 	for(int i = 0; i < NB_POINT_LIGHTS; i++)
-		color_result += calculate_point_light(point_light_list[i], normalized_normals, world_position, view_direction);
+		color_result += calculate_point_light(point_light_list[i], normalized_normals, world_position, view_direction, diffuse_sample_color.rgb, specular_sample_color.rgb);
 
 	//gamma correct the output:
 	color_output = apply_gamma(vec4(color_result, 1.0), gamma);
 }
 
-vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction)
+vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color)
 {
 	vec3 light_direction = normalize(-light.direction);
 
@@ -85,8 +89,8 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 	vec3 refection_direction = reflect(-light_direction, frag_normal);
 	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), material.shininess);
 
-	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb * material.diffuse_color;
-	vec3 specular_sample_color = texture(material.specular, texture_coordinates).rgb * material.specular_color;
+	diffuse_sample_color = diffuse_sample_color * material.diffuse_color;
+	specular_sample_color = specular_sample_color * material.specular_color;
 	
 	
 	vec3 ambient_color = light.ambient * diffuse_sample_color;
@@ -97,7 +101,7 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 	return ambient_color + diffuse_color + specular_color;
 }
 
-vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction)
+vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color)
 {
 	vec3 light_direction = normalize(light.position - frag_world_position);
 
@@ -115,9 +119,6 @@ vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_
 		+ (light.linear * (light_frag_distance))
 		+ (light.quadratic * (light_frag_distance_sq))
 	);
-
-	vec3 diffuse_sample_color = texture(material.diffuse, texture_coordinates).rgb;
-	vec3 specular_sample_color = texture(material.specular, texture_coordinates).rgb;
 
 	vec3 ambient_color = light.ambient * diffuse_sample_color;
 	vec3 diffuse_color = light.diffuse * diffuse_factor * diffuse_sample_color;
