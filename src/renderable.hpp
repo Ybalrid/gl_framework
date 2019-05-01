@@ -30,6 +30,7 @@ private:
 	shader_handle shader_program	= shader_program_manager::invalid_shader;
 	texture_handle diffuse_texture	= texture_manager::invalid_texture;
 	texture_handle specular_texture = texture_manager::invalid_texture;
+	texture_handle normal_texture	= texture_manager::invalid_texture;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
 	GLenum draw_mode = GL_TRIANGLES, element_type = GL_UNSIGNED_INT;
@@ -43,6 +44,7 @@ private:
 	static constexpr GLuint vertex_position_location = 0;
 	static constexpr GLuint vertex_texture_location	 = 1;
 	static constexpr GLuint vertex_normal_location	 = 2;
+	static constexpr GLuint vertex_tangent_location	 = 3;
 
 	void steal_guts(renderable& other);
 
@@ -54,6 +56,7 @@ public:
 		bool position : 1;
 		bool texture : 1;
 		bool normal : 1;
+		bool tangent : 1;
 	};
 
 	renderable() = default;
@@ -67,11 +70,17 @@ public:
 			   size_t vertex_coord_offset  = 0,
 			   size_t texture_coord_offset = 0,
 			   size_t normal_coord_offset  = 0,
+			   size_t tangent_coord_offset = 0,
 			   GLenum draw_operation	   = GL_TRIANGLES,
 			   GLenum buffer_usage		   = GL_STATIC_DRAW);
 
 	void set_diffuse_texture(texture_handle t);
 	void set_specular_texture(texture_handle t);
+	void set_normal_texture(texture_handle t);
+
+	texture_handle get_diffuse_texture() const { return diffuse_texture; }
+	texture_handle get_specular_texture() const { return specular_texture; }
+	texture_handle get_normal_texture() const { return normal_texture; }
 
 	~renderable();
 	renderable(const renderable&) = delete;

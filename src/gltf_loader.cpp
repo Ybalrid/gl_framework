@@ -127,15 +127,16 @@ GLenum gltf_loader::mode(GLenum input)
 std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::get_vertices(const tinygltf::Model& model,
 																							int vertex_accessor_index,
 																							int texture_accessor_index,
-																							int normal_accessor_index)
+																							int normal_accessor_index,
+																							int tangent_accessor_index)
 {
-	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/;
+	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/ + (tangent_accessor_index >= 0 ? 3 : 0);
 	std::vector<float> vertex_buffer;
 	const auto vertex_accessor	= model.accessors[size_t(vertex_accessor_index)];
 	const auto texture_accessor = model.accessors[size_t(texture_accessor_index)];
 	const auto normal_accessor	= model.accessors[size_t(normal_accessor_index)];
 
-	// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z]
+	// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z] (T [X, Y, Z])
 	vertex_buffer.resize(vertex_accessor.count * (c));
 
 	//Get the requred pointers, strides, and sizes from the accessors's buffers
@@ -193,6 +194,26 @@ std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::g
 					vertex_buffer[i * c + j] = (float)((double*)(normal_data_start_ptr + (i * normal_data_byte_stride)))[j - 5];
 				default: throw std::runtime_error("unsuported vertex format");
 			}
+
+		if(tangent_accessor_index >= 0)
+		{
+			const auto& tangent_accessor	  = model.accessors[size_t(tangent_accessor_index)];
+			const auto& tangent_buffer_view	  = model.bufferViews[tangent_accessor.bufferView];
+			const auto& tangent_buffer_buffer = model.buffers[tangent_buffer_view.buffer];
+			const auto tangent_data_start_ptr
+				= tangent_buffer_buffer.data.data() + (tangent_buffer_view.byteOffset + tangent_accessor.byteOffset);
+			const auto tangent_data_byte_stride = tangent_accessor.ByteStride(tangent_buffer_view);
+			for(int j = 8; j < 11; j++) switch(tangent_accessor.componentType)
+				{
+					case TINYGLTF_COMPONENT_TYPE_FLOAT:
+						vertex_buffer[i * c + j] = ((float*)(tangent_data_start_ptr + (i * tangent_data_byte_stride)))[j - 8];
+						break;
+					case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+						vertex_buffer[i * c + j]
+							= (float)((double*)(tangent_data_start_ptr + (i * tangent_data_byte_stride)))[j - 8];
+					default: throw std::runtime_error("unsuported vertex format");
+				}
+		}
 	}
 
 	glm::vec3 min { float(vertex_accessor.minValues[0]),
@@ -269,9 +290,12 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 			const auto vertex_coord_accessor_index	= primitive.attributes.at("POSITION");
 			const auto texture_coord_accessor_index = primitive.attributes.at("TEXCOORD_0");
 			const auto normal_accessor_index		= primitive.attributes.at("NORMAL");
+			const auto tangent_accessor_index_it	= primitive.attributes.find("TANGENT");
+			const auto tangent_accessor_index
+				= tangent_accessor_index_it != primitive.attributes.end() ? tangent_accessor_index_it->second : -1;
 
-			auto [vertex, aabb]
-				= get_vertices(model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index);
+			auto [vertex, aabb] = get_vertices(
+				model, vertex_coord_accessor_index, texture_coord_accessor_index, normal_accessor_index, tangent_accessor_index);
 			auto index = get_indices(model, indices_accessor_index);
 
 			if(gltf_mesh.primitives[i].material >= 0)
@@ -282,6 +306,7 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 				const auto color_image	 = model.images[color_texture.source];
 
 				texture_handle diffuse_texture_handle = texture_manager::invalid_texture;
+				texture_handle normal_texture_handle  = texture_manager::invalid_texture;
 				{
 					const auto cached = model_texture_cache.find(color_texture.source);
 					if(cached == std::end(model_texture_cache))
@@ -301,14 +326,70 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 					}
 				}
 
+				int normal_texture_index = -1;
+				{
+					auto normal_texture_it = material.additionalValues.find("normalTexture");
+					if(normal_texture_it != material.additionalValues.end())
+						normal_texture_index = normal_texture_it->second.TextureIndex();
+				}
+
+				if(normal_texture_index >= 0)
+				{
+					const auto normal_texture = model.textures[normal_texture_index];
+					const auto normal_image	  = model.images[normal_texture.source];
+
+					const auto cached = model_texture_cache.find(normal_texture.source);
+					if(cached == std::end(model_texture_cache))
+					{
+						GLuint tex			  = load_to_gl_texture(normal_image, false);
+						normal_texture_handle = texture_manager::create_texture(tex);
+						{
+							auto& normal_texture_object = texture_manager::get_from_handle(normal_texture_handle);
+							normal_texture_object.generate_mipmaps();
+							normal_texture_object.set_filtering_parameters();
+						}
+						model_texture_cache[normal_texture.source] = normal_texture_handle;
+					}
+					else
+					{
+						normal_texture_handle = cached->second;
+					}
+				}
+
 				renderable_handle r = renderable_manager::create_renderable(
-					dshader, vertex, index, aabb, renderable::configuration { true, true, true }, 8, 0, 3, 5, draw_mode);
-				renderable_manager::get_from_handle(r).set_diffuse_texture(diffuse_texture_handle);
+					dshader,
+					vertex,
+					index,
+					aabb,
+					renderable::configuration { true, true, true, tangent_accessor_index >= 0 },
+					tangent_accessor_index >= 0 ? 11 : 8,
+					0,
+					3,
+					5,
+					8,
+					draw_mode);
+				{
+					auto& renderable = renderable_manager::get_from_handle(r);
+					renderable.set_diffuse_texture(diffuse_texture_handle);
+					renderable.set_normal_texture(normal_texture_handle);
+				}
+
 				return r;
 			}
 
-			return renderable_manager::create_renderable(
-				dshader, vertex, index, aabb, renderable::configuration { true, true, true }, 8, 0, 3, 5, draw_mode);
+			auto r = renderable_manager::create_renderable(
+				dshader,
+				vertex,
+				index,
+				aabb,
+				renderable::configuration { true, true, true, tangent_accessor_index >= 0 },
+				tangent_accessor_index >= 0 ? 11 : 8,
+				0,
+				3,
+				5,
+				8,
+				draw_mode);
+			return r;
 		}());
 	}
 

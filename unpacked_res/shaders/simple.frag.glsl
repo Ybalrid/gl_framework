@@ -6,6 +6,7 @@ out vec4 color_output;
 in vec2 texture_coordinates;
 in vec3 normal_direction;
 in vec3 world_position;
+in mat3 TBN;
 
 //cpu inputs
 uniform vec3 camera_position;
@@ -18,6 +19,8 @@ struct material_def
 {
 	sampler2D diffuse;
 	sampler2D specular;
+	sampler2D normal;
+
 	float shininess;
 
 	vec3 diffuse_color;
@@ -62,7 +65,10 @@ vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_
 void main()
 {
 	//compute additional vectors : 
-	vec3 normalized_normals = normalize(normal_direction);
+	vec3 normalized_normals = texture(material.normal, texture_coordinates).rgb;
+	normalized_normals = normalize(normalized_normals * 2.0 - 1.0);
+	normalized_normals = normalize(TBN * normalized_normals);
+
 	vec3 view_direction = normalize(camera_position - world_position);
 
 	vec4 diffuse_sample_color = texture(material.diffuse, texture_coordinates);

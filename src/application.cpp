@@ -84,13 +84,21 @@ void application::draw_debug_ui()
 							ImGui::ColorEdit3("diffuse", const_cast<float*>(renderable.mat.diffuse_color.data.data));
 							ImGui::ColorEdit3("specular", const_cast<float*>(renderable.mat.specular_color.data.data));
 							const auto bounds = renderable.get_bounds();
-							ImGui::Text("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
-										bounds.min.x,
-										bounds.min.y,
-										bounds.min.z,
-										bounds.max.x,
-										bounds.max.y,
-										bounds.max.z);
+							ImGui::TextWrapped("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
+											   bounds.min.x,
+											   bounds.min.y,
+											   bounds.min.z,
+											   bounds.max.x,
+											   bounds.max.y,
+											   bounds.max.z);
+							const auto diffuse	= renderable.get_diffuse_texture();
+							const auto specular = renderable.get_specular_texture();
+							const auto normal	= renderable.get_normal_texture();
+
+							ImGui::Text("Textures:");
+							ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
+							ImGui::Text("Specular : %d", specular == texture_mgr.invalid_texture ? -1 : specular);
+							ImGui::Text("Normal : %d", normal == texture_mgr.invalid_texture ? -1 : normal);
 						}
 					}
 			}
@@ -470,10 +478,10 @@ void application::setup_scene()
 	const std::vector<float> plane =
 	{
 		//x=	y=		 z=			u=	v=		normal=
-		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,
-		0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,
-		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,
-		0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,
+		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,  0,-1,0,
+		 0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,  0,-1,0,
+		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,  0,-1,0,
+		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,  0,-1,0
 	};
 
 	const std::vector<unsigned int> plane_indices =
@@ -490,11 +498,12 @@ void application::setup_scene()
 												plane,
 												plane_indices,
 												renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
-												renderable::configuration { true, true, true },
-												3 + 2 + 3,
+												renderable::configuration { true, true, true, true },
+												3 + 2 + 3 + 3,
 												0,
 												3,
-												5);
+												5,
+												8);
 	renderable_manager::get_from_handle(textured_plane_primitive).set_diffuse_texture(polutropon_logo_texture);
 	mesh textured_plane;
 	textured_plane.add_submesh(textured_plane_primitive);
@@ -527,22 +536,26 @@ void application::setup_scene()
 	inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
 
 	//TODO build a real level system!
-	const auto duck_renderable = gltf.load_mesh("/gltf/Duck.glb", 0);
-	auto plane0				   = s.scene_root->push_child(create_node());
-	auto plane1				   = s.scene_root->push_child(create_node());
-	auto duck_root			   = s.scene_root->push_child(create_node());
-	auto duck				   = duck_root->push_child(create_node());
-	duck->assign(scene_object(duck_renderable));
-	duck->local_xform.set_scale(0.01f * transform::UNIT_SCALE);
+	auto plane0 = s.scene_root->push_child(create_node());
 	plane0->assign(scene_object(textured_plane));
-	plane1->assign(scene_object(textured_plane));
-	plane1->local_xform.translate(glm::vec3(2.f, 0.f, 0));
 
-	auto other_plane = duck_root->push_child(create_node());
-	other_plane->local_xform.rotate(90, transform::X_AXIS);
-	other_plane->local_xform.translate(glm::vec3(0, 2.5f, 0));
-	other_plane->local_xform.scale(0.9f * transform::UNIT_SCALE);
-	other_plane->assign(scene_object(textured_plane));
+	auto corset_node = s.scene_root->push_child(create_node());
+	auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb", 0);
+	corset_node->assign(scene_object(corset_mesh));
+	corset_node->local_xform.translate(glm::vec3(-4, 0, 0));
+	corset_node->local_xform.scale(50.f * transform::UNIT_SCALE);
+
+	auto antique_camera_node = s.scene_root->push_child(create_node());
+	auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb", 0);
+	antique_camera_node->assign(scene_object(antique_camera_mesh));
+	antique_camera_node->local_xform.translate(glm::vec3(4, 0, 0));
+	antique_camera_node->local_xform.scale(0.25f * transform::UNIT_SCALE);
+
+	auto damaged_helmet_node = s.scene_root->push_child(create_node());
+	auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb", 0);
+	damaged_helmet_node->assign(scene_object(damaged_helmet_mesh));
+	damaged_helmet_node->local_xform.translate(glm::vec3(8.f, 1.f, 0));
+	damaged_helmet_node->local_xform.rotate(glm::angleAxis(glm::radians(90.f), transform::X_AXIS));
 
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;

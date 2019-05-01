@@ -63,6 +63,7 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 
 	uniform_indices[int(uniform::material_diffuse)]		   = glGetUniformLocation(program, "material.diffuse");
 	uniform_indices[int(uniform::material_specular)]	   = glGetUniformLocation(program, "material.specular");
+	uniform_indices[int(uniform::material_normal)]		   = glGetUniformLocation(program, "material.normal");
 	uniform_indices[int(uniform::material_shininess)]	   = glGetUniformLocation(program, "material.shininess");
 	uniform_indices[int(uniform::material_diffuse_color)]  = glGetUniformLocation(program, "material.diffuse_color");
 	uniform_indices[int(uniform::material_specular_color)] = glGetUniformLocation(program, "material.diffuse_color");

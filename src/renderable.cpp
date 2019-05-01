@@ -7,6 +7,7 @@ void renderable::steal_guts(renderable& other)
 	shader_program	 = other.shader_program;
 	diffuse_texture	 = other.diffuse_texture;
 	specular_texture = other.specular_texture;
+	normal_texture	 = other.normal_texture;
 	VAO				 = other.VAO;
 	VBO				 = other.VBO;
 	EBO				 = other.EBO;
@@ -32,6 +33,7 @@ renderable::renderable(shader_handle program,
 					   size_t vertex_coord_offset,
 					   size_t texture_coord_offset,
 					   size_t normal_coord_offset,
+					   size_t tangent_coord_offset,
 					   GLenum draw_operation,
 					   GLenum buffer_usage) :
  shader_program(program),
@@ -75,6 +77,16 @@ renderable::renderable(shader_handle program,
 							  reinterpret_cast<void*>(normal_coord_offset * sizeof(float)));
 		glEnableVertexAttribArray(vertex_normal_location);
 	}
+	if(vertex_config.tangent)
+	{
+		glVertexAttribPointer(vertex_tangent_location,
+							  3,
+							  GL_FLOAT,
+							  GL_FALSE,
+							  GLsizei(vertex_buffer_stride * sizeof(float)),
+							  reinterpret_cast<void*>(tangent_coord_offset * sizeof(float)));
+		glEnableVertexAttribArray(vertex_tangent_location);
+	}
 	glBindVertexArray(0);
 	element_count = GLuint(index_buffer.size());
 }
@@ -82,6 +94,8 @@ renderable::renderable(shader_handle program,
 void renderable::set_diffuse_texture(texture_handle t) { diffuse_texture = t; }
 
 void renderable::set_specular_texture(texture_handle t) { specular_texture = t; }
+
+void renderable::set_normal_texture(texture_handle t) { normal_texture = t; }
 
 renderable::~renderable()
 {
@@ -111,7 +125,6 @@ void renderable::draw() const
 	shader_object.set_uniform(shader::uniform::model, model);	//world space model matrix
 	shader_object.set_uniform(shader::uniform::normal, normal); //3x3 matrix extracted from(transpose(inverse(model)))
 	shader_object.set_uniform(shader::uniform::material_shininess, mat.shininess);
-	shader_object.set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
 	shader_object.set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
 	shader_object.set_uniform(shader::uniform::material_specular_color, mat.specular_color);
 
@@ -120,13 +133,19 @@ void renderable::draw() const
 		texture_manager::get_from_handle(diffuse_texture).bind(shader::material_diffuse_texture_slot);
 	else
 		texture_manager::get_from_handle(texture_manager::get_dummy_texture()).bind(shader::material_diffuse_texture_slot);
-	shader_object.set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+	shader_object.set_uniform(shader::uniform::material_diffuse, shader::material_diffuse_texture_slot);
 
 	if(specular_texture != texture_manager::invalid_texture)
 		texture_manager::get_from_handle(specular_texture).bind(shader::material_specular_texture_slot);
 	else
 		texture_manager::get_from_handle(texture_manager::get_dummy_texture()).bind(shader::material_specular_texture_slot);
 	shader_object.set_uniform(shader::uniform::material_specular, shader::material_specular_texture_slot);
+
+	if(normal_texture != texture_manager::invalid_texture)
+		texture_manager::get_from_handle(normal_texture).bind(shader::material_normal_texture_slot);
+	else
+		texture_manager::get_from_handle(texture_manager::get_dummy_texture()).bind(shader::material_normal_texture_slot);
+	shader_object.set_uniform(shader::uniform::material_normal, shader::material_normal_texture_slot);
 
 	//bind object buffers and issue draw call
 	if(last_bound_vao != VAO)

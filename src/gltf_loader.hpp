@@ -51,8 +51,11 @@ public:
 
 	//this is a bit unnecessary for OpenGL as theses identifier are the same
 	static GLenum mode(GLenum input);
-	static std::tuple<std::vector<float>, renderable::vertex_buffer_extrema>
-	get_vertices(const tinygltf::Model& model, int vertex_accessor_index, int texture_accessor_index, int normal_accessor_index);
+	static std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> get_vertices(const tinygltf::Model& model,
+																						  int vertex_accessor_index,
+																						  int texture_accessor_index,
+																						  int normal_accessor_index,
+																						  int tangent_accessor_index);
 	static std::vector<unsigned int> get_indices(const tinygltf::Model& model, int indices_accessor);
 	GLuint load_to_gl_texture(const tinygltf::Image& color_image, bool srgb = true) const;
 	mesh build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Model& model);
