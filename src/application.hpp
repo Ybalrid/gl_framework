@@ -1,13 +1,13 @@
 #pragma once
-
-#include <glm/glm.hpp>
-
 #ifdef USING_JETLIVE
 #include "jet/live/Live.hpp"
 #include "jet/live/ILiveListener.hpp"
 #include "nameof.hpp"
 #include <iostream>
 #endif
+
+#include <glm/glm.hpp>
+
 
 #include <GL/glew.h>
 #define CPP_SDL2_GL_WINDOW

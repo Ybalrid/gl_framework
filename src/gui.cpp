@@ -5,10 +5,11 @@
 #include <examples/imgui_impl_sdl.h>
 #include <examples/imgui_impl_opengl3.h>
 
-#define CPP_SDL2_GL_WINDOW
-#include <cpp-sdl2/sdl.hpp>
 #include <iostream>
 #include "application.hpp"
+
+#define CPP_SDL2_GL_WINDOW
+#include <cpp-sdl2/sdl.hpp>
 
 void gui::set_script_engine_ptr(script_system* s) { scripting_engine = s; }
 

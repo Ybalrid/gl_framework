@@ -1,4 +1,5 @@
 #include "renderable.hpp"
+#include <algorithm>
 
 GLint renderable::last_bound_vao = 0;
 
