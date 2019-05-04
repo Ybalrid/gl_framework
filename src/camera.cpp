@@ -28,9 +28,9 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 			//Orthographic porjection that respoct the viewport geometry, with (0,0) in the center of the screen,
 			//in the normal opengl coordinates
 			set_gl_viewport(viewport_x, viewport_y, viewport_w, viewport_h);
-			float width	 = ratio / 2.f;
-			float height = 1 / 2.f;
-			projection	 = glm::ortho(-width, width, -height, height, near_clip, far_clip);
+			const float width  = ratio / 2.f;
+			const float height = 1 / 2.f;
+			projection		   = glm::ortho(-width, width, -height, height, near_clip, far_clip);
 		}
 		break;
 

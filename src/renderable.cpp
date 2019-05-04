@@ -24,20 +24,54 @@ void renderable::steal_guts(renderable& other)
 	other.VAO = other.VBO = other.EBO = 0;
 }
 
-renderable::renderable(shader_handle program,
-					   const std::vector<float>& vertex_buffer,
-					   const std::vector<unsigned>& index_buffer,
-					   vertex_buffer_extrema min_max,
-					   configuration vertex_config,
-					   size_t vertex_buffer_stride,
-					   size_t vertex_coord_offset,
-					   size_t texture_coord_offset,
-					   size_t normal_coord_offset,
-					   size_t tangent_coord_offset,
-					   GLenum draw_operation,
-					   GLenum buffer_usage) :
- shader_program(program),
- draw_mode(draw_operation), bounds { min_max }
+std::vector<float> generate_tangents(const std::vector<float>& vertex_buffer,
+									 size_t stride,
+									 size_t vertex_coord_offset,
+									 size_t texture_coord_offset,
+									 size_t normal_coord_offset)
+{
+	const size_t elements_count			= vertex_buffer.size() / stride;
+	const size_t new_stride				= stride + 3; //(position.xyz, texture.st, normal.xyz) + tangent.xyz
+	const size_t new_vertex_buffer_size = (vertex_buffer.size() / stride) * new_stride;
+	std::vector<float> new_vertex_buffer(new_vertex_buffer_size);
+
+	for(size_t i = 0; i < elements_count; ++i)
+	{
+		//copy existing vertex data
+		memcpy(&new_vertex_buffer[i * new_stride], &vertex_buffer[i * stride], stride * sizeof(float));
+		glm::vec3 normal, tangent, tangent_0, tangent_1;
+
+		//extract normal vector
+		memcpy(glm::value_ptr(normal), &vertex_buffer[i * stride + normal_coord_offset], 3 * sizeof(float));
+
+		//extrapolate a tangent vector
+		tangent_0 = glm::cross(normal, { 0.f, 0.f, 1.f });
+		tangent_1 = glm::cross(normal, { 0.f, 1.f, 0.f });
+		if(glm::length(tangent_0) > glm::length(tangent_1))
+			tangent = tangent_0;
+		else
+			tangent = tangent_1;
+
+		//TODO check if tangent aligned with uvs?
+		(void)texture_coord_offset;
+		(void)vertex_coord_offset;
+
+		//write back tangent to new vertex buffer
+		memcpy(&new_vertex_buffer[i * new_stride + stride], glm::value_ptr(tangent), 3 * sizeof(float));
+	}
+
+	return new_vertex_buffer;
+}
+
+void renderable::upload_to_gpu(const std::vector<float>& vertex_buffer,
+							   const std::vector<unsigned>& index_buffer,
+							   renderable::configuration vertex_config,
+							   size_t vertex_buffer_stride,
+							   size_t vertex_coord_offset,
+							   size_t texture_coord_offset,
+							   size_t normal_coord_offset,
+							   size_t tangent_coord_offset,
+							   GLenum buffer_usage)
 {
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -89,6 +123,63 @@ renderable::renderable(shader_handle program,
 	}
 	glBindVertexArray(0);
 	element_count = GLuint(index_buffer.size());
+}
+
+renderable::renderable(shader_handle program,
+					   const std::vector<float>& vertex_buffer,
+					   const std::vector<unsigned>& index_buffer,
+					   vertex_buffer_extrema min_max,
+					   configuration vertex_config,
+					   size_t vertex_buffer_stride,
+					   size_t vertex_coord_offset,
+					   size_t texture_coord_offset,
+					   size_t normal_coord_offset,
+					   size_t tangent_coord_offset,
+					   GLenum draw_operation,
+					   GLenum buffer_usage) :
+ shader_program(program),
+ draw_mode(draw_operation), bounds { min_max }
+{
+	//Tangents are required for normal mapping. If vertex buffer doesn't have them, we will compute tem
+	if(!vertex_config.tangent)
+	{
+		//compute a vertex buffer that includes tangent info
+		const auto new_vertex_buffer = generate_tangents(
+			vertex_buffer, vertex_buffer_stride, vertex_coord_offset, texture_coord_offset, normal_coord_offset);
+
+		//Adjust the meta data to handle the fact that there's 3 more floats per vertex, and that the last 3 are the tangent vector
+		const auto new_vertex_buffer_stride = vertex_buffer_stride + 3;
+		const auto tangent_coord_offset		= vertex_buffer_stride;
+		const auto new_vertex_config		= [=] {
+			   auto new_vertex_config	 = vertex_config;
+			   new_vertex_config.tangent = true;
+			   return new_vertex_config;
+		}();
+
+		//Send to GPU
+		upload_to_gpu(new_vertex_buffer,
+					  index_buffer,
+					  new_vertex_config,
+					  new_vertex_buffer_stride,
+					  vertex_coord_offset,
+					  texture_coord_offset,
+					  normal_coord_offset,
+					  tangent_coord_offset,
+					  buffer_usage);
+	}
+	else
+	{
+		//Use as-is
+		upload_to_gpu(vertex_buffer,
+					  index_buffer,
+					  vertex_config,
+					  vertex_buffer_stride,
+					  vertex_coord_offset,
+					  texture_coord_offset,
+					  normal_coord_offset,
+					  tangent_coord_offset,
+					  buffer_usage);
+	}
 }
 
 void renderable::set_diffuse_texture(texture_handle t) { diffuse_texture = t; }
@@ -147,6 +238,11 @@ void renderable::draw() const
 		texture_manager::get_from_handle(texture_manager::get_dummy_texture()).bind(shader::material_normal_texture_slot);
 	shader_object.set_uniform(shader::uniform::material_normal, shader::material_normal_texture_slot);
 
+	submit_draw_call();
+}
+
+void renderable::submit_draw_call() const
+{
 	//bind object buffers and issue draw call
 	if(last_bound_vao != VAO)
 	{

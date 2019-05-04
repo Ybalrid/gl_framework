@@ -43,11 +43,6 @@ public:
 	bool load_model(const std::string& virtual_path, tinygltf::Model& model);
 	mesh load_mesh(const std::string& virtual_path, int index);
 	mesh load_mesh(const std::string& virtual_path, const std::string& name);
-	mesh load_meshes(const std::string& virtual_path)
-	{
-		//TODO add meshes abstraction that contains multiple renderables
-		return load_mesh(virtual_path, 0);
-	}
 
 	//this is a bit unnecessary for OpenGL as theses identifier are the same
 	static GLenum mode(GLenum input);

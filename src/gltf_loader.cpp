@@ -36,15 +36,22 @@ gltf_loader& gltf_loader::operator=(gltf_loader&& other) noexcept
 
 bool gltf_loader::load_model(const std::string& virtual_path, tinygltf::Model& model)
 {
+	std::cout << "Loading gltf asset: " << virtual_path << '\n';
 	const auto ext = virtual_path.substr(virtual_path.find_last_of('.') + 1);
+
 	if(ext == "glb" || ext == "vrm")
 	{
+		std::cout << "Detected binary glTF\n";
 		const auto gltf_asset = resource_system::get_file(virtual_path);
 		return gltf.LoadBinaryFromMemory(&model, &error, &warning, gltf_asset.data(), unsigned(gltf_asset.size()));
 	}
+
 	if(ext == "gltf")
 	{
-		const auto base_dir	 = virtual_path.substr(0, 1 + virtual_path.find_last_of("\\/"));
+		std::cout << "Detected ascii glTF\n";
+		const auto base_dir = virtual_path.substr(0, 1 + virtual_path.find_last_of("\\/"));
+		std::cout << "Base directory:" << base_dir << '\n';
+
 		auto gltf_asset_text = resource_system::get_file(virtual_path);
 		gltf_asset_text.push_back(0);
 		const auto gltf_string = std::string(reinterpret_cast<char*>(gltf_asset_text.data()));
@@ -54,6 +61,8 @@ bool gltf_loader::load_model(const std::string& virtual_path, tinygltf::Model& m
 	}
 
 	error = "File extension is not a glTF extension for " + virtual_path;
+	std::cout << "Error:" << error << '\n';
+	std::cout << "Warning:" << warning << '\n';
 	return false;
 }
 
@@ -89,25 +98,6 @@ mesh gltf_loader::load_mesh(const std::string& virtual_path, const std::string& 
 
 	throw std::runtime_error("Couldn't find " + name + " in " + virtual_path);
 }
-
-//
-//std::vector<renderable_handle> gltf_loader::load_meshes(const std::string& virtual_path)
-//{
-//	//TODO refactor this:
-//	error.clear();
-//	warning.clear();
-//
-//	//TODO create model cache
-//	tinygltf::Model model;
-//	if(!load_model(virtual_path, model)) { std::cerr << error; }
-//
-//	const auto size = model.meshes.size();
-//	std::vector<renderable_handle> output;
-//	output.reserve(size);
-//
-//	for(size_t i = 0; i < size; ++i) output.assign(build_renderables(model.meshes[i], model));
-//	return output;
-//}
 
 GLenum gltf_loader::mode(GLenum input)
 {

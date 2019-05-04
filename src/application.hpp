@@ -65,6 +65,7 @@ class application
 	void initialize_modern_opengl() const;
 	void initialize_gui();
 	void frame_prepare();
+	void render_shadowmap();
 	void render_draw_list(camera* render_camera);
 	void build_draw_list_from_camera(camera* render_camera);
 	void render_frame();
@@ -118,7 +119,11 @@ class application
 
 	std::vector<draw_operation> draw_list;
 
-	bool debug_draw_bbox = false;
+	bool debug_draw_bbox		= false;
+	shader_handle shadow_shader = shader_program_manager::invalid_shader;
+	GLuint shadow_depth_fbo, shadow_depth_map;
+
+	static constexpr unsigned int shadow_width = 1024, shadow_height = 1024;
 
 	static glm::vec4 clear_color;
 

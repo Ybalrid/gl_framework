@@ -1,12 +1,17 @@
 #include "shader.hpp"
 #include "resource_system.hpp"
+
+#include <iostream>
 #include <algorithm>
 #include <stdexcept>
+
 float shader::gamma				 = 2.2f;
 GLuint shader::last_used_program = 0;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
 {
+	std::cout << "Loading shader from " << vertex_shader_virtual_path << ", " << fragment_shader_virtual_path << '\n';
+
 	//Load source files as C strings
 	auto vertex_source_data	  = resource_system::get_file(vertex_shader_virtual_path);
 	auto fragment_source_data = resource_system::get_file(fragment_shader_virtual_path);
@@ -41,6 +46,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 		throw std::runtime_error("Couldn't compile fragment shader " + std::string(info_log));
 	}
 
+	std::cout << "Compiled... ";
+
 	//link shaders into shader program
 	program = glCreateProgram();
 	glAttachShader(program, vertex_shader);
@@ -52,6 +59,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		throw std::runtime_error("Couldn't link shader program " + std::string(info_log));
 	}
+
+	std::cout << " and linked!\n";
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
@@ -74,7 +83,10 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	uniform_indices[int(uniform::projection)]	   = glGetUniformLocation(program, "projection");
 	uniform_indices[int(uniform::gamma)]		   = glGetUniformLocation(program, "gamma");
 	uniform_indices[int(uniform::time)]			   = glGetUniformLocation(program, "time");
-	uniform_indices[int(uniform::debug_color)]	   = glGetUniformLocation(program, "debug_color");
+
+	//special shader uniforms
+	uniform_indices[int(uniform::debug_color)]		  = glGetUniformLocation(program, "debug_color");
+	uniform_indices[int(uniform::light_space_matrix)] = glGetUniformLocation(program, "light_space_matrix");
 
 	//one directional lights
 	main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
@@ -99,6 +111,7 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	use();
 	set_uniform(uniform::material_diffuse, material_diffuse_texture_slot);
 	set_uniform(uniform::material_specular, material_specular_texture_slot);
+	set_uniform(uniform::material_normal, material_specular_texture_slot);
 	use_0();
 }
 

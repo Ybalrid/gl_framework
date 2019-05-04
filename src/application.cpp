@@ -8,9 +8,14 @@
 #include "gltf_loader.hpp"
 #include "imgui.h"
 #include <cpptoml.h>
-
 #include "light.hpp"
 #include <chrono>
+
+float shadow_map_ortho_scale		  = 50;
+float shadow_map_direction_multiplier = 100;
+float shadow_map_near_plane			  = .1;
+float shadow_map_far_plane			  = 250;
+glm::vec3 sun_direction_unormalized { -0.5f, -0.75f, -0.25f };
 
 //The statics
 std::vector<std::string> application::resource_paks;
@@ -68,6 +73,14 @@ void application::draw_debug_ui()
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
 			ImGui::BeginChild(
 				"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+			ImGui::Text("Main ShadowMap:");
+			ImGui::SliderFloat3("sun direction", (float*)sun_direction_unormalized.data.data, -1.f, 1.f);
+			ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
+			ImGui::SliderFloat("far", &shadow_map_far_plane, 50.f, 500.f);
+			ImGui::SliderFloat("ortho window", &shadow_map_ortho_scale, 10.f, 200.f);
+			ImGui::SliderFloat("distance scale", &shadow_map_direction_multiplier, 1.f, 1000.f);
+
+			ImGui::Image(ImTextureID(shadow_depth_map), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 			if(ImGui::CollapsingHeader("Renderable Manager State"))
 			{
 				const auto& list			 = renderable_manager::get_list();
@@ -125,7 +138,7 @@ void application::draw_debug_ui()
 						ImGuiTextureHandle = reinterpret_cast<ImTextureID>(id);
 #endif
 
-						ImGui::Image(ImGuiTextureHandle, ImVec2(256.f, 256.f));
+						ImGui::Image(ImGuiTextureHandle, ImVec2(256.f, 256.f), ImVec2(0, 1), ImVec2(1, 0));
 					}
 				}
 			}
@@ -301,6 +314,7 @@ void application::initialize_gui()
 
 void application::frame_prepare()
 {
+	sun.direction				= glm::normalize(sun_direction_unormalized);
 	const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
 	(void)opengl_debug_tag;
 
@@ -321,6 +335,55 @@ void application::frame_prepare()
 
 	const auto size = window.size();
 	main_camera->update_projection(size.x, size.y);
+}
+
+void application::render_shadowmap()
+{
+	const auto opengl_debug_tag = opengl_debug_group("application::render_shadowmap()");
+	(void)opengl_debug_tag;
+
+	glViewport(0, 0, shadow_width, shadow_height);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	//toto render
+	auto& shader = shader_program_manager::get_from_handle(shadow_shader);
+	shader.use();
+	//set the matrices and everything
+
+	//calculate an orthographic projection for the directional light
+	glm::mat4 light_projection = glm::ortho(-shadow_map_ortho_scale,
+											shadow_map_ortho_scale,
+											-shadow_map_ortho_scale,
+											shadow_map_ortho_scale,
+											shadow_map_near_plane,
+											shadow_map_far_plane);
+	glm::mat4 light_view = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
+	glm::mat4 light_space_matrix = light_projection * light_view;
+	shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
+
+	glFrontFace(GL_CCW);
+	//draw everything...
+	s.run_on_whole_graph([&](node* current_node) {
+		current_node->visit([&](auto&& node_attached_object) {
+			using T = std::decay_t<decltype(node_attached_object)>;
+			if constexpr(std::is_same_v<T, scene_object>)
+			{
+				auto& object = static_cast<scene_object&>(node_attached_object);
+				for(const auto submesh : object.get_mesh().get_submeshes())
+				{
+					auto& to_render = renderable_manager::get_from_handle(submesh);
+					shader.set_uniform(shader::uniform::model, to_render.get_model_matrix());
+					to_render.submit_draw_call();
+				}
+			}
+		});
+	});
+	glFrontFace(GL_CW);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	const auto size = window.size();
+	glViewport(0, 0, size.x, size.y);
 }
 
 void application::render_draw_list(camera* render_camera)
@@ -416,6 +479,7 @@ void application::render_frame()
 	scripts.update(last_frame_delta_sec);
 
 	frame_prepare();
+	render_shadowmap();
 	build_draw_list_from_camera(main_camera);
 	render_draw_list(main_camera);
 
@@ -560,7 +624,7 @@ void application::setup_scene()
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
 	sun.ambient	  = glm::vec3(0);
-	sun.direction = glm::normalize(glm::vec3(-0.5f, -0.25, 1));
+	sun.direction = glm::normalize(sun_direction_unormalized);
 
 	std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
 
@@ -623,6 +687,30 @@ application::application(int argc, char** argv, const std::string& application_n
 	initialize_modern_opengl();
 	texture_manager::initialize_dummy_texture();
 	initialize_gui();
+
+	try
+	{
+		shadow_shader = shader_program_manager::create_shader("/shaders/shadow.vert.glsl", "/shaders/shadow.frag.glsl");
+		glGenFramebuffers(1, &shadow_depth_fbo);
+		glGenTextures(1, &shadow_depth_map);
+		glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_depth_map, 0);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+	catch(const std::exception& e)
+	{
+		sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create shadowing shader!", e.what());
+		throw;
+	}
+
 	setup_scene();
 
 	sdl::Mouse::set_relative(true);

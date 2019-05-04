@@ -26,6 +26,14 @@ public:
 		vertex_buffer_extrema(const vertex_buffer_extrema&) = default;
 	};
 
+	struct configuration
+	{
+		bool position : 1;
+		bool texture : 1;
+		bool normal : 1;
+		bool tangent : 1;
+	};
+
 private:
 	shader_handle shader_program	= shader_program_manager::invalid_shader;
 	texture_handle diffuse_texture	= texture_manager::invalid_texture;
@@ -48,16 +56,18 @@ private:
 
 	void steal_guts(renderable& other);
 
+	void upload_to_gpu(const std::vector<float>& vertex_buffer,
+					   const std::vector<unsigned>& index_buffer,
+					   configuration vertex_config,
+					   size_t vertex_buffer_stride,
+					   size_t vertex_coord_offset,
+					   size_t texture_coord_offset,
+					   size_t normal_coord_offset,
+					   size_t tangent_coord_offset,
+					   GLenum buffer_usage);
+
 public:
 	material mat;
-
-	struct configuration
-	{
-		bool position : 1;
-		bool texture : 1;
-		bool normal : 1;
-		bool tangent : 1;
-	};
 
 	renderable() = default;
 
@@ -89,9 +99,12 @@ public:
 	renderable& operator=(renderable&& other) noexcept;
 
 	void draw() const;
+	void submit_draw_call() const;
 	void set_mvp_matrix(const glm::mat4& matrix);
 	void set_model_matrix(const glm::mat4& matrix);
 	void set_view_matrix(const glm::mat4& matrix);
+
+	glm::mat4 const& get_model_matrix() const { return model; }
 
 	vertex_buffer_extrema get_bounds() const;
 

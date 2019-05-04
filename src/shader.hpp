@@ -21,6 +21,7 @@ public:
 		normal,
 		view,
 		projection,
+		light_space_matrix,
 		camera_position,
 		gamma,
 		time,
