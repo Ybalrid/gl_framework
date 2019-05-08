@@ -8,7 +8,6 @@
 
 #include <glm/glm.hpp>
 
-
 #include <GL/glew.h>
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
@@ -76,7 +75,7 @@ class application
 	resource_system resources;
 
 	bool debug_ui			   = false;
-	uint32_t current_time	   = 0;
+	uint32_t current_time	  = 0;
 	uint32_t last_frame_time   = 0;
 	uint32_t last_second_time  = 0;
 	uint32_t last_frame_delta  = 0;

@@ -129,7 +129,8 @@ void gui::console()
 							   }
 						   }
 						   break;
-					   case ImGuiInputTextFlags_CallbackHistory: {
+					   case ImGuiInputTextFlags_CallbackHistory:
+					   {
 						   const char* text = nullptr;
 						   const auto console_history_max
 							   = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
@@ -196,13 +197,13 @@ void gui::console()
 
 void gui::show_console()
 {
-	show_console_	  = true;
+	show_console_	 = true;
 	last_frame_showed = false;
 }
 
 void gui::hide_console()
 {
-	show_console_	  = false;
+	show_console_	 = false;
 	last_frame_showed = false;
 }
 
@@ -214,7 +215,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io	   = ImGui::GetIO();
+	ImGuiIO& io	= ImGui::GetIO();
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
@@ -289,12 +290,12 @@ void gui::clear_console() { console_content.clear(); }
 
 void gui::move_from(gui& o)
 {
-	w	= o.w;
+	w   = o.w;
 	o.w = nullptr;
 
 	console_font = o.console_font;
 	default_font = o.default_font;
-	ugly_font	 = o.ugly_font;
+	ugly_font	= o.ugly_font;
 }
 
 gui::gui(gui&& o) noexcept { move_from(o); }

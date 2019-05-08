@@ -20,10 +20,7 @@ physfs_raii::~physfs_raii()
 	}
 }
 
-physfs_raii::physfs_raii(physfs_raii&& other) noexcept
-{
-	steal_guts(other);
-}
+physfs_raii::physfs_raii(physfs_raii&& other) noexcept { steal_guts(other); }
 
 physfs_raii& physfs_raii::operator=(physfs_raii&& other) noexcept
 {

@@ -13,11 +13,11 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	std::cout << "Loading shader from " << vertex_shader_virtual_path << ", " << fragment_shader_virtual_path << '\n';
 
 	//Load source files as C strings
-	auto vertex_source_data	  = resource_system::get_file(vertex_shader_virtual_path);
+	auto vertex_source_data   = resource_system::get_file(vertex_shader_virtual_path);
 	auto fragment_source_data = resource_system::get_file(fragment_shader_virtual_path);
 	vertex_source_data.push_back('\0');
 	fragment_source_data.push_back('\0');
-	const char* vertex_shader_cstr	 = reinterpret_cast<const char*>(vertex_source_data.data());
+	const char* vertex_shader_cstr   = reinterpret_cast<const char*>(vertex_source_data.data());
 	const char* fragment_shader_cstr = reinterpret_cast<const char*>(fragment_source_data.data());
 
 	//Compile shaders
@@ -66,21 +66,21 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	glDeleteShader(fragment_shader);
 
 	//Object invariant:
-	uniform_indices[int(uniform::mvp)]	  = glGetUniformLocation(program, "mvp");
+	uniform_indices[int(uniform::mvp)]	= glGetUniformLocation(program, "mvp");
 	uniform_indices[int(uniform::model)]  = glGetUniformLocation(program, "model");
 	uniform_indices[int(uniform::normal)] = glGetUniformLocation(program, "normal");
 
 	uniform_indices[int(uniform::material_diffuse)]		   = glGetUniformLocation(program, "material.diffuse");
 	uniform_indices[int(uniform::material_specular)]	   = glGetUniformLocation(program, "material.specular");
 	uniform_indices[int(uniform::material_normal)]		   = glGetUniformLocation(program, "material.normal");
-	uniform_indices[int(uniform::material_shininess)]	   = glGetUniformLocation(program, "material.shininess");
+	uniform_indices[int(uniform::material_shininess)]	  = glGetUniformLocation(program, "material.shininess");
 	uniform_indices[int(uniform::material_diffuse_color)]  = glGetUniformLocation(program, "material.diffuse_color");
 	uniform_indices[int(uniform::material_specular_color)] = glGetUniformLocation(program, "material.diffuse_color");
 
 	//Frame invariant:
 	uniform_indices[int(uniform::camera_position)] = glGetUniformLocation(program, "camera_position");
 	uniform_indices[int(uniform::view)]			   = glGetUniformLocation(program, "view");
-	uniform_indices[int(uniform::projection)]	   = glGetUniformLocation(program, "projection");
+	uniform_indices[int(uniform::projection)]	  = glGetUniformLocation(program, "projection");
 	uniform_indices[int(uniform::gamma)]		   = glGetUniformLocation(program, "gamma");
 	uniform_indices[int(uniform::time)]			   = glGetUniformLocation(program, "time");
 
@@ -99,13 +99,13 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
 	{
 		std::string point_light_name = "point_light_list[" + std::to_string(i) + "].";
 
-		point_light_list_uniform_locations[i].position	= glGetUniformLocation(program, (point_light_name + "position").c_str());
-		point_light_list_uniform_locations[i].constant	= glGetUniformLocation(program, (point_light_name + "constant").c_str());
+		point_light_list_uniform_locations[i].position  = glGetUniformLocation(program, (point_light_name + "position").c_str());
+		point_light_list_uniform_locations[i].constant  = glGetUniformLocation(program, (point_light_name + "constant").c_str());
 		point_light_list_uniform_locations[i].linear	= glGetUniformLocation(program, (point_light_name + "linear").c_str());
 		point_light_list_uniform_locations[i].quadratic = glGetUniformLocation(program, (point_light_name + "quadratic").c_str());
-		point_light_list_uniform_locations[i].ambient	= glGetUniformLocation(program, (point_light_name + "ambient").c_str());
-		point_light_list_uniform_locations[i].diffuse	= glGetUniformLocation(program, (point_light_name + "diffuse").c_str());
-		point_light_list_uniform_locations[i].specular	= glGetUniformLocation(program, (point_light_name + "specular").c_str());
+		point_light_list_uniform_locations[i].ambient   = glGetUniformLocation(program, (point_light_name + "ambient").c_str());
+		point_light_list_uniform_locations[i].diffuse   = glGetUniformLocation(program, (point_light_name + "diffuse").c_str());
+		point_light_list_uniform_locations[i].specular  = glGetUniformLocation(program, (point_light_name + "specular").c_str());
 	}
 
 	use();

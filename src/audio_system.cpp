@@ -25,7 +25,8 @@ audio_system::audio_system(const char* device_name)
 
 	(void)audio_listener::get_listener();
 
-	std::cout << "Initialized OpenAL " << alGetString(AL_VERSION) << " from '" << alGetString(AL_VENDOR) << "' based Audio system\n";
+	std::cout << "Initialized OpenAL " << alGetString(AL_VERSION) << " from '" << alGetString(AL_VENDOR)
+			  << "' based Audio system\n";
 
 	soundfile_io.get_filelen = [](void* user_data) {
 		auto* handle = reinterpret_cast<soundfile_buffer*>(user_data);
@@ -36,17 +37,10 @@ audio_system::audio_system(const char* device_name)
 		auto* handle = reinterpret_cast<soundfile_buffer*>(user_data);
 		switch(whence)
 		{
-			case SEEK_CUR:
-				handle->seek_position += offset;
-				break;
-			case SEEK_END:
-				handle->seek_position = sf_count_t(handle->data.size()) + offset;
-				break;
-			case SEEK_SET:
-				handle->seek_position = offset;
-				break;
-			default:
-				break;
+			case SEEK_CUR: handle->seek_position += offset; break;
+			case SEEK_END: handle->seek_position = sf_count_t(handle->data.size()) + offset; break;
+			case SEEK_SET: handle->seek_position = offset; break;
+			default: break;
 		}
 
 		return handle->seek_position;
@@ -60,9 +54,8 @@ audio_system::audio_system(const char* device_name)
 		return count;
 	};
 
-	soundfile_io.tell = [](void* user_data) -> sf_count_t {
-		return reinterpret_cast<soundfile_buffer*>(user_data)->seek_position;
-	};
+	soundfile_io.tell
+		= [](void* user_data) -> sf_count_t { return reinterpret_cast<soundfile_buffer*>(user_data)->seek_position; };
 
 	soundfile_io.write = nullptr;
 }
@@ -72,8 +65,7 @@ audio_system::~audio_system()
 	if(device)
 	{
 		alcMakeContextCurrent(nullptr);
-		if(context)
-			alcDestroyContext(context);
+		if(context) alcDestroyContext(context);
 
 		alcCloseDevice(device);
 		alGetError();
@@ -84,10 +76,7 @@ audio_system::~audio_system()
 	context = nullptr;
 }
 
-audio_system::audio_system(audio_system&& other) noexcept
-{
-	steal_guts(other);
-}
+audio_system::audio_system(audio_system&& other) noexcept { steal_guts(other); }
 
 audio_system& audio_system::operator=(audio_system&& other) noexcept
 {
@@ -115,21 +104,16 @@ audio_buffer audio_system::get_buffer(const std::string& virtual_path)
 	sf_close(sound_file);
 
 	//Handle config
-	const buffer_config config {
-		[&](const int c) {
-			switch(c)
-			{
-				case 1:
-					return AL_FORMAT_MONO16;
-				case 2:
-					return AL_FORMAT_STEREO16;
-				default:
-					throw std::runtime_error("Unreconginzed channel count in file " + virtual_path);
-			}
-		}(info.channels),
-		static_cast<ALsizei>(sizeof(ALshort) * size_t(sample_count)),
-		sample_rate
-	};
+	const buffer_config config { [&](const int c) {
+									switch(c)
+									{
+										case 1: return AL_FORMAT_MONO16;
+										case 2: return AL_FORMAT_STEREO16;
+										default: throw std::runtime_error("Unreconginzed channel count in file " + virtual_path);
+									}
+								}(info.channels),
+								 static_cast<ALsizei>(sizeof(ALshort) * size_t(sample_count)),
+								 sample_rate };
 
 	//Create and return an openal buffer containing that data
 	return audio_buffer(sample_buffer, config);
@@ -143,10 +127,7 @@ audio_listener::audio_listener()
 	unique_listener = this;
 }
 
-audio_listener::~audio_listener()
-{
-	unique_listener = nullptr;
-}
+audio_listener::~audio_listener() { unique_listener = nullptr; }
 
 void audio_listener::set_world_transform(const glm::mat4& transform) const
 {
@@ -158,7 +139,8 @@ void audio_listener::set_world_transform(const glm::mat4& transform) const
 	const glm::vec3 orientation_up = orientation * glm::vec3(0, 1.f, 0);
 
 	//Construct an orientation vector as OpenAL want's it
-	const std::array<ALfloat, 6> al_orientation { orientation_at.x, orientation_at.y, orientation_at.z, orientation_up.x, orientation_up.y, orientation_up.z };
+	const std::array<ALfloat, 6> al_orientation { orientation_at.x, orientation_at.y, orientation_at.z,
+												  orientation_up.x, orientation_up.y, orientation_up.z };
 
 	//Set the listener position and orientation
 	alListener3f(AL_POSITION, position.x, position.y, position.z);
@@ -178,8 +160,7 @@ void audio_buffer::steal_guts(audio_buffer& other)
 	current_config = other.current_config;
 }
 
-audio_buffer::audio_buffer(const std::vector<ALshort>& samples, const buffer_config& config) :
- current_config(config)
+audio_buffer::audio_buffer(const std::vector<ALshort>& samples, const buffer_config& config) : current_config(config)
 {
 	alGenBuffers(1, &buffer);
 	alBufferData(buffer, config.format, samples.data(), config.size, config.freq);
@@ -187,14 +168,10 @@ audio_buffer::audio_buffer(const std::vector<ALshort>& samples, const buffer_con
 
 audio_buffer::~audio_buffer()
 {
-	if(buffer > 0)
-		alDeleteBuffers(1, &buffer);
+	if(buffer > 0) alDeleteBuffers(1, &buffer);
 }
 
-audio_buffer::audio_buffer(audio_buffer&& other) noexcept
-{
-	steal_guts(other);
-}
+audio_buffer::audio_buffer(audio_buffer&& other) noexcept { steal_guts(other); }
 
 audio_buffer& audio_buffer::operator=(audio_buffer&& other) noexcept
 {
@@ -202,15 +179,9 @@ audio_buffer& audio_buffer::operator=(audio_buffer&& other) noexcept
 	return *this;
 }
 
-ALuint audio_buffer::get_al_buffer() const
-{
-	return buffer;
-}
+ALuint audio_buffer::get_al_buffer() const { return buffer; }
 
-buffer_config audio_buffer::get_config() const
-{
-	return current_config;
-}
+buffer_config audio_buffer::get_config() const { return current_config; }
 
 void audio_source::steal_guts(audio_source& other)
 {
@@ -218,21 +189,14 @@ void audio_source::steal_guts(audio_source& other)
 	other.source = 0;
 }
 
-audio_source::audio_source()
-{
-	alGenSources(1, &source);
-}
+audio_source::audio_source() { alGenSources(1, &source); }
 
 audio_source::~audio_source()
 {
-	if(source > 0)
-		alDeleteSources(1, &source);
+	if(source > 0) alDeleteSources(1, &source);
 }
 
-audio_source::audio_source(audio_source&& other) noexcept
-{
-	steal_guts(other);
-}
+audio_source::audio_source(audio_source&& other) noexcept { steal_guts(other); }
 
 audio_source& audio_source::operator=(audio_source&& other) noexcept
 {
@@ -240,10 +204,7 @@ audio_source& audio_source::operator=(audio_source&& other) noexcept
 	return *this;
 }
 
-ALuint audio_source::get_al_source() const
-{
-	return source;
-}
+ALuint audio_source::get_al_source() const { return source; }
 
 void audio_source::set_world_transform(const glm::mat4& transform) const
 {
@@ -252,45 +213,21 @@ void audio_source::set_world_transform(const glm::mat4& transform) const
 	alSource3f(source, AL_POSITION, position.x, position.y, position.z);
 }
 
-void audio_source::set_buffer(const audio_buffer& buffer) const
-{
-	alSourcei(source, AL_BUFFER, ALint(buffer.get_al_buffer()));
-}
+void audio_source::set_buffer(const audio_buffer& buffer) const { alSourcei(source, AL_BUFFER, ALint(buffer.get_al_buffer())); }
 
-void audio_source::play() const
-{
-	alSourcePlay(source);
-}
+void audio_source::play() const { alSourcePlay(source); }
 
-void audio_source::set_looping(bool loop_state) const
-{
-	alSourcei(source, AL_LOOPING, loop_state ? AL_TRUE : AL_FALSE);
-}
+void audio_source::set_looping(bool loop_state) const { alSourcei(source, AL_LOOPING, loop_state ? AL_TRUE : AL_FALSE); }
 
-void audio_source::set_volume(float level) const
-{
-	alSourcef(source, AL_GAIN, level);
-}
+void audio_source::set_volume(float level) const { alSourcef(source, AL_GAIN, level); }
 
-void audio_source::set_pitch(float level) const
-{
-	alSourcef(source, AL_PITCH, level);
-}
+void audio_source::set_pitch(float level) const { alSourcef(source, AL_PITCH, level); }
 
-void audio_source::pause() const
-{
-	alSourcePause(source);
-}
+void audio_source::pause() const { alSourcePause(source); }
 
-void audio_source::stop() const
-{
-	alSourceStop(source);
-}
+void audio_source::stop() const { alSourceStop(source); }
 
-void audio_source::rewind() const
-{
-	alSourceRewind(source);
-}
+void audio_source::rewind() const { alSourceRewind(source); }
 
 void listener_marker::set_world_transform(const glm::mat4& transform) const
 {

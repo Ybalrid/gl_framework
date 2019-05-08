@@ -104,9 +104,9 @@ void application::draw_debug_ui()
 											   bounds.max.x,
 											   bounds.max.y,
 											   bounds.max.z);
-							const auto diffuse	= renderable.get_diffuse_texture();
+							const auto diffuse  = renderable.get_diffuse_texture();
 							const auto specular = renderable.get_specular_texture();
-							const auto normal	= renderable.get_normal_texture();
+							const auto normal   = renderable.get_normal_texture();
 
 							ImGui::Text("Textures:");
 							ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
@@ -183,7 +183,7 @@ void application::update_timing()
 	//calculate frame timing
 	last_frame_time		 = current_time;
 	current_time		 = SDL_GetTicks();
-	current_time_in_sec	 = float(current_time) * .001f;
+	current_time_in_sec  = float(current_time) * .001f;
 	last_frame_delta	 = current_time - last_frame_time;
 	last_frame_delta_sec = float(last_frame_delta) * .001f;
 
@@ -342,11 +342,11 @@ void application::render_shadowmap()
 	const auto opengl_debug_tag = opengl_debug_group("application::render_shadowmap()");
 	(void)opengl_debug_tag;
 
+	//Set the opengl to be the full shadowmap
 	glViewport(0, 0, shadow_width, shadow_height);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	//toto render
 	auto& shader = shader_program_manager::get_from_handle(shadow_shader);
 	shader.use();
 	//set the matrices and everything
@@ -412,7 +412,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
 				auto& object				  = static_cast<scene_object&>(node_attached_object);
-				const auto obb_points_list	  = object.get_obb(current_node->get_world_matrix());
+				const auto obb_points_list	= object.get_obb(current_node->get_world_matrix());
 				const glm::mat4 to_clip_space = render_camera->get_view_projection_matrix();
 				std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
 				for(size_t j = 0; j < obb_points_list.size(); ++j)
@@ -453,6 +453,8 @@ void application::build_draw_list_from_camera(camera* render_camera)
 					{
 						auto scene_obj					 = static_cast<scene_object>(node_attached_object);
 						const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+						(void)opengl_debug_tag_obbs;
+
 						GLint bind_back;
 						glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &bind_back);
 						glBindVertexArray(bbox_drawer_vao);
@@ -623,7 +625,7 @@ void application::setup_scene()
 
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
-	sun.ambient	  = glm::vec3(0);
+	sun.ambient   = glm::vec3(0);
 	sun.direction = glm::normalize(sun_direction_unormalized);
 
 	std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
@@ -763,7 +765,18 @@ void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::e
 	}
 }
 
-void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::execute() { parent_->debug_ui = !parent_->debug_ui; }
+void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::execute()
+{
+	if(parent_->debug_ui)
+	{
+		sdl::Mouse::set_relative(true);
+		parent_->debug_ui = false;
+	}
+	else
+	{
+		parent_->debug_ui = true;
+	}
+}
 
 void application::keyboard_debug_utilities_::toggle_live_code_reload_command_::execute()
 {

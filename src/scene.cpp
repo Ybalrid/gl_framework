@@ -1,9 +1,6 @@
 #include "scene.hpp"
 
-node* scene::find_node(size_t id)
-{
-	return find_node_in_children(scene_root.get(), id);
-}
+node* scene::find_node(size_t id) { return find_node_in_children(scene_root.get(), id); }
 
 node* scene::find_node_in_children(node* node, size_t id) const
 {

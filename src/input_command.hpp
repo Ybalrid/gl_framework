@@ -20,8 +20,7 @@ struct keyboard_input_command : input_command
 };
 
 struct gamepad_button_command : input_command //this one exist for API consistency.
-{
-};
+{};
 
 struct gamepad_axis_command : input_command
 {

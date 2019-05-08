@@ -14,26 +14,18 @@ freeimage::~freeimage()
 	std::cout << "Deinitialized FreeImage\n";
 }
 
-freeimage_image::freeimage_image(FIBITMAP* naked) :
- ptr(naked)
-{
-}
+freeimage_image::freeimage_image(FIBITMAP* naked) : ptr(naked) {}
 
 freeimage_image::~freeimage_image()
 {
-	if(ptr)
-		FreeImage_Unload(ptr);
+	if(ptr) FreeImage_Unload(ptr);
 }
 
-FIBITMAP* freeimage_image::get() const
-{
-	return ptr;
-}
+FIBITMAP* freeimage_image::get() const { return ptr; }
 
 void freeimage_image::set_ptr_to(FIBITMAP* naked)
 {
-	if(ptr)
-		FreeImage_Unload(ptr);
+	if(ptr) FreeImage_Unload(ptr);
 	ptr = naked;
 }
 
@@ -50,26 +42,16 @@ freeimage_image& freeimage_image::operator=(freeimage_image&& o) noexcept
 	return *this;
 }
 
-freeimage_memory::freeimage_memory(unsigned char* memory, unsigned char size) :
- ptr(FreeImage_OpenMemory(memory, size))
-{
-}
+freeimage_memory::freeimage_memory(unsigned char* memory, unsigned char size) : ptr(FreeImage_OpenMemory(memory, size)) {}
 
-freeimage_memory::freeimage_memory(FIMEMORY* naked) :
- ptr(naked)
-{
-}
+freeimage_memory::freeimage_memory(FIMEMORY* naked) : ptr(naked) {}
 
 freeimage_memory::~freeimage_memory()
 {
-	if(ptr)
-		FreeImage_CloseMemory(ptr);
+	if(ptr) FreeImage_CloseMemory(ptr);
 }
 
-FIMEMORY* freeimage_memory::get() const
-{
-	return ptr;
-}
+FIMEMORY* freeimage_memory::get() const { return ptr; }
 
 void freeimage_memory::set_ptr_to(FIMEMORY* new_ptr)
 {

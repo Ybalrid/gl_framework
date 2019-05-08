@@ -6,7 +6,7 @@
 void gltf_loader::steal_guts(gltf_loader& loader)
 {
 	gltf	= loader.gltf;
-	error	= std::move(loader.error);
+	error   = std::move(loader.error);
 	warning = std::move(loader.warning);
 	dshader = loader.dshader;
 
@@ -122,20 +122,20 @@ std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::g
 {
 	const auto c = 3 /*position*/ + 2 /*texture_coords*/ + 3 /*normal*/ + (tangent_accessor_index >= 0 ? 3 : 0);
 	std::vector<float> vertex_buffer;
-	const auto vertex_accessor	= model.accessors[size_t(vertex_accessor_index)];
+	const auto vertex_accessor  = model.accessors[size_t(vertex_accessor_index)];
 	const auto texture_accessor = model.accessors[size_t(texture_accessor_index)];
-	const auto normal_accessor	= model.accessors[size_t(normal_accessor_index)];
+	const auto normal_accessor  = model.accessors[size_t(normal_accessor_index)];
 
 	// fill the vertex buffer in this manner : P[X, Y, Z] TX[U, V] N[X, Y, Z] (T [X, Y, Z])
 	vertex_buffer.resize(vertex_accessor.count * (c));
 
 	//Get the requred pointers, strides, and sizes from the accessors's buffers
-	const auto vertex_buffer_view	= model.bufferViews[vertex_accessor.bufferView];
+	const auto vertex_buffer_view   = model.bufferViews[vertex_accessor.bufferView];
 	const auto vertex_buffer_buffer = model.buffers[vertex_buffer_view.buffer];
 	const auto vertex_data_start_ptr
 		= vertex_buffer_buffer.data.data() + (vertex_buffer_view.byteOffset + vertex_accessor.byteOffset);
 	const auto vertex_data_byte_stride = vertex_accessor.ByteStride(vertex_buffer_view);
-	const auto texture_buffer_view	   = model.bufferViews[texture_accessor.bufferView];
+	const auto texture_buffer_view	 = model.bufferViews[texture_accessor.bufferView];
 	const auto texture_buffer_buffer   = model.buffers[texture_buffer_view.buffer];
 	const auto texture_data_start_ptr
 		= texture_buffer_buffer.data.data() + (texture_buffer_view.byteOffset + texture_accessor.byteOffset);
@@ -188,7 +188,7 @@ std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::g
 		if(tangent_accessor_index >= 0)
 		{
 			const auto& tangent_accessor	  = model.accessors[size_t(tangent_accessor_index)];
-			const auto& tangent_buffer_view	  = model.bufferViews[tangent_accessor.bufferView];
+			const auto& tangent_buffer_view   = model.bufferViews[tangent_accessor.bufferView];
 			const auto& tangent_buffer_buffer = model.buffers[tangent_buffer_view.buffer];
 			const auto tangent_data_start_ptr
 				= tangent_buffer_buffer.data.data() + (tangent_buffer_view.byteOffset + tangent_accessor.byteOffset);
@@ -219,7 +219,7 @@ std::vector<unsigned> gltf_loader::get_indices(const tinygltf::Model& model, int
 {
 	std::vector<unsigned int> index_buffer;
 
-	const auto index_accessor	   = model.accessors[indices_accessor];
+	const auto index_accessor	  = model.accessors[indices_accessor];
 	const auto index_buffer_view   = model.bufferViews[index_accessor.bufferView];
 	const auto index_buffer_buffer = model.buffers[index_buffer_view.buffer];
 	const auto index_buffer_start_ptr
@@ -277,7 +277,7 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 			const auto draw_mode = mode(primitive.mode);
 
 			const auto indices_accessor_index		= primitive.indices;
-			const auto vertex_coord_accessor_index	= primitive.attributes.at("POSITION");
+			const auto vertex_coord_accessor_index  = primitive.attributes.at("POSITION");
 			const auto texture_coord_accessor_index = primitive.attributes.at("TEXCOORD_0");
 			const auto normal_accessor_index		= primitive.attributes.at("NORMAL");
 			const auto tangent_accessor_index_it	= primitive.attributes.find("TANGENT");
@@ -293,7 +293,7 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 
 				const auto material		 = model.materials[gltf_mesh.primitives[i].material];
 				const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
-				const auto color_image	 = model.images[color_texture.source];
+				const auto color_image   = model.images[color_texture.source];
 
 				texture_handle diffuse_texture_handle = texture_manager::invalid_texture;
 				texture_handle normal_texture_handle  = texture_manager::invalid_texture;
@@ -326,7 +326,7 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
 				if(normal_texture_index >= 0)
 				{
 					const auto normal_texture = model.textures[normal_texture_index];
-					const auto normal_image	  = model.images[normal_texture.source];
+					const auto normal_image   = model.images[normal_texture.source];
 
 					const auto cached = model_texture_cache.find(normal_texture.source);
 					if(cached == std::end(model_texture_cache))

@@ -37,8 +37,7 @@ public:
 									  listener_marker>;
 
 	using child_list = std::vector<node_ptr>;
-	node() :
-	 ID { counter++ } {}
+	node() : ID { counter++ } {}
 	~node() = default;
 
 private:

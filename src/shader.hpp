@@ -65,7 +65,7 @@ public:
 	static constexpr const size_t NB_POINT_LIGHT { 4 }; //this needs to match the same variable in the fragment shader
 	static constexpr const int material_diffuse_texture_slot  = 0;
 	static constexpr const int material_specular_texture_slot = 1;
-	static constexpr const int material_normal_texture_slot	  = 2;
+	static constexpr const int material_normal_texture_slot   = 2;
 
 	///Construct a shader object. Take the location in the resource package of the source code
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);

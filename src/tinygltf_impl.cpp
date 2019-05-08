@@ -89,7 +89,7 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image,
 
 	//Some drivers will only accept 32bit images apparently, convert everything.
 	image->width	 = w;
-	image->height	 = h;
+	image->height	= h;
 	image->component = 4;
 
 	if(FreeImage_GetBPP(loaded_image.get()) != 32) loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
@@ -120,7 +120,7 @@ void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 	tinygltf::FsCallbacks callbacks {};
 
 	callbacks.FileExists	 = tinygltf_file_exist_callback;
-	callbacks.ReadWholeFile	 = tinygltf_read_whole_file_callback;
+	callbacks.ReadWholeFile  = tinygltf_read_whole_file_callback;
 	callbacks.ExpandFilePath = tinygltf_expand_file_path_callback;
 
 	//We are not writing glTF files from this application

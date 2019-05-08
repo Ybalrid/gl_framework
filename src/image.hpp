@@ -34,10 +34,7 @@ class image
 		}
 	}
 
-	void steal_guts(image& other)
-	{
-		internal_image = std::move(other.internal_image);
-	}
+	void steal_guts(image& other) { internal_image = std::move(other.internal_image); }
 
 public:
 	explicit image(const std::string& virtual_path)
@@ -52,8 +49,7 @@ public:
 		internal_image = image_memory.load();
 		image_data.clear();
 
-		if(!internal_image.get())
-			throw std::runtime_error("Couldn't load bitmap from " + virtual_path);
+		if(!internal_image.get()) throw std::runtime_error("Couldn't load bitmap from " + virtual_path);
 
 		internal_image = FreeImage_ConvertTo32Bits(internal_image.get());
 		FreeImage_FlipVertical(internal_image.get());
@@ -64,10 +60,7 @@ public:
 	~image()			 = default;
 	image(const image&&) = delete;
 	image& operator=(const image&&) = delete;
-	image(image&& other) noexcept
-	{
-		steal_guts(other);
-	}
+	image(image&& other) noexcept { steal_guts(other); }
 
 	image& operator=(image&& other) noexcept
 	{
@@ -75,40 +68,26 @@ public:
 		return *this;
 	}
 
-	int get_width() const
-	{
-		return FreeImage_GetWidth(internal_image.get());
-	}
+	int get_width() const { return FreeImage_GetWidth(internal_image.get()); }
 
-	int get_height() const
-	{
-		return FreeImage_GetHeight(internal_image.get());
-	}
+	int get_height() const { return FreeImage_GetHeight(internal_image.get()); }
 
-	enum class type { rgba,
-					  rgb };
+	enum class type { rgba, rgb };
 	static GLint get_gl_type(type t)
 	{
 		switch(t)
 		{
-			case type::rgb:
-				return GL_RGB;
-			case type::rgba:
-				return GL_RGBA;
-			default:
-				throw std::runtime_error("cannot make sence of your type thing");
+			case type::rgb: return GL_RGB;
+			case type::rgba: return GL_RGBA;
+			default: throw std::runtime_error("cannot make sence of your type thing");
 		}
 	}
 
 	type get_type() const
 	{
-		if(FreeImage_GetBPP(internal_image.get()) == 32)
-			return type::rgba;
+		if(FreeImage_GetBPP(internal_image.get()) == 32) return type::rgba;
 		return type::rgb;
 	}
 
-	BYTE* get_binary() const
-	{
-		return FreeImage_GetBits(internal_image.get());
-	}
+	BYTE* get_binary() const { return FreeImage_GetBits(internal_image.get()); }
 };

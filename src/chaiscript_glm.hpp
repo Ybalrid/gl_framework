@@ -66,10 +66,10 @@ static ModulePtr get_glm_module()
 	glm_module->add(fun(static_cast<vec3 (*)(const vec3&, const vec3&, float)>(refract)), "refract");
 	glm_module->add(fun(static_cast<vec3 (*)(const vec3&, const vec3&, float)>(mix)), "mix");
 	glm_module->add(fun([](const vec3& a, const vec3& b) { return all(equal(a, b)); }), "==");
-	glm_module->add(fun([](const vec3& v) -> std::string { return "vec3("
-															   + to_string(v.x) + ", "
-															   + to_string(v.y) + ", "
-															   + to_string(v.z) + ")"; }), "to_string");
+	glm_module->add(fun([](const vec3& v) -> std::string {
+						return "vec3(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ")";
+					}),
+					"to_string");
 
 	////quaternion
 	glm_module->add(user_type<quat>(), "quat");
@@ -89,11 +89,11 @@ static ModulePtr get_glm_module()
 	glm_module->add(fun(static_cast<quat (*)(const quat&, const quat&, float)>(mix)), "mix");
 	glm_module->add(fun(static_cast<quat (*)(const quat&, const quat&, float)>(mix)), "slerp");
 	glm_module->add(fun([](const quat& a, const quat& b) { return all(equal(a, b)); }), "==");
-	glm_module->add(fun([](const quat& q) -> std::string { return "quat("
-															   + to_string(q.w) + ", "
-															   + to_string(q.x) + ", "
-															   + to_string(q.y) + ", "
-															   + to_string(q.z) + ")"; }), "to_string");
+	glm_module->add(fun([](const quat& q) -> std::string {
+						return "quat(" + to_string(q.w) + ", " + to_string(q.x) + ", " + to_string(q.y) + ", " + to_string(q.z)
+							+ ")";
+					}),
+					"to_string");
 
 	////2D vector
 	glm_module->add(user_type<vec2>(), "vec2");
@@ -118,10 +118,9 @@ static ModulePtr get_glm_module()
 	glm_module->add(fun(static_cast<vec2 (*)(const vec2&, const vec2&, float)>(refract)), "refract");
 	glm_module->add(fun(static_cast<vec2 (*)(const vec2&, const vec2&, float)>(mix)), "mix");
 	glm_module->add(fun([](const vec2& a, const vec2& b) { return all(equal(a, b)); }), "==");
-	glm_module->add(fun([](const vec2& v) -> std::string { return "vec2("
-															   + to_string(v.x) + ", "
-															   + to_string(v.y) + ", "
-															   + ")"; }), "to_string");
+	glm_module->add(
+		fun([](const vec2& v) -> std::string { return "vec2(" + to_string(v.x) + ", " + to_string(v.y) + ", " + ")"; }),
+		"to_string");
 
 	////4D vector
 	glm_module->add(user_type<vec4>(), "vec4");
@@ -150,11 +149,11 @@ static ModulePtr get_glm_module()
 	glm_module->add(fun(static_cast<vec4 (*)(const vec4&, const vec4&, float)>(refract)), "refract");
 	glm_module->add(fun(static_cast<vec4 (*)(const vec4&, const vec4&, float)>(mix)), "mix");
 	glm_module->add(fun([](const vec4& a, const vec4& b) { return all(equal(a, b)); }), "==");
-	glm_module->add(fun([](const vec4& v) -> std::string { return "vec4("
-															   + to_string(v.x) + ", "
-															   + to_string(v.y) + ", "
-															   + to_string(v.z) + ", "
-															   + to_string(v.w) + ")"; }), "to_string");
+	glm_module->add(fun([](const vec4& v) -> std::string {
+						return "vec4(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ", " + to_string(v.w)
+							+ ")";
+					}),
+					"to_string");
 
 	return glm_module;
 }

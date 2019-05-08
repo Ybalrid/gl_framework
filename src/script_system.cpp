@@ -85,10 +85,10 @@ std::vector<std::string> script_system::global_scope_object_names() const
 {
 	auto& chai = pimpl->get();
 
-	const auto& state	  = chai.get_state().engine_state;
+	const auto& state	 = chai.get_state().engine_state;
 	const auto& functions = state.m_function_objects;
-	const auto& globals	  = state.m_global_objects;
-	const auto& locals	  = chai.get_locals();
+	const auto& globals   = state.m_global_objects;
+	const auto& locals	= chai.get_locals();
 
 	const auto size = functions.size() + globals.size() + locals.size() + 2;
 

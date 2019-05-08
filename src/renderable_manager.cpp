@@ -21,8 +21,7 @@ renderable_manager::~renderable_manager()
 
 renderable& renderable_manager::get_from_handle(renderable_handle r)
 {
-	if(r == invalid_renderable)
-		throw std::runtime_error("Cannot get invalid renderable");
+	if(r == invalid_renderable) throw std::runtime_error("Cannot get invalid renderable");
 
 	return manager->renderables.at(r);
 }

@@ -4,10 +4,7 @@
 
 struct light
 {
-	void set_position_from_world_mat(const glm::mat4& world_mat)
-	{
-		position = glm::vec3(world_mat[3]);
-	}
+	void set_position_from_world_mat(const glm::mat4& world_mat) { position = glm::vec3(world_mat[3]); }
 
 	void set_direction_from_world_mat(const glm::mat4 world_mat)
 	{
@@ -33,9 +30,7 @@ struct light
 };
 
 struct directional_light : light
-{
-};
+{};
 
 struct point_light : light
-{
-};
+{};

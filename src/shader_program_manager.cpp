@@ -21,8 +21,7 @@ shader_program_manager::~shader_program_manager()
 
 shader& shader_program_manager::get_from_handle(shader_handle h)
 {
-	if(h == invalid_shader)
-		throw std::runtime_error("Cannot get from invalid shader handle");
+	if(h == invalid_shader) throw std::runtime_error("Cannot get from invalid shader handle");
 
 	return manager->shaders.at(h);
 }

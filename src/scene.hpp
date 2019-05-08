@@ -12,10 +12,7 @@ struct scene
 		callable(start, args...);
 		for(size_t i = 0U; i < start->get_child_count(); ++i)
 		{
-			if(auto* child = start->get_child(i); child != nullptr)
-			{
-				run_on_subgraph(child, callable, args...);
-			}
+			if(auto* child = start->get_child(i); child != nullptr) { run_on_subgraph(child, callable, args...); }
 		}
 	}
 

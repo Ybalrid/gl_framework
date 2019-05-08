@@ -14,17 +14,11 @@ class camera_controller;
 class camera_controller_command : public keyboard_input_command
 {
 public:
-	enum class movement_type {
-		left,
-		right,
-		up,
-		down,
-		count
-	};
-	enum class action_type { pressed,
-							 released };
+	enum class movement_type { left, right, up, down, count };
+	enum class action_type { pressed, released };
 	camera_controller_command(camera_controller* owner, movement_type mvmt, action_type act) :
-	 owner_ { owner }, movement_type_ { mvmt }, action_type_ { act } {}
+	 owner_ { owner }, movement_type_ { mvmt }, action_type_ { act }
+	{}
 
 	void execute() override;
 
@@ -37,19 +31,17 @@ private:
 class camera_controller_run_modifier : public keyboard_input_command
 {
 public:
-	camera_controller_run_modifier(camera_controller* owner) : owner_{owner}{};
+	camera_controller_run_modifier(camera_controller* owner) : owner_ { owner } {};
 	void execute() override;
+
 private:
 	camera_controller* owner_;
-
 };
 
 class camera_controller_mouse_command : public mouse_input_command
 {
 public:
-	camera_controller_mouse_command(camera_controller* owner) :
-	 owner_ { owner }
-	{}
+	camera_controller_mouse_command(camera_controller* owner) : owner_ { owner } {}
 	void execute() override;
 
 private:
@@ -58,22 +50,23 @@ private:
 
 class camera_controller
 {
-	bool left   = false;
-	bool right  = false;
-	bool up		= false;
-	bool down   = false;
-	bool running = false;
-	bool fly = false;
-	float scaled_yaw = 0;
+	bool left		   = false;
+	bool right		   = false;
+	bool up			   = false;
+	bool down		   = false;
+	bool running	   = false;
+	bool fly		   = false;
+	float scaled_yaw   = 0;
 	float scaled_pitch = 0;
-	float scaler = 0.001f;
+	float scaler	   = 0.001f;
 
 	node* controlled_camera_node = nullptr;
 	friend class camera_controller_command;
 	friend class camera_controller_mouse_command;
 	friend class camera_controller_run_modifier;
 
-	std::array<std::unique_ptr<keyboard_input_command>, 2 * size_t(camera_controller_command::movement_type::count)> command_objects;
+	std::array<std::unique_ptr<keyboard_input_command>, 2 * size_t(camera_controller_command::movement_type::count)>
+		command_objects;
 	std::unique_ptr<mouse_input_command> mouse_command_object;
 	std::unique_ptr<keyboard_input_command> running_state_command;
 
@@ -87,5 +80,5 @@ public:
 	void apply_movement(float delta_frame_second);
 
 	float walk_speed = 3.0f; // m.s^-1
-	float run_speed = 13.f;
+	float run_speed  = 13.f;
 };

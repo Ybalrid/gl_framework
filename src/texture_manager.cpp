@@ -2,7 +2,7 @@
 #include <iostream>
 #include <array>
 
-texture_manager* texture_manager::manager	  = nullptr;
+texture_manager* texture_manager::manager	 = nullptr;
 texture_handle texture_manager::dummy_texture = texture_manager::invalid_texture;
 
 texture_manager::texture_manager()

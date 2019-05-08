@@ -24,7 +24,8 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 			projection = glm::perspective(glm::radians(fov), ratio, near_clip, far_clip);
 			break;
 
-		case ortho: {
+		case ortho:
+		{
 			//Orthographic porjection that respoct the viewport geometry, with (0,0) in the center of the screen,
 			//in the normal opengl coordinates
 			set_gl_viewport(viewport_x, viewport_y, viewport_w, viewport_h);
@@ -34,7 +35,8 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 		}
 		break;
 
-		case hud: {
+		case hud:
+		{
 			set_gl_viewport(viewport_x, viewport_y, viewport_w, viewport_h);
 			//render geometry in screen space directly, with pixel values
 			//we intentionally flip back the Y axis here so (0, 0) is the top left corner of the screen
@@ -47,7 +49,8 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 		}
 		break;
 
-		case eye_vr: {
+		case eye_vr:
+		{
 			//This will **not** call glViewport for you
 			if(vr_eye_projection_callback) vr_eye_projection_callback(projection, near_clip, far_clip);
 		}
