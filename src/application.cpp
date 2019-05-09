@@ -408,6 +408,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
 
 	s.run_on_whole_graph([&](node* current_node) {
 		current_node->visit([&](auto&& node_attached_object) {
+			//Only run this code if object is a scene_object
 			using T = std::decay_t<decltype(node_attached_object)>;
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
@@ -543,11 +544,11 @@ void application::setup_scene()
 	// clang-format off
 	const std::vector<float> plane =
 	{
-		//x=	y=		 z=			u=	v=		normal=
-		-0.9f,	0.0f,	 0.9f,		0,	1,		0, 1, 0,  0,-1,0,
-		 0.9f,	0.0f,	 0.9f,		1,	1,		0, 1, 0,  0,-1,0,
-		-0.9f,	0.0f,	-0.9f,		0,	0,		0, 1, 0,  0,-1,0,
-		 0.9f,	0.0f,	-0.9f,		1,	0,		0, 1, 0,  0,-1,0
+		//x=    y=     z=     uv=    normal=   tangent=
+		-0.9f,  0.0f,  0.9f,  0, 1,  0, 1, 0,  0, -1, 0,
+		 0.9f,  0.0f,  0.9f,  1, 1,  0, 1, 0,  0, -1, 0,
+		-0.9f,  0.0f, -0.9f,  0, 0,  0, 1, 0,  0, -1, 0,
+		 0.9f,  0.0f, -0.9f,  1, 0,  0, 1, 0,  0, -1, 0
 	};
 
 	const std::vector<unsigned int> plane_indices =
