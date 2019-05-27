@@ -11,6 +11,8 @@
 #include "light.hpp"
 #include <chrono>
 
+//just a test
+
 float shadow_map_ortho_scale		  = 50;
 float shadow_map_direction_multiplier = 100;
 float shadow_map_near_plane			  = .1;
