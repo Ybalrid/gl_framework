@@ -16,9 +16,8 @@ class camera_controller_command : public keyboard_input_command
 public:
 	enum class movement_type { left, right, up, down, count };
 	enum class action_type { pressed, released };
-	camera_controller_command(camera_controller* owner, movement_type mvmt, action_type act) :
-	 owner_ { owner }, movement_type_ { mvmt }, action_type_ { act }
-	{}
+
+	camera_controller_command(camera_controller* owner, movement_type mvmt, action_type act);
 
 	void execute() override;
 
@@ -31,7 +30,7 @@ private:
 class camera_controller_run_modifier : public keyboard_input_command
 {
 public:
-	camera_controller_run_modifier(camera_controller* owner) : owner_ { owner } {};
+	camera_controller_run_modifier(camera_controller* owner);
 	void execute() override;
 
 private:
@@ -41,7 +40,7 @@ private:
 class camera_controller_mouse_command : public mouse_input_command
 {
 public:
-	camera_controller_mouse_command(camera_controller* owner) : owner_ { owner } {}
+	camera_controller_mouse_command(camera_controller* owner);
 	void execute() override;
 
 private:
@@ -80,5 +79,5 @@ public:
 	void apply_movement(float delta_frame_second);
 
 	float walk_speed = 3.0f; // m.s^-1
-	float run_speed  = 13.f;
+	float run_speed	 = 13.f;
 };

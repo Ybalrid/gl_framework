@@ -61,6 +61,10 @@ void camera_controller::apply_movement(float delta_frame_second)
 			glm::quat(glm::vec3(scaled_pitch, scaled_yaw, 0.f))); //this euler angle will never gimbal lock
 }
 
+camera_controller_command::camera_controller_command(camera_controller* owner, movement_type mvmt, action_type act) :
+ owner_ { owner }, movement_type_ { mvmt }, action_type_ { act }
+{}
+
 void camera_controller_command::execute()
 {
 	const bool new_state = action_type_ == action_type::pressed;
@@ -76,11 +80,15 @@ void camera_controller_command::execute()
 	}
 }
 
+camera_controller_mouse_command::camera_controller_mouse_command(camera_controller* owner) : owner_ { owner } {}
+
 void camera_controller_mouse_command::execute()
 {
 	owner_->scaled_yaw -= owner_->scaler * relative_motion.x;
 	owner_->scaled_pitch -= owner_->scaler * relative_motion.y;
 	owner_->scaled_pitch = glm::clamp(owner_->scaled_pitch, -glm::half_pi<float>(), glm::half_pi<float>());
 }
+
+camera_controller_run_modifier::camera_controller_run_modifier(camera_controller* owner) : owner_ { owner } {}
 
 void camera_controller_run_modifier::execute() { owner_->running = modifier & KMOD_LSHIFT; }

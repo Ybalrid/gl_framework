@@ -75,7 +75,7 @@ class application
 	resource_system resources;
 
 	bool debug_ui			   = false;
-	uint32_t current_time	  = 0;
+	uint32_t current_time	   = 0;
 	uint32_t last_frame_time   = 0;
 	uint32_t last_second_time  = 0;
 	uint32_t last_frame_delta  = 0;
@@ -160,32 +160,22 @@ public:
 	static std::vector<std::string> resource_paks;
 	static void set_clear_color(glm::vec4 color);
 
-	static void push_opengl_debug_group(const char* name)
-	{
-#ifdef _DEBUG
-		if(glPushDebugGroup) //likely to fail on macos without this test, as opengl 4.1 shouldn't have access to this
-			glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, GLsizei(0), GLsizei(strlen(name)), name);
-#else
-		(void)name;
-#endif
-	}
+	static void push_opengl_debug_group(const char* name);
 
-	static void pop_opengl_debug_group()
-	{
-#ifdef _DEBUG
-		if(glPopDebugGroup) glPopDebugGroup();
-#endif
-	}
+	static void pop_opengl_debug_group();
 
 	struct opengl_debug_group
 	{
 #ifdef _DEBUG
 		const char* name_;
-		opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
+		opengl_debug_group(const char* name);
 
-		~opengl_debug_group() { pop_opengl_debug_group(); }
+		~opengl_debug_group();
 #else
-		opengl_debug_group(const char* name) { (void)name; }
+		opengl_debug_group(const char* name);
+		{
+			(void)name;
+		}
 #endif
 	};
 };

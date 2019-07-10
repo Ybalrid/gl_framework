@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include "image.hpp"
 #include <array>
+
 class texture
 {
 	static std::array<GLuint, 16> texture_bound_state;

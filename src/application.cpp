@@ -76,13 +76,13 @@ void application::draw_debug_ui()
 			ImGui::BeginChild(
 				"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
 			ImGui::Text("Main ShadowMap:");
-			ImGui::SliderFloat3("sun direction", (float*)sun_direction_unormalized.data.data, -1.f, 1.f);
+			ImGui::SliderFloat3("sun direction", static_cast<float*>(sun_direction_unormalized.data.data), -1.f, 1.f);
 			ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
 			ImGui::SliderFloat("far", &shadow_map_far_plane, 50.f, 500.f);
 			ImGui::SliderFloat("ortho window", &shadow_map_ortho_scale, 10.f, 200.f);
 			ImGui::SliderFloat("distance scale", &shadow_map_direction_multiplier, 1.f, 1000.f);
 
-			ImGui::Image(ImTextureID(shadow_depth_map), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 			if(ImGui::CollapsingHeader("Renderable Manager State"))
 			{
 				const auto& list			 = renderable_manager::get_list();
@@ -106,9 +106,9 @@ void application::draw_debug_ui()
 											   bounds.max.x,
 											   bounds.max.y,
 											   bounds.max.z);
-							const auto diffuse  = renderable.get_diffuse_texture();
+							const auto diffuse	= renderable.get_diffuse_texture();
 							const auto specular = renderable.get_specular_texture();
-							const auto normal   = renderable.get_normal_texture();
+							const auto normal	= renderable.get_normal_texture();
 
 							ImGui::Text("Textures:");
 							ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
@@ -185,7 +185,7 @@ void application::update_timing()
 	//calculate frame timing
 	last_frame_time		 = current_time;
 	current_time		 = SDL_GetTicks();
-	current_time_in_sec  = float(current_time) * .001f;
+	current_time_in_sec	 = float(current_time) * .001f;
 	last_frame_delta	 = current_time - last_frame_time;
 	last_frame_delta_sec = float(last_frame_delta) * .001f;
 
@@ -415,7 +415,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
 			if constexpr(std::is_same_v<T, scene_object>)
 			{
 				auto& object				  = static_cast<scene_object&>(node_attached_object);
-				const auto obb_points_list	= object.get_obb(current_node->get_world_matrix());
+				const auto obb_points_list	  = object.get_obb(current_node->get_world_matrix());
 				const glm::mat4 to_clip_space = render_camera->get_view_projection_matrix();
 				std::array<glm::vec4, 8> clip_space_obb { glm::vec4(0) };
 				for(size_t j = 0; j < obb_points_list.size(); ++j)
@@ -628,7 +628,7 @@ void application::setup_scene()
 
 	sun.diffuse = sun.specular = glm::vec3(1);
 	sun.specular *= 42;
-	sun.ambient   = glm::vec3(0);
+	sun.ambient	  = glm::vec3(0);
 	sun.direction = glm::normalize(sun_direction_unormalized);
 
 	std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
@@ -668,6 +668,30 @@ void application::set_clear_color(glm::vec4 color)
 		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 	}
 }
+
+void application::push_opengl_debug_group(const char* name)
+{
+#ifdef _DEBUG
+	if(glPushDebugGroup) //likely to fail on macos without this test, as opengl 4.1 shouldn't have access to this
+		glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, GLsizei(0), GLsizei(strlen(name)), name);
+#else
+	(void)name;
+#endif
+}
+
+void application::pop_opengl_debug_group()
+{
+#ifdef _DEBUG
+	if(glPopDebugGroup) glPopDebugGroup();
+#endif
+}
+
+#ifdef _DEBUG
+application::opengl_debug_group::opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
+application::opengl_debug_group::~opengl_debug_group() { pop_opengl_debug_group(); }
+#else
+application::opengl_debug_group::opengl_debug_group(const char* name) { (void)(name_); }
+#endif
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {

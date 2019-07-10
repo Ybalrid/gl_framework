@@ -15,9 +15,11 @@
 
 class audio_buffer;
 
+///Initialize OpenAL
 class audio_system
 {
-	ALCdevice* device   = nullptr;
+
+	ALCdevice* device	= nullptr;
 	ALCcontext* context = nullptr;
 
 	void steal_guts(audio_system& other);
@@ -31,35 +33,51 @@ class audio_system
 	};
 
 public:
+	///Open an audio output device
 	audio_system(const char* device_name = nullptr);
 	~audio_system();
 
+	///No Copy
 	audio_system(const audio_system&) = delete;
+	///No Copy
 	audio_system& operator=(const audio_system&) = delete;
 
+	///Move
 	audio_system(audio_system&& other) noexcept;
+	///Move
 	audio_system& operator=(audio_system&& other) noexcept;
 
+	///Get an audio buffer with the data from an audio file
 	static audio_buffer get_buffer(const std::string& virtual_path);
 };
 
+///Audio listener, represent the point in spcace where audio is "captured from"
 class audio_listener
 {
+	///This is a singleton-ish pattern
 	static audio_listener* unique_listener;
 
 public:
+	///Create teh listener
 	audio_listener();
+	///Destroy the listener
 	~audio_listener();
+
+	///Set the world transformation of the listener ( = model matrix )
 	void set_world_transform(const glm::mat4& transform) const;
+
+	///Get the audio listener
 	static audio_listener* get_listener();
 };
 
+///Configuration cookie of an audio buffer
 struct buffer_config
 {
 	ALenum format;
 	ALsizei size, freq;
 };
 
+///Audio buffer : Represent an open al buffer, created from an array of samples
 class audio_buffer
 {
 	ALuint buffer = 0;
@@ -82,6 +100,7 @@ public:
 	buffer_config get_config() const;
 };
 
+///Audio source : point in space that can emit sound
 class audio_source
 {
 	ALuint source = 0;
@@ -99,6 +118,8 @@ public:
 	audio_source& operator=(audio_source&& other) noexcept;
 
 	ALuint get_al_source() const;
+
+	///Set the model matrix that place this source in the world
 	void set_world_transform(const glm::mat4& transform) const;
 
 	void set_buffer(const audio_buffer& buffer) const;
@@ -111,7 +132,7 @@ public:
 	void rewind() const;
 };
 
-//Empty object that can be stashed into a node
+///Empty object that can be stashed into a node
 struct listener_marker
 {
 	void set_world_transform(const glm::mat4& transform) const;

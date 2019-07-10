@@ -1,13 +1,16 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
 set(GAME_NAME "test_project")
-PROJECT (${GAME_NAME})
 
+
+PROJECT (${GAME_NAME})
 SET (CMAKE_CXX_STANDARD 17)
 
 #configure glm
 ADD_DEFINITIONS(-DGLM_FORCE_SWIZZLE -DGLM_ENABLE_EXPERIMENTAL)
 
+# Detect platforms and configure build options for specials usages
 
+#activate optimizations and things like that
 IF (MSVC)
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /arch:AVX2 /fp:fast")
 	ADD_DEFINITIONS(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
@@ -20,6 +23,7 @@ ELSE()
 ENDIF()
 
 IF (UNIX)
+#use JET LIVE for hot realoading of modified code
   SET(JET_LIVE_BUILD_EXAMPLE OFF)
   INCLUDE(third_party/jet-live/cmake/jet_live_setup.cmake)
         ADD_SUBDIRECTORY(third_party/jet-live/)
@@ -27,6 +31,7 @@ IF (UNIX)
         ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
 ENDIF()
 
+#list source code
 FILE (GLOB sources
            CONFIGURE_DEPENDS
            ./src/*.cpp
@@ -40,7 +45,7 @@ FILE (GLOB sources
 # just add this lib as a subdir,
 ADD_SUBDIRECTORY (third_party/physfs/)
 
-
+#Get libraries
 SET (LIBRARIES_PACKAGE_DIR "path_to_libraries" CACHE PATH "path to the 3rd party libraries directory")
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/" "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake")
 FIND_PACKAGE (OpenAL REQUIRED)
@@ -51,15 +56,10 @@ FIND_PACKAGE (FreeImage REQUIRED)
 FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
+#Create our build target
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
 
-IF(FALSE)
-FIND_PACKAGE(OpenMP)
-IF(OpenMP_FOUND)
-	TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE OpenMP::OpenMP_CXX)
-ENDIF()
-ENDIF()
-
+#Add header only libraries include path
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
@@ -72,6 +72,8 @@ TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
 TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
+
+#link libraries
 TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
                        PRIVATE Threads::Threads
                                ${CMAKE_DL_LIBS}
@@ -86,7 +88,6 @@ TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
 IF(UNIX)
 	TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PUBLIC jet-live)
 ENDIF()
-
 IF (APPLE)
     FIND_LIBRARY (IOKit IOKit)
     TARGET_LINK_LIBRARIES (${GAME_NAME}_exe PRIVATE ${IOKit})
