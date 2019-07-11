@@ -173,9 +173,6 @@ public:
 		~opengl_debug_group();
 #else
 		opengl_debug_group(const char* name);
-		{
-			(void)name;
-		}
 #endif
 	};
 };

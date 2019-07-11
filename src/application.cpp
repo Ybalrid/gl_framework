@@ -690,7 +690,7 @@ void application::pop_opengl_debug_group()
 application::opengl_debug_group::opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
 application::opengl_debug_group::~opengl_debug_group() { pop_opengl_debug_group(); }
 #else
-application::opengl_debug_group::opengl_debug_group(const char* name) { (void)(name_); }
+application::opengl_debug_group::opengl_debug_group(const char* name) { (void)(name); }
 #endif
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)

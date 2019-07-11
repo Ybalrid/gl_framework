@@ -11,13 +11,17 @@
 
 #include <array>
 
+///A bounding box is 8 points in space forming a cuboid
 using bounding_box = std::array<glm::vec3, 8>;
 
+///A renderable is an entity that can be rendered on screen, as part of a mesh
 class renderable
 {
+	///The last VAO that was bound on the GL state
 	static GLint last_bound_vao;
 
 public:
+	///Min Max
 	struct vertex_buffer_extrema
 	{
 		glm::vec3 min, max;
@@ -26,6 +30,7 @@ public:
 		vertex_buffer_extrema(const vertex_buffer_extrema&) = default;
 	};
 
+	///Things that a renderable own
 	struct configuration
 	{
 		bool position : 1;
@@ -35,27 +40,34 @@ public:
 	};
 
 private:
-	shader_handle shader_program	= shader_program_manager::invalid_shader;
-	texture_handle diffuse_texture  = texture_manager::invalid_texture;
+	///Shader to be used to display this object
+	shader_handle shader_program = shader_program_manager::invalid_shader;
+	//Textures TODO PBR
+	texture_handle diffuse_texture	= texture_manager::invalid_texture;
 	texture_handle specular_texture = texture_manager::invalid_texture;
-	texture_handle normal_texture   = texture_manager::invalid_texture;
+	texture_handle normal_texture	= texture_manager::invalid_texture;
 
 	GLuint VAO = 0, VBO = 0, EBO = 0;
 	GLenum draw_mode = GL_TRIANGLES, element_type = GL_UNSIGNED_INT;
 	GLuint element_count = 0;
 
+	///Matrices to display this object
 	glm::mat4 mvp = glm::mat4(1.f), model = glm::mat4(1.f), view = glm::mat4(1.f);
 	glm::mat3 normal = glm::mat3(1.f);
 
+	///bouding box
 	vertex_buffer_extrema bounds {};
 
+	///Vertex index locations
 	static constexpr GLuint vertex_position_location = 0;
-	static constexpr GLuint vertex_texture_location  = 1;
-	static constexpr GLuint vertex_normal_location   = 2;
-	static constexpr GLuint vertex_tangent_location  = 3;
+	static constexpr GLuint vertex_texture_location	 = 1;
+	static constexpr GLuint vertex_normal_location	 = 2;
+	static constexpr GLuint vertex_tangent_location	 = 3;
 
+	///Move utility
 	void steal_guts(renderable& other);
 
+	///Push data to GPU
 	void upload_to_gpu(const std::vector<float>& vertex_buffer,
 					   const std::vector<unsigned>& index_buffer,
 					   configuration vertex_config,
@@ -67,10 +79,13 @@ private:
 					   GLenum buffer_usage);
 
 public:
+	///Object material
 	material mat;
 
+	///Default contructor to make a placeholder object that can be moved into
 	renderable() = default;
 
+	///Ctor
 	renderable(shader_handle program,
 			   const std::vector<float>& vertex_buffer,
 			   const std::vector<unsigned int>& index_buffer,
@@ -84,27 +99,36 @@ public:
 			   GLenum draw_operation	   = GL_TRIANGLES,
 			   GLenum buffer_usage		   = GL_STATIC_DRAW);
 
+	///Set textures
 	void set_diffuse_texture(texture_handle t);
 	void set_specular_texture(texture_handle t);
 	void set_normal_texture(texture_handle t);
 
-	texture_handle get_diffuse_texture() const { return diffuse_texture; }
-	texture_handle get_specular_texture() const { return specular_texture; }
-	texture_handle get_normal_texture() const { return normal_texture; }
+	///Get textures
+	texture_handle get_diffuse_texture() const;
+	texture_handle get_specular_texture() const;
+	texture_handle get_normal_texture() const;
 
+	///Dtor
 	~renderable();
+	///No copy
 	renderable(const renderable&) = delete;
+	///No copy
 	renderable& operator=(const renderable&) = delete;
+	///Move
 	renderable(renderable&& other) noexcept;
+	///Move
 	renderable& operator=(renderable&& other) noexcept;
 
+	///Draw this object
 	void draw() const;
 	void submit_draw_call() const;
 	void set_mvp_matrix(const glm::mat4& matrix);
 	void set_model_matrix(const glm::mat4& matrix);
 	void set_view_matrix(const glm::mat4& matrix);
 
-	glm::mat4 const& get_model_matrix() const { return model; }
+	///Get this object model matrix
+	glm::mat4 const& get_model_matrix() const;
 
 	vertex_buffer_extrema get_bounds() const;
 

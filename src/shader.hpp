@@ -43,6 +43,7 @@ public:
 		MAX_UNIFORM_LOCATION_COUNT
 	};
 
+	///Uniform for a directional light
 	struct directional_light_uniform_locations
 	{
 		int direction { -1 };
@@ -51,6 +52,7 @@ public:
 		int specular { -1 };
 	};
 
+	///Uniform for a point light
 	struct point_light_uniform_locations
 	{
 		int position { -1 };
@@ -62,10 +64,13 @@ public:
 		int specular { -1 };
 	};
 
-	static constexpr const size_t NB_POINT_LIGHT { 4 }; //this needs to match the same variable in the fragment shader
-	static constexpr const int material_diffuse_texture_slot  = 0;
-	static constexpr const int material_specular_texture_slot = 1;
-	static constexpr const int material_normal_texture_slot   = 2;
+	///Maximum number of lights in the system
+	static constexpr size_t NB_POINT_LIGHT { 4 }; //this needs to match the same variable in the fragment shader
+
+	//TODO redo texture binding system
+	static constexpr int material_diffuse_texture_slot	= 0;
+	static constexpr int material_specular_texture_slot = 1;
+	static constexpr int material_normal_texture_slot	= 2;
 
 	///Construct a shader object. Take the location in the resource package of the source code
 	shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);

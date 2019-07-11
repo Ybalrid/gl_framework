@@ -31,3 +31,5 @@ void renderable_manager::get_rid_of(renderable_handle r)
 	manager->unallocated_renderables.push_back(r);
 	get_from_handle(r) = renderable();
 }
+
+std::vector<renderable> const& renderable_manager::get_list() { return manager->renderables; }

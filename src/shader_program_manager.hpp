@@ -13,7 +13,7 @@ class shader_program_manager
 	static shader_program_manager* manager;
 
 public:
-	static constexpr const shader_handle invalid_shader { std::numeric_limits<shader_handle>::max() };
+	static constexpr shader_handle invalid_shader { std::numeric_limits<shader_handle>::max() };
 
 	shader_program_manager();
 	~shader_program_manager();

@@ -129,8 +129,7 @@ void gui::console()
 							   }
 						   }
 						   break;
-					   case ImGuiInputTextFlags_CallbackHistory:
-					   {
+					   case ImGuiInputTextFlags_CallbackHistory: {
 						   const char* text = nullptr;
 						   const auto console_history_max
 							   = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
@@ -197,13 +196,13 @@ void gui::console()
 
 void gui::show_console()
 {
-	show_console_	 = true;
+	show_console_	  = true;
 	last_frame_showed = false;
 }
 
 void gui::hide_console()
 {
-	show_console_	 = false;
+	show_console_	  = false;
 	last_frame_showed = false;
 }
 
@@ -215,7 +214,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io	= ImGui::GetIO();
+	ImGuiIO& io	   = ImGui::GetIO();
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsDark();
@@ -242,7 +241,7 @@ gui::gui(SDL_Window* window, SDL_GLContext gl_context)
 	strcpy(vera_mono_config.Name, "vera mono");
 	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f, &vera_mono_config);
 
-	ugly_font = io.Fonts->AddFontDefault();
+	pixel_font = io.Fonts->AddFontDefault();
 
 	if(!console_font) std::cerr << "console font is null\n";
 
@@ -290,12 +289,12 @@ void gui::clear_console() { console_content.clear(); }
 
 void gui::move_from(gui& o)
 {
-	w   = o.w;
+	w	= o.w;
 	o.w = nullptr;
 
 	console_font = o.console_font;
 	default_font = o.default_font;
-	ugly_font	= o.ugly_font;
+	pixel_font	 = o.pixel_font;
 }
 
 gui::gui(gui&& o) noexcept { move_from(o); }

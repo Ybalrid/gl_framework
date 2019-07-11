@@ -62,7 +62,7 @@ public:
 	void clean_child_list();
 
 	template <typename T>
-	T* get_if_is() const
+	const T* get_if_is() const
 	{
 		return std::get_if<T>(&content);
 	}

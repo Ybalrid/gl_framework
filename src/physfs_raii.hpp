@@ -1,5 +1,6 @@
 #pragma once
 
+///raii wrapper around physics_fs
 struct physfs_raii
 {
 	bool init = false;

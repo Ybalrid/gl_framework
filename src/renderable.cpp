@@ -5,14 +5,14 @@ GLint renderable::last_bound_vao = 0;
 
 void renderable::steal_guts(renderable& other)
 {
-	shader_program   = other.shader_program;
-	diffuse_texture  = other.diffuse_texture;
+	shader_program	 = other.shader_program;
+	diffuse_texture	 = other.diffuse_texture;
 	specular_texture = other.specular_texture;
-	normal_texture   = other.normal_texture;
+	normal_texture	 = other.normal_texture;
 	VAO				 = other.VAO;
 	VBO				 = other.VBO;
 	EBO				 = other.EBO;
-	element_count	= other.element_count;
+	element_count	 = other.element_count;
 	draw_mode		 = other.draw_mode;
 	element_type	 = other.element_type;
 	mvp				 = other.mvp;
@@ -152,7 +152,7 @@ renderable::renderable(shader_handle program,
 		const auto new_vertex_buffer_stride = vertex_buffer_stride + 3;
 		const auto tangent_coord_offset		= vertex_buffer_stride;
 		const auto new_vertex_config		= [=] {
-			   auto new_vertex_config	= vertex_config;
+			   auto new_vertex_config	 = vertex_config;
 			   new_vertex_config.tangent = true;
 			   return new_vertex_config;
 		}();
@@ -189,6 +189,12 @@ void renderable::set_specular_texture(texture_handle t) { specular_texture = t; 
 
 void renderable::set_normal_texture(texture_handle t) { normal_texture = t; }
 
+texture_handle renderable::get_diffuse_texture() const { return diffuse_texture; }
+
+texture_handle renderable::get_specular_texture() const { return specular_texture; }
+
+texture_handle renderable::get_normal_texture() const { return normal_texture; }
+
 renderable::~renderable()
 {
 	if(VBO) glDeleteBuffers(1, &VBO);
@@ -214,13 +220,14 @@ void renderable::draw() const
 	//Setup our shader
 	shader_object.use();
 	shader_object.set_uniform(shader::uniform::mvp, mvp);		//projection * view * model
-	shader_object.set_uniform(shader::uniform::model, model);   //world space model matrix
+	shader_object.set_uniform(shader::uniform::model, model);	//world space model matrix
 	shader_object.set_uniform(shader::uniform::normal, normal); //3x3 matrix extracted from(transpose(inverse(model)))
 	shader_object.set_uniform(shader::uniform::material_shininess, mat.shininess);
 	shader_object.set_uniform(shader::uniform::material_diffuse_color, mat.diffuse_color);
 	shader_object.set_uniform(shader::uniform::material_specular_color, mat.specular_color);
 
 	//bind material textures, fallback to the black texture if map doesn't exist. Do not forget any material slot here!
+	//TODO PBR in material
 	if(diffuse_texture != texture_manager::invalid_texture)
 		texture_manager::get_from_handle(diffuse_texture).bind(shader::material_diffuse_texture_slot);
 	else
@@ -262,6 +269,8 @@ void renderable::set_model_matrix(const glm::mat4& matrix)
 }
 
 void renderable::set_view_matrix(const glm::mat4& matrix) { view = matrix; }
+
+glm::mat4 const& renderable::get_model_matrix() const { return model; }
 
 renderable::vertex_buffer_extrema renderable::get_bounds() const { return bounds; }
 
