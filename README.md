@@ -29,6 +29,9 @@ Think of this as a C++ OpenGL framework with some added sugar:
    - libsndfile *audio file loading*
  - **Scripting Engine:**
    - ChaiScript (as submodule) *simple to integrate scripting engine*
+ - **Integrated GUI:**
+   - Dear ImGui *a flexible immediate mode GUI system*
+   - ImGuizmo *a 3D manipulator gizmo build with ImGui*
 
 The resulting combinaison of these components makes up for a *framework* that can serve as the
 basis for a cross platform application. This framework is know to work fine on Windows, Linux
@@ -63,24 +66,28 @@ how it is used as part of this project:
  - OpenAL-Soft : GNU LGPL
  - libsndfile : GNU LGPL
  - ChaiScript : BSD 3-Clause
+ - ImGui : MIT
+ - ImGuizmo : MIT
 
 You can use these packages in a closed source application with the following consideration:
-The MIT, zlib, BSD (3-clause), FIPL (and Happy Bunny) permit you to staically link their code
-to your executable, if you so desire. The LGPL license require you to *dynamically* link these
-libraries with your application. This means that if you distribute an application made with this
-framework and wish to keep it source closed, you'll only have the choice to distribute
+The **MIT**, **zlib**, **BSD** (3-clause), **FIPL** (and Happy Bunny) permit you to staically 
+link their code to your executable, if you so desire. The **LGPL** license require you to *dynamically* 
+link these libraries with your application. This means that if you distribute an application made 
+with this framework and wish to keep it source closed, you'll only have the choice to distribute
 `OpenAL-soft` and `libsndfile` as a dynamically lodable binary library. This generally means
 a .dll/.so/.dylib file on MS Windows/GNU Linux/macOs.
 
-The Happy Bunny License stipulate that millitary uses of the GLM source code will make a bunny
-unhappy. This framework uses GLM to implement the linear algebra needed for 3D rendering
+The Happy Bunny License stipulate that millitary uses of the GLM source code will *make a bunny
+unhappy*. This framework uses GLM to implement the linear algebra needed for 3D rendering
 (geometry transformation).
 
 I am not a lawyer, the above doesn't constitute legal advice. 
 
 ## TODO 
- - [ ] Audio integration
- - [ ] Propper Input system
+ - [x] Audio integration
+ - [x] Propper Input system
+ - [ ] Shadow map
  - [ ] Defered rendering setup (g-buffers, multiple passes)
  - [ ] Script attachement system to "objects" in scene
+ - [ ] Physics
  - [ ] Separate simulation and rendering threads

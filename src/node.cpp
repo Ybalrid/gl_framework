@@ -1,5 +1,8 @@
 #include "node.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
 size_t node::counter = 0;
 
 glm::mat4 node::get_world_matrix() const { return world_space_model; }
@@ -55,7 +58,7 @@ node* node::get_parent() const { return parent; }
 node* node::push_child(node_ptr&& child)
 {
 	children.emplace_back(std::move(child));
-	node* new_child   = children.back().get();
+	node* new_child	  = children.back().get();
 	new_child->parent = this;
 	return new_child;
 }

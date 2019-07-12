@@ -57,6 +57,8 @@ struct transform
 
 	std::string to_string() const;
 
+	void set_to(const glm::mat4& local);
+
 private:
 	//This is the cached model matrix and a flag that signal if the model matrix is dirty
 	mutable bool dirty = true;

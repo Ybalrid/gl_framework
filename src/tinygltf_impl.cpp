@@ -89,7 +89,7 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image,
 
 	//Some drivers will only accept 32bit images apparently, convert everything.
 	image->width	 = w;
-	image->height	= h;
+	image->height	 = h;
 	image->component = 4;
 
 	if(FreeImage_GetBPP(loaded_image.get()) != 32) loaded_image = FreeImage_ConvertTo32Bits(loaded_image.get());
@@ -97,19 +97,19 @@ bool tinygltf_image_data_loader_callback(tinygltf::Image* image,
 	//Oh, my dear OpenGL. You and your silly texture coordinate space. Let me fix that for you...
 	FreeImage_FlipVertical(loaded_image.get());
 
-	const size_t pixel_size = w * h;
-	std::vector<uint8_t> image_bytes(pixel_size * 4);
-	const auto bits			= FreeImage_GetBits(loaded_image.get());
-	const auto pixels		= reinterpret_cast<uint32_t*>(bits);
-	const auto image_pixels = reinterpret_cast<uint32_t*>(image_bytes.data());
+	const auto pixel_size = size_t(w) * size_t(h);
+	std::vector<uint8_t> output_image_bytes(pixel_size * 4);
+	const auto image_bytes	 = FreeImage_GetBits(loaded_image.get());
+	const auto pixel_array	 = reinterpret_cast<uint32_t*>(image_bytes);
+	const auto output_pixels = reinterpret_cast<uint32_t*>(output_image_bytes.data());
 	for(int pixel = 0; pixel < pixel_size; ++pixel)
 	{
-		const uint32_t original_pixel = pixels[pixel];
-		image_pixels[pixel]			  = (0x000000FF & original_pixel) << 16 //R
+		const uint32_t original_pixel = pixel_array[pixel];
+		output_pixels[pixel]		  = (0x000000FF & original_pixel) << 16 //R
 			| (0x00FF0000 & original_pixel) >> 16							//B
 			| (0xFF00FF00 & original_pixel);								//G and A
 	}
-	image->image = std::move(image_bytes);
+	image->image = std::move(output_image_bytes);
 	return true;
 }
 
@@ -120,7 +120,7 @@ void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf)
 	tinygltf::FsCallbacks callbacks {};
 
 	callbacks.FileExists	 = tinygltf_file_exist_callback;
-	callbacks.ReadWholeFile  = tinygltf_read_whole_file_callback;
+	callbacks.ReadWholeFile	 = tinygltf_read_whole_file_callback;
 	callbacks.ExpandFilePath = tinygltf_expand_file_path_callback;
 
 	//We are not writing glTF files from this application

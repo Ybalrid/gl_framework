@@ -15,6 +15,12 @@
 #include <tuple>
 #include <unordered_map>
 
+/*
+ * TODO:
+ *  - Build node hierarchy that mimic the one inside a glTF scene
+ *  - Load every single meshes on that scene and attach them to the nodes
+ */
+
 ///Function calls that setup filesystem and image decoding callback to tinygltf
 void tinygltf_freeimage_setup(tinygltf::TinyGLTF& gltf);
 void tinygltf_resource_system_setup(tinygltf::TinyGLTF& gltf);

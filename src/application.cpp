@@ -58,6 +58,7 @@ void application::activate_vsync() const
 	}
 }
 
+#include "gizmo.hpp"
 void application::draw_debug_ui()
 {
 	static auto show_demo_window  = false;
@@ -147,6 +148,37 @@ void application::draw_debug_ui()
 			ImGui::EndChild();
 		}
 		ImGui::End();
+
+		static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
+		static ImGuizmo::MODE mode			 = ImGuizmo::MODE::WORLD;
+		static node* active_node			 = nullptr;
+
+		if(ImGui::Begin("Transform mode", &debug_ui))
+		{
+			ImGui::Text("Operation");
+			if(ImGui::RadioButton("Translate", operation == ImGuizmo::TRANSLATE)) operation = ImGuizmo::TRANSLATE;
+			ImGui::SameLine();
+			if(ImGui::RadioButton("Rotate", operation == ImGuizmo::ROTATE)) operation = ImGuizmo::ROTATE;
+			ImGui::SameLine();
+			if(ImGui::RadioButton("Scale", operation == ImGuizmo::SCALE)) operation = ImGuizmo::SCALE;
+			ImGui::Separator();
+			ImGui::Text("Mode");
+			if(ImGui::RadioButton("World", mode == ImGuizmo::WORLD)) mode = ImGuizmo::WORLD;
+			ImGui::SameLine();
+			if(ImGui::RadioButton("Local", mode == ImGuizmo::LOCAL)) mode = ImGuizmo::LOCAL;
+		}
+		ImGui::End();
+
+		if(ImGui::Begin("nodes", &debug_ui))
+		{
+			if(ImGui::RadioButton("nullptr", active_node == nullptr)) active_node = nullptr;
+			main_scene->run_on_whole_graph([&](node* n) {
+				if(ImGui::RadioButton(std::to_string(size_t(n)).c_str(), active_node == n)) active_node = n;
+			});
+		}
+		ImGui::End();
+
+		if(active_node) { gizmo::manipulate(active_node, main_camera, mode, operation); }
 
 		if(show_style_editor)
 		{

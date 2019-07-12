@@ -1,12 +1,14 @@
 #include "transform.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 glm::mat4 transform::get_model() const
 {
 	if(dirty)
 	{
 		const glm::mat4 translation_matrix = glm::translate(glm::mat4(1.f), current_position);
-		const glm::mat4 rotation_matrix	= glm::mat4_cast(glm::normalize(current_orientation));
-		const glm::mat4 scaling_matrix	 = glm::scale(glm::mat4(1.f), current_scale);
+		const glm::mat4 rotation_matrix	   = glm::mat4_cast(glm::normalize(current_orientation));
+		const glm::mat4 scaling_matrix	   = glm::scale(glm::mat4(1.f), current_scale);
 		model							   = translation_matrix * rotation_matrix * scaling_matrix;
 		dirty							   = false;
 	}
@@ -61,4 +63,22 @@ std::string transform::to_string() const
 		+ std::to_string(current_orientation.x) + ", " + std::to_string(current_orientation.y) + ", "
 		+ std::to_string(current_orientation.z) + ")\n" + "scale       vec3(" + std::to_string(current_scale.x) + ", "
 		+ std::to_string(current_scale.y) + ", " + std::to_string(current_scale.z) + ")";
+}
+
+void transform::set_to(const glm::mat4& local)
+{
+
+	glm::vec3 position, scale, skew;
+	glm::vec4 persp;
+	glm::quat orientation;
+	glm::decompose(local, scale, orientation, position, skew, persp);
+	(void)persp;
+	(void)skew;
+
+	orientation = glm::normalize(orientation);
+
+	current_position	= position;
+	current_orientation = orientation;
+	current_scale		= scale;
+	dirty				= true;
 }

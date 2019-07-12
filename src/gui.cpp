@@ -11,6 +11,8 @@
 #define CPP_SDL2_GL_WINDOW
 #include <cpp-sdl2/sdl.hpp>
 
+#include "gizmo.hpp"
+
 void gui::set_script_engine_ptr(script_system* s) { scripting_engine = s; }
 
 void gui::console()
@@ -271,6 +273,8 @@ void gui::frame()
 	ImGui::NewFrame();
 
 	if(show_console_) console();
+
+	gizmo::begin_frame();
 }
 
 void gui::render() const
