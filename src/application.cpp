@@ -59,6 +59,41 @@ void application::activate_vsync() const
 }
 
 #include "gizmo.hpp"
+
+void scene_node_outline(node* current_node, node*& active_node)
+{
+	std::string type;
+	current_node->visit([&](auto&& content) {
+		if constexpr(std::is_same_v<std::decay_t<decltype(content)>, std::monostate>)
+			type = "empty";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, scene_object>)
+			type = "scene_object";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, camera>)
+			type = "camera";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, light>)
+			type = "light";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, point_light>)
+			type = "point_light";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, audio_source>)
+			type = "audio_source";
+		else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, listener_marker>)
+			type = "audio_listener_marker";
+		else
+			type = std::string("ERROR: missing node type in") + __FILE__ + " " + std::to_string(__LINE__);
+	});
+	const std::string name = type + " node " + std::to_string(current_node->get_id());
+
+	//Draw selection ball
+	if(ImGui::RadioButton(("###select " + name).c_str(), current_node == active_node)) active_node = current_node;
+	ImGui::SameLine();
+	if(ImGui::TreeNode(name.c_str()))
+	{
+		const auto children_count = current_node->get_child_count();
+		for(size_t i = 0; i < children_count; ++i) { scene_node_outline(current_node->get_child(i), active_node); }
+		ImGui::TreePop();
+	}
+}
+
 void application::draw_debug_ui()
 {
 	static auto show_demo_window  = false;
@@ -67,15 +102,75 @@ void application::draw_debug_ui()
 	if(debug_ui)
 	{
 		sdl::Mouse::set_relative(false);
-		if(ImGui::Begin("Debugger Window", &debug_ui, ImGuiWindowFlags_AlwaysAutoResize))
+
+		if(ImGui::Begin("Texture Manager state", &debug_ui))
+		{
+			const auto& textures	  = texture_manager::get_list();
+			const auto texture_number = textures.size();
+			ImGui::Text("Loaded %d textures", texture_number);
+			for(size_t i = 0; i < texture_number; ++i)
+			{
+				std::string header_name
+					= i == texture_manager::get_dummy_texture() ? "dummy texture" : "texture[" + std::to_string(i) + "]";
+				if(ImGui::CollapsingHeader(header_name.c_str()))
+				{
+					const auto& texture = textures[i];
+					const GLuint id		= texture.get_glid();
+					ImGui::Text("Texture OpenGL ID = %d", id);
+					ImTextureID ImGuiTextureHandle = nullptr;
+
+					//gracefully handle the widening of the value in 64bit
+					ImGui::Image(ImTextureID(size_t(id)), ImVec2(256.f, 256.f), ImVec2(0, 1), ImVec2(1, 0));
+				}
+			}
+		}
+		ImGui::End();
+
+		if(ImGui::Begin("Renderable Manager State", &debug_ui))
+		{
+			const auto& list			 = renderable_manager::get_list();
+			const auto renderable_number = list.size();
+			ImGui::Text("Loaded %d renderables", renderable_number);
+			if(ImGui::CollapsingHeader("Content"))
+				for(size_t i = 0; i < renderable_number; i++)
+				{
+					const auto& renderable		  = list[i];
+					std::string renderable_header = "renderable[" + std::to_string(i) + "]";
+					if(ImGui::CollapsingHeader(renderable_header.c_str()))
+					{
+						ImGui::Text("Material : shinyness %f", renderable.mat.shininess);
+						ImGui::ColorEdit3("diffuse", const_cast<float*>(renderable.mat.diffuse_color.data.data));
+						ImGui::ColorEdit3("specular", const_cast<float*>(renderable.mat.specular_color.data.data));
+						const auto bounds = renderable.get_bounds();
+						ImGui::TextWrapped("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
+										   bounds.min.x,
+										   bounds.min.y,
+										   bounds.min.z,
+										   bounds.max.x,
+										   bounds.max.y,
+										   bounds.max.z);
+						const auto diffuse	= renderable.get_diffuse_texture();
+						const auto specular = renderable.get_specular_texture();
+						const auto normal	= renderable.get_normal_texture();
+
+						ImGui::Text("Textures:");
+						ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
+						ImGui::Text("Specular : %d", specular == texture_mgr.invalid_texture ? -1 : specular);
+						ImGui::Text("Normal : %d", normal == texture_mgr.invalid_texture ? -1 : normal);
+					}
+				}
+		}
+		ImGui::End();
+
+		if(ImGui::Begin("Debugger Window", &debug_ui))
 		{
 			ImGui::Text("FPS: %d", fps);
 			ImGui::Text("%3d objects passed frustum culling", draw_list.size());
 			ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
 			ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
 			ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
-			ImGui::BeginChild(
-				"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+			//ImGui::BeginChild(
+			//	"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
 			ImGui::Text("Main ShadowMap:");
 			ImGui::SliderFloat3("sun direction", static_cast<float*>(sun_direction_unormalized.data.data), -1.f, 1.f);
 			ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
@@ -84,68 +179,6 @@ void application::draw_debug_ui()
 			ImGui::SliderFloat("distance scale", &shadow_map_direction_multiplier, 1.f, 1000.f);
 
 			ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-			if(ImGui::CollapsingHeader("Renderable Manager State"))
-			{
-				const auto& list			 = renderable_manager::get_list();
-				const auto renderable_number = list.size();
-				ImGui::Text("Loaded %d renderables", renderable_number);
-				if(ImGui::CollapsingHeader("Content"))
-					for(size_t i = 0; i < renderable_number; i++)
-					{
-						const auto& renderable		  = list[i];
-						std::string renderable_header = "renderable[" + std::to_string(i) + "]";
-						if(ImGui::CollapsingHeader(renderable_header.c_str()))
-						{
-							ImGui::Text("Material : shinyness %f", renderable.mat.shininess);
-							ImGui::ColorEdit3("diffuse", const_cast<float*>(renderable.mat.diffuse_color.data.data));
-							ImGui::ColorEdit3("specular", const_cast<float*>(renderable.mat.specular_color.data.data));
-							const auto bounds = renderable.get_bounds();
-							ImGui::TextWrapped("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
-											   bounds.min.x,
-											   bounds.min.y,
-											   bounds.min.z,
-											   bounds.max.x,
-											   bounds.max.y,
-											   bounds.max.z);
-							const auto diffuse	= renderable.get_diffuse_texture();
-							const auto specular = renderable.get_specular_texture();
-							const auto normal	= renderable.get_normal_texture();
-
-							ImGui::Text("Textures:");
-							ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
-							ImGui::Text("Specular : %d", specular == texture_mgr.invalid_texture ? -1 : specular);
-							ImGui::Text("Normal : %d", normal == texture_mgr.invalid_texture ? -1 : normal);
-						}
-					}
-			}
-			if(ImGui::CollapsingHeader("Texture Manager state"))
-			{
-				const auto& textures	  = texture_manager::get_list();
-				const auto texture_number = textures.size();
-				ImGui::Text("Loaded %d textures", texture_number);
-				for(size_t i = 0; i < texture_number; ++i)
-				{
-					std::string header_name
-						= i == texture_manager::get_dummy_texture() ? "dummy texture" : "texture[" + std::to_string(i) + "]";
-					if(ImGui::CollapsingHeader(header_name.c_str()))
-					{
-						const auto& texture = textures[i];
-						const GLuint id		= texture.get_glid();
-						ImGui::Text("Texture OpenGL ID = %d", id);
-						ImTextureID ImGuiTextureHandle = nullptr;
-
-						//gracefully handle the widening of the value in 64bit
-#if _WIN64 || __amd64__ || __X86_64__
-						ImGuiTextureHandle = reinterpret_cast<ImTextureID>(uint64_t(id));
-#else
-						ImGuiTextureHandle = reinterpret_cast<ImTextureID>(id);
-#endif
-
-						ImGui::Image(ImGuiTextureHandle, ImVec2(256.f, 256.f), ImVec2(0, 1), ImVec2(1, 0));
-					}
-				}
-			}
-			ImGui::EndChild();
 		}
 		ImGui::End();
 
@@ -171,10 +204,9 @@ void application::draw_debug_ui()
 
 		if(ImGui::Begin("nodes", &debug_ui))
 		{
-			if(ImGui::RadioButton("nullptr", active_node == nullptr)) active_node = nullptr;
-			main_scene->run_on_whole_graph([&](node* n) {
-				if(ImGui::RadioButton(std::to_string(size_t(n)).c_str(), active_node == n)) active_node = n;
-			});
+			if(ImGui::RadioButton("Noting selected", active_node == nullptr)) active_node = nullptr;
+
+			scene_node_outline(main_scene->scene_root.get(), active_node);
 		}
 		ImGui::End();
 

@@ -28,9 +28,10 @@ void gui::console()
 		ImGui::SetNextWindowPos({ 0, 0 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
-		ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
-		// Leave room for 1 separator + 1 InputText
+		ImGui::Begin(
+			"Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking);
 
+		// Leave room for 1 separator + 1 InputText
 		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -30), false, ImGuiWindowFlags_HorizontalScrollbar);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
@@ -75,7 +76,7 @@ void gui::console()
 							   auto list_of_words = ui->scripting_engine->global_scope_object_names();
 
 							   //get the content of the buffer
-							   std::string current_input = (ui->console_input);
+							   const std::string current_input = (ui->console_input);
 
 							   //point where the last word shoud start
 							   int last_word_start_char = int(current_input.find_last_of(" .()[]-+-/<>~=\"'"));
@@ -91,7 +92,7 @@ void gui::console()
 							   //We have a word
 							   if(!last_word.empty())
 							   {
-								   //find matching symbols with the string at the begining
+								   //find matching symbols with the string at the beginning
 								   std::vector<std::string> matches;
 								   auto it = list_of_words.begin();
 								   while(it != list_of_words.end())
@@ -110,7 +111,7 @@ void gui::console()
 									   //if there's only one to use:
 									   if(matches.size() == 1)
 									   {
-										   //Delete everythign up to the one character after the found delimiter
+										   //Delete everything up to the one character after the found delimiter
 										   data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
 															 int(current_input.size()) - last_word_start_char
 																 - (last_word_start_char > 0 ? 1 : 0));
@@ -210,43 +211,40 @@ void gui::hide_console()
 
 bool gui::is_console_showed() const { return show_console_; }
 
-gui::gui(SDL_Window* window, SDL_GLContext gl_context)
+gui::gui(SDL_Window* window, SDL_GLContext gl_context) : w(window), scripting_engine(nullptr)
 {
-	w = window;
-
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io	   = ImGui::GetIO();
-	io.IniFilename = nullptr;
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	ImGui::StyleColorsDark();
-	ImVec4* colors			 = ImGui::GetStyle().Colors;
-	colors[ImGuiCol_FrameBg] = ImVec4(0.52f, 0.52f, 0.52f, 0.20f);
+	//ImGui::StyleColorsLight();
+	//ImVec4* colors = ImGui::GetStyle().Colors; //TODO change style
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui_ImplOpenGL3_Init("#version 330 core");
 
+	//Load our preferred GUI fonts from resource_system
 	auto vera_mono_ttf = resource_system::get_file("/fonts/VeraMono.ttf");
 	auto biolinum_ttf  = resource_system::get_file("/fonts/LinBiolinum_Rah.ttf");
+	ImFontConfig biolinum_config;
+	ImFontConfig vera_mono_config;
+
 	//Okay, so for some reason, ImGui wants to own the pointer to the font data, and will call "free" on my pointer.
 	//So, we're going to stash the ttf file content on the heap, so it will be happy:
-	void* biolinum_data = malloc(biolinum_ttf.size());
-	assert(biolinum_data);
-	memcpy(biolinum_data, biolinum_ttf.data(), biolinum_ttf.size());
-	ImFontConfig biolinum_config;
-	strcpy(biolinum_config.Name, "biolinum");
-	default_font = io.Fonts->AddFontFromMemoryTTF(biolinum_data, int(biolinum_ttf.size()), 18.f, &biolinum_config);
-
+	void* biolinum_data		 = malloc(biolinum_ttf.size());
 	void* vera_mono_ttf_data = malloc(vera_mono_ttf.size());
-	assert(vera_mono_ttf_data); //has to be not null
+	assert(biolinum_data);
+	assert(vera_mono_ttf_data);
+	memcpy(biolinum_data, biolinum_ttf.data(), biolinum_ttf.size());
 	memcpy(vera_mono_ttf_data, vera_mono_ttf.data(), vera_mono_ttf.size());
-	ImFontConfig vera_mono_config;
-	strcpy(vera_mono_config.Name, "vera mono");
-	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f, &vera_mono_config);
 
-	pixel_font = io.Fonts->AddFontDefault();
+	strcpy(biolinum_config.Name, "biolinum");
+	strcpy(vera_mono_config.Name, "vera mono");
+	default_font = io.Fonts->AddFontFromMemoryTTF(biolinum_data, int(biolinum_ttf.size()), 18.f, &biolinum_config);
+	console_font = io.Fonts->AddFontFromMemoryTTF(vera_mono_ttf_data, int(vera_mono_ttf.size()), 20.0f, &vera_mono_config);
+	pixel_font	 = io.Fonts->AddFontDefault();
 
 	if(!console_font) std::cerr << "console font is null\n";
-
 	std::cout << "Initialized ImGui " << IMGUI_VERSION << " based gui system\n";
 }
 
