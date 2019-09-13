@@ -29,6 +29,7 @@
 #include "audio_system.hpp"
 #include "input_handler.hpp"
 #include "camera_controller.hpp"
+#include "vr_system.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -152,6 +153,8 @@ class application
 
 		keyboard_debug_utilities_(application* parent) : parent_ { parent } {}
 	} keyboard_debug_utilities { this };
+
+	vr_system_ptr vr = nullptr;
 
 public:
 	static scene* get_main_scene();
