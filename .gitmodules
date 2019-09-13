@@ -31,3 +31,6 @@
 [submodule "third_party/ImGuizmo"]
 	path = third_party/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo
+[submodule "third_party/openvr"]
+	path = third_party/openvr
+	url = https://github.com/ValveSoftware/openvr
