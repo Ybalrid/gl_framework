@@ -3,3 +3,5 @@ multisampling = true
 samples = 4
 resolution = [1024, 768]
 fullscreen = false
+is_vr = true
+vr_system = "openvr"

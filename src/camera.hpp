@@ -31,7 +31,7 @@ public:
 	///Set the global transform (model matrix) of the camera
 	void set_world_matrix(const glm::mat4& matrix);
 	///Set the view matrix of the camera (it actually set the model matrix internally)
-	void set_view_matrix(const glm::mat4 matrix);
+	void set_view_matrix(const glm::mat4& matrix);
 	///Call this with the viewport geometry
 	void update_projection(int viewport_w, int viewport_h, int viewport_x = 0, int viewport_y = 0);
 
@@ -40,6 +40,5 @@ private:
 	glm::mat4 projection { 1.f };
 	///We only store a model matrix, the view matrix is computed by inveting the model matrix
 	glm::mat4 world_model_matrix { 1.f };
-
-	void set_gl_viewport(int x, int y, int w, int h);
+	static void set_gl_viewport(int x, int y, int w, int h);
 };

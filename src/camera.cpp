@@ -14,7 +14,7 @@ glm::mat4 camera::get_view_projection_matrix() const { return projection * get_v
 
 void camera::set_world_matrix(const glm::mat4& matrix) { world_model_matrix = matrix; }
 
-void camera::set_view_matrix(const glm::mat4 matrix) { world_model_matrix = glm::inverse(matrix); }
+void camera::set_view_matrix(const glm::mat4& matrix) { world_model_matrix = glm::inverse(matrix); }
 
 void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, int viewport_y)
 {

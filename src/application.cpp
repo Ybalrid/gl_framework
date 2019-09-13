@@ -346,6 +346,23 @@ void application::configure_and_create_window(const std::string& application_nam
 	window_size.x				 = int(window_size_array->at(0));
 	window_size.y				 = int(window_size_array->at(1));
 
+	const auto is_vr = configuration_table->get_as<bool>("is_vr").value_or(false);
+	if(is_vr)
+	{
+		std::string system_name = configuration_table->get_as<std::string>("vr_system").value_or("none");
+		if(system_name != "none")
+		{
+#if USING_OPENVR
+			if(system_name == "openvr") { vr = std::make_unique<vr_system_openvr>(); }
+#endif
+			if(!vr)
+			{
+				std::cerr << "application is VR, but VR system named " << system_name
+						  << "is unknown to the framework. Check build options, and check config.toml for correctness\n";
+			}
+		}
+	}
+
 	//create window
 	window = sdl::Window(application_name,
 						 window_size,
@@ -544,12 +561,39 @@ void application::build_draw_list_from_camera(camera* render_camera)
 
 void application::render_frame()
 {
+	//When using VR, the VR system is the master of the framerate!
+	if(vr) vr->wait_until_next_frame();
+
+	//gameplay side thingies
 	ui.frame();
 	scripts.update(last_frame_delta_sec);
 
 	frame_prepare();
 	render_shadowmap();
+
+	//this apply frustrum culling algorithm and build a "objets to draw list" CPU side
 	build_draw_list_from_camera(main_camera);
+
+	if(vr)
+	{
+		//TODO use VR cameras
+		const sdl::Vec2i left_size	= vr->get_eye_framebuffer_size(vr_system::eye::left),
+						 right_size = vr->get_eye_framebuffer_size(vr_system::eye::right);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		main_camera->update_projection(left_size.x, left_size.y);
+		render_draw_list(main_camera);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		main_camera->update_projection(right_size.x, right_size.y);
+		render_draw_list(main_camera);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		vr->submit_frame_to_vr_system();
+	}
+	main_camera->update_projection(window.size().x, window.size().y);
 	render_draw_list(main_camera);
 
 	draw_debug_ui();
@@ -780,6 +824,8 @@ application::application(int argc, char** argv, const std::string& application_n
 	initialize_modern_opengl();
 	texture_manager::initialize_dummy_texture();
 	initialize_gui();
+
+	if(vr) vr->initialize();
 
 	try
 	{
