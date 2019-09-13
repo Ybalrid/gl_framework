@@ -33,7 +33,7 @@ endif()
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/build_config.template.hpp ${CMAKE_SOURCE_DIR}/src/build_config.hpp )
 
 #configure glm
-ADD_DEFINITIONS(-DGLM_FORCE_SWIZZLE -DGLM_ENABLE_EXPERIMENTAL)
+ADD_DEFINITIONS( -DGLM_ENABLE_EXPERIMENTAL)
 
 # Detect platforms and configure build options for specials usages
 

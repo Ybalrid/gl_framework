@@ -139,8 +139,8 @@ void application::draw_debug_ui()
 					if(ImGui::CollapsingHeader(renderable_header.c_str()))
 					{
 						ImGui::Text("Material : shinyness %f", renderable.mat.shininess);
-						ImGui::ColorEdit3("diffuse", const_cast<float*>(renderable.mat.diffuse_color.data.data));
-						ImGui::ColorEdit3("specular", const_cast<float*>(renderable.mat.specular_color.data.data));
+						ImGui::ColorEdit3("diffuse", const_cast<float*>(glm::value_ptr(renderable.mat.diffuse_color)));
+						ImGui::ColorEdit3("specular", const_cast<float*>(glm::value_ptr(renderable.mat.specular_color)));
 						const auto bounds = renderable.get_bounds();
 						ImGui::TextWrapped("(Model space) Bounds : min(%f, %f, %f) max(%f, %f, %f)",
 										   bounds.min.x,
@@ -172,7 +172,7 @@ void application::draw_debug_ui()
 			//ImGui::BeginChild(
 			//	"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
 			ImGui::Text("Main ShadowMap:");
-			ImGui::SliderFloat3("sun direction", static_cast<float*>(sun_direction_unormalized.data.data), -1.f, 1.f);
+			ImGui::SliderFloat3("sun direction", static_cast<float*>(glm::value_ptr(sun_direction_unormalized)), -1.f, 1.f);
 			ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
 			ImGui::SliderFloat("far", &shadow_map_far_plane, 50.f, 500.f);
 			ImGui::SliderFloat("ortho window", &shadow_map_ortho_scale, 10.f, 200.f);
@@ -562,7 +562,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
 void application::render_frame()
 {
 	//When using VR, the VR system is the master of the framerate!
-	if(vr) vr->wait_until_next_frame();
+	if(vr) { vr->wait_until_next_frame(); }
 
 	//gameplay side thingies
 	ui.frame();
@@ -572,28 +572,34 @@ void application::render_frame()
 	render_shadowmap();
 
 	//this apply frustrum culling algorithm and build a "objets to draw list" CPU side
-	build_draw_list_from_camera(main_camera);
 
 	if(vr)
 	{
-		//TODO use VR cameras
+		//TODO use VR cameras instead
 		const sdl::Vec2i left_size	= vr->get_eye_framebuffer_size(vr_system::eye::left),
 						 right_size = vr->get_eye_framebuffer_size(vr_system::eye::right);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		main_camera->update_projection(left_size.x, left_size.y);
-		render_draw_list(main_camera);
+		camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
+		left_eye->update_projection(left_size.x, left_size.y);
+		build_draw_list_from_camera(left_eye);
+		render_draw_list(left_eye);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		main_camera->update_projection(right_size.x, right_size.y);
-		render_draw_list(main_camera);
+		camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
+		right_eye->update_projection(right_size.x, right_size.y);
+		build_draw_list_from_camera(right_eye);
+		render_draw_list(right_eye);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		vr->submit_frame_to_vr_system();
 	}
-	main_camera->update_projection(window.size().x, window.size().y);
+
+	const auto window_size = window.size();
+	main_camera->update_projection(window_size.x, window_size.y);
+	build_draw_list_from_camera(main_camera);
 	render_draw_list(main_camera);
 
 	draw_debug_ui();
@@ -641,7 +647,14 @@ void application::run()
 void application::setup_scene()
 {
 	//TODO everything about this sould be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
-	main_scene									 = &s;
+	main_scene = &s;
+
+	if(vr)
+	{
+		vr->set_anchor(s.scene_root->push_child(create_node()));
+		vr->build_camera_node_system();
+	}
+
 	const texture_handle polutropon_logo_texture = texture_manager::create_texture();
 	{
 		const auto img						 = image("/polutropon.png");

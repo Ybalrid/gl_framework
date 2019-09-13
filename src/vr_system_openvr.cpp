@@ -2,8 +2,18 @@
 #include <iostream>
 #include "vr_system_openvr.hpp"
 #include <gl/glew.h>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #if USING_OPENVR
+
+vr::IVRSystem* static_access_hmd = nullptr;
+
+inline glm::mat4 get_mat4_from_34(const vr::HmdMatrix34_t& mat)
+{
+	return { mat.m[0][0], mat.m[0][1], mat.m[0][2], mat.m[0][3], mat.m[1][0], mat.m[1][1], mat.m[1][2], mat.m[1][3],
+			 mat.m[2][0], mat.m[2][1], mat.m[2][2], mat.m[2][3], 0.0f,		  0.0f,		   0.0f,		1.0f };
+}
+
 vr_system_openvr::vr_system_openvr() : vr_system() { std::cout << "Initialized OpenVR based vr_system implementation\n"; }
 vr_system_openvr::~vr_system_openvr()
 {
@@ -90,7 +100,8 @@ bool vr_system_openvr::initialize()
 	//Unbound any left bound framebuffers
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	init_success = true;
+	init_success	  = true;
+	static_access_hmd = hmd;
 	return init_success;
 }
 
@@ -134,5 +145,47 @@ void vr_system_openvr::submit_frame_to_vr_system()
 
 	if(left_error != vr::VRCompositorError_None) { std::cerr << (int)left_error << "\n"; }
 	if(right_error != vr::VRCompositorError_None) { std::cerr << (int)right_error << "\n"; }
+}
+
+void vr_system_openvr::build_camera_node_system()
+{
+	head_node = vr_tracking_anchor->push_child(create_node());
+	for(size_t i = 0; i < 2; ++i)
+	{
+		eye_camera_node[i] = head_node->push_child(create_node());
+		camera cam;
+		//TODO setup custom projection matrix callback
+		eye_camera[i] = eye_camera_node[i]->assign(std::move(cam));
+	}
+
+	glm::vec4 persp;
+	glm::vec3 tr, sc, sk;
+	glm::quat rot;
+	const auto left_eye_matrix_34	   = hmd->GetEyeToHeadTransform(vr::Eye_Left);
+	const auto left_eye_full_transform = glm::transpose(get_mat4_from_34(left_eye_matrix_34));
+	glm::decompose(left_eye_full_transform, sc, rot, tr, sk, persp);
+	eye_camera_node[0]->local_xform.set_position(tr);
+	eye_camera_node[0]->local_xform.set_orientation(glm::normalize(rot));
+
+	const auto right_eye_matrix_34		= hmd->GetEyeToHeadTransform(vr::Eye_Right);
+	const auto right_eye_full_transform = glm::transpose(get_mat4_from_34(right_eye_matrix_34));
+	glm::decompose(right_eye_full_transform, sc, rot, tr, sk, persp);
+	eye_camera_node[1]->local_xform.set_position(tr);
+	eye_camera_node[1]->local_xform.set_orientation(glm::normalize(rot));
+
+	eye_camera[0]->vr_eye_projection_callback = &get_left_eye_proj_matrix;
+	eye_camera[1]->vr_eye_projection_callback = &get_right_eye_proj_matrix;
+	eye_camera[0]->projection_type			  = camera::projection_mode::eye_vr;
+	eye_camera[1]->projection_type			  = camera::projection_mode::eye_vr;
+}
+
+void vr_system_openvr::get_left_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
+{
+	matrix = glm::transpose(glm::make_mat4((float*)static_access_hmd->GetProjectionMatrix(vr::Eye_Left, near_clip, far_clip).m));
+}
+
+void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
+{
+	matrix = glm::transpose(glm::make_mat4((float*)static_access_hmd->GetProjectionMatrix(vr::Eye_Left, near_clip, far_clip).m));
 }
 #endif

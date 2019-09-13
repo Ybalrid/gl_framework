@@ -50,7 +50,7 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
 		break;
 
 		case eye_vr: {
-			//This will **not** call glViewport for you
+			set_gl_viewport(viewport_x, viewport_y, viewport_w, viewport_h);
 			if(vr_eye_projection_callback) vr_eye_projection_callback(projection, near_clip, far_clip);
 		}
 		break;

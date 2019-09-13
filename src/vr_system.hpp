@@ -1,4 +1,5 @@
 #pragma once
+#include <cpp-sdl2/sdl.hpp>
 #include "build_config.hpp"
 
 #include <memory>
@@ -8,7 +9,8 @@
 class vr_system
 {
 protected:
-	node* camera_rig			 = nullptr;
+	node* vr_tracking_anchor	 = nullptr;
+	camera* eye_camera[2]		 = { nullptr, nullptr };
 	GLuint eye_fbo[2]			 = { 0, 0 };
 	GLuint eye_render_texture[2] = { 0, 0 };
 	GLuint eye_render_depth[2]	 = { 0, 0 };
@@ -24,6 +26,10 @@ public:
 	virtual void update_tracking()					 = 0;
 	virtual void wait_until_next_frame()			 = 0;
 	virtual void submit_frame_to_vr_system()		 = 0;
+	virtual void build_camera_node_system()			 = 0;
+
+	void set_anchor(node* node);
+	camera* get_eye_camera(eye output);
 };
 
 using vr_system_ptr = std::unique_ptr<vr_system>;
