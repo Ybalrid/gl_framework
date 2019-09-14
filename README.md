@@ -42,6 +42,20 @@ All of the non header-only libraries that you would be expected to dynamically l
 with the exception of FreeImage are currently part of the Steam Runtime for Linux, making for
 an easy distribution-version agnostic way of distributing applications using it.
 
+## Features
+
+### VR
+
+Preliminary VR support has been added. Engine configuration file (config.toml) must have the following keys inserted : 
+
+```toml
+is_vr = true
+vr_system = "openvr"
+```
+
+The option to have each available `vr_system` has to be set in CMake when configuring the project. OpenVR is distributed
+as a Git Submodule in the third_party directory. 
+
 
 ## Licencing situation
 
@@ -86,8 +100,15 @@ I am not a lawyer, the above doesn't constitute legal advice.
 ## TODO 
  - [x] Audio integration
  - [x] Propper Input system
- - [ ] Shadow map
- - [ ] Defered rendering setup (g-buffers, multiple passes)
+ - [ ] OpenVR
+ - [ ] Oculus VR
+ - [ ] OpenXR
+ - [ ] Proper level/environement loader/unloader system
  - [ ] Script attachement system to "objects" in scene
  - [ ] Physics
  - [ ] Separate simulation and rendering threads
+
+ Renderer is basic, and needs to be improved
+ - [ ] PBR
+ - [ ] Shadow map
+ - [ ] Defered rendering setup (g-buffers, multiple passes)
