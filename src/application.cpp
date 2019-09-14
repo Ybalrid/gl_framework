@@ -562,7 +562,11 @@ void application::build_draw_list_from_camera(camera* render_camera)
 void application::render_frame()
 {
 	//When using VR, the VR system is the master of the framerate!
-	if(vr) { vr->wait_until_next_frame(); }
+	if(vr)
+	{
+		vr->wait_until_next_frame();
+		vr->update_tracking();
+	}
 
 	//gameplay side thingies
 	ui.frame();

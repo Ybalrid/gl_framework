@@ -15,7 +15,7 @@ void node::update_world_matrix()
 		world_space_model = local_xform.get_model();
 	}
 
-	//call visitor that update some specifi types of objects
+	//call visitor that update some specific types of objects
 	visit([&](auto&& o) {
 		using T = std::decay_t<decltype(o)>;
 
