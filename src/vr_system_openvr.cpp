@@ -31,6 +31,8 @@ vr_system_openvr::~vr_system_openvr()
 	std::cout << "Deinitialized OpenVR based vr_system implementation\n";
 
 	deinitialize_openvr();
+
+	if(vr_tracking_anchor) vr_tracking_anchor->clean_child_list();
 }
 
 bool vr_system_openvr::initialize()
@@ -44,6 +46,9 @@ bool vr_system_openvr::initialize()
 							  "without having installed the runtime");
 		return false;
 	}
+
+	std::string runtime_path;
+	char buffer[1024];
 
 	if(!vr::VR_IsHmdPresent())
 	{
@@ -118,19 +123,19 @@ bool vr_system_openvr::initialize()
 
 void vr_system_openvr::deinitialize_openvr()
 {
-	//TODO proper cleanup
-}
+	if(init_success)
+	{
+		glDeleteTextures(2, eye_render_texture);
+		glDeleteRenderbuffers(2, eye_render_depth);
+		//just to avoid deleting the currently bound framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(2, eye_fbo);
 
-GLuint vr_system_openvr::get_eye_framebuffer(eye output)
-{
-	if(output == eye::left) return eye_fbo[0];
-	if(output == eye::right) return eye_fbo[1];
-}
+		for(auto& size : eye_render_target_sizes) size = { 0, 0 };
 
-sdl::Vec2i vr_system_openvr::get_eye_framebuffer_size(eye output)
-{
-	if(output == eye::left) return eye_render_target_sizes[0];
-	if(output == eye::right) return eye_render_target_sizes[1];
+		//openvr cleanup
+		vr::VR_Shutdown();
+	}
 }
 
 void vr_system_openvr::update_tracking()
@@ -182,6 +187,8 @@ void vr_system_openvr::build_camera_node_system()
 		camera cam;
 		//TODO setup custom projection matrix callback
 		eye_camera[i] = eye_camera_node[i]->assign(std::move(cam));
+
+		hand_node[i] = head_node->push_child(create_node());
 	}
 
 	glm::vec4 persp;

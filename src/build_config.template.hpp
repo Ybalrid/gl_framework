@@ -10,4 +10,6 @@
 // clang-format off
 #define USING_OPENVR @CPP_HAS_OPENVR@
 #define USING_OCULUS_VR @CPP_HAS_OCULUS_VR@
+#define USING_OPENXR @CPP_HAS_OPENXR@
+#define GAME_NAME "@GAME_NAME@"
 // clang-format on

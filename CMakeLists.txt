@@ -8,8 +8,9 @@ SET (CMAKE_CXX_STANDARD 17)
 #User configurable fields:
 OPTION (HAS_OPENVR "Activate the OpenVR VR system" OFF)
 OPTION (HAS_OCULUS_VR "Activate the OpenVR VR system" OFF)
+OPTION (HAS_OPENXR "Activate the OpenXR VR system" OFF)
 
-IF(HAS_OPENVR OR HAS_OCULUS_VR)
+IF(HAS_OPENVR OR HAS_OCULUS_VR OR HAS_OPENXR)
 	SET(HAS_VR TRUE)
 ENDIF()
 
@@ -27,6 +28,12 @@ if(HAS_OCULUS_VR)
 	set(CPP_HAS_OCULUS_VR "true")
 else()
 	set(CPP_HAS_OCULUS_VR "false")
+endif()
+
+if(HAS_OPENXR)
+	set(CPP_HAS_OPENXR "true")
+else()
+	set(CPP_HAS_OPENXR "false")
 endif()
 
 
@@ -118,6 +125,14 @@ if(HAS_OPENVR)
 		ENDIF()
 	ENDIF()
 ENDIF()
+
+
+if(HAS_OPENXR)
+	message(STATUS "Including OpenXR directories")
+	add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK")
+	target_link_libraries(${GAME_NAME}_exe PRIVATE openxr_loader)
+	target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include")
+endif()
 
 
 #link libraries

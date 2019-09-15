@@ -12,7 +12,6 @@ class vr_system_openvr : public vr_system
 	bool init_success																 = false;
 	vr::Texture_t texture_handlers[2];
 
-	node* head_node			 = nullptr;
 	node* eye_camera_node[2] = { nullptr, nullptr };
 
 public:
@@ -23,10 +22,6 @@ public:
 	bool initialize() override;
 
 	void deinitialize_openvr();
-
-	GLuint get_eye_framebuffer(eye) override;
-
-	sdl::Vec2i get_eye_framebuffer_size(eye) override;
 
 	void update_tracking() override;
 	void wait_until_next_frame() override;

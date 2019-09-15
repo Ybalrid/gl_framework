@@ -355,6 +355,10 @@ void application::configure_and_create_window(const std::string& application_nam
 #if USING_OPENVR
 			if(system_name == "openvr") { vr = std::make_unique<vr_system_openvr>(); }
 #endif
+#if USING_OPENXR
+			if(system_name == "openxr") { vr = std::make_unique<vr_system_openxr>(); }
+#endif
+
 			if(!vr)
 			{
 				std::cerr << "application is VR, but VR system named " << system_name
@@ -842,7 +846,8 @@ application::application(int argc, char** argv, const std::string& application_n
 	texture_manager::initialize_dummy_texture();
 	initialize_gui();
 
-	if(vr) vr->initialize();
+	//attempt init VR
+	if(vr && !vr->initialize()) vr = nullptr;
 
 	try
 	{
