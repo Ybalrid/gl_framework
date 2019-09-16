@@ -42,6 +42,22 @@ All of the non header-only libraries that you would be expected to dynamically l
 with the exception of FreeImage are currently part of the Steam Runtime for Linux, making for
 an easy distribution-version agnostic way of distributing applications using it.
 
+## TODO: 
+ - [x] Audio integration
+ - [x] Propper Input system
+ - [x] OpenVR
+ - [x] OpenXR
+ - [ ] Oculus VR
+ - [ ] Proper level/environement loader/unloader system
+ - [ ] Script attachement system to "objects" in scene
+ - [ ] Physics
+ - [ ] Separate simulation and rendering threads
+
+ The 3D renderer is still "too basic" and needs to be improved:
+ - [ ] PBR
+ - [ ] Shadow map
+ - [ ] Defered rendering setup (g-buffers, multiple passes)
+
 ## Features
 
 ### VR
@@ -56,6 +72,16 @@ vr_system = "openvr"
 The option to have each available `vr_system` has to be set in CMake when configuring the project. OpenVR is distributed
 as a Git Submodule in the third_party directory. 
 
+Currently supported vr systems are:
+ - `"openvr"`
+ - `"openxr"`
+
+Support is planned support for
+ - `"oculusvr"`
+
+### Scripting
+
+//TODO
 
 ## Licencing situation
 
@@ -96,19 +122,3 @@ unhappy*. This framework uses GLM to implement the linear algebra needed for 3D 
 (geometry transformation).
 
 I am not a lawyer, the above doesn't constitute legal advice. 
-
-## TODO 
- - [x] Audio integration
- - [x] Propper Input system
- - [ ] OpenVR
- - [ ] Oculus VR
- - [ ] OpenXR
- - [ ] Proper level/environement loader/unloader system
- - [ ] Script attachement system to "objects" in scene
- - [ ] Physics
- - [ ] Separate simulation and rendering threads
-
- Renderer is basic, and needs to be improved
- - [ ] PBR
- - [ ] Shadow map
- - [ ] Defered rendering setup (g-buffers, multiple passes)
