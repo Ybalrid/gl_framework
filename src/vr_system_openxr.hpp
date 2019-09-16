@@ -7,7 +7,7 @@
 #ifdef WIN32
 #define XR_USE_PLATFORM_WIN32
 #else
-//TODO linux here
+#define XR_USE_PLATFORM_XLIB
 #endif
 
 #include <openxr/openxr.h>
@@ -25,11 +25,6 @@ class vr_system_openxr : public vr_system
 	std::vector<XrCompositionLayerBaseHeader*> layers;
 	XrCompositionLayerProjectionView projection_layer_views[2];
 	XrSpace application_space = XR_NULL_HANDLE;
-
-	//TODO these are useless the handles can be compared against XR_NULL_HANDLE
-	bool instance_created = false;
-	bool session_created  = false;
-	bool session_started  = false;
 
 	node* eye_camera_node[2] = { nullptr, nullptr };
 

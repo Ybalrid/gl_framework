@@ -8,31 +8,15 @@
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 
-void compute_projection_matrix_for_view(XrView* view, glm::mat4& output, float near_plane, float far_plane)
-{
-	output = glm::frustum(near_plane * glm::tan(view->fov.angleLeft),
-						  near_plane * glm::tan(view->fov.angleRight),
-						  near_plane * glm::tan(view->fov.angleDown),
-						  near_plane * glm::tan(view->fov.angleUp),
-						  near_plane,
-						  far_plane);
-}
-
-void left_eye_projection(glm::mat4& output, float near_plane, float far_plane)
-{
-	compute_projection_matrix_for_view(left_eye_view, output, near_plane, far_plane);
-}
-
-void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
-{
-	compute_projection_matrix_for_view(right_eye_view, output, near_plane, far_plane);
-}
-
 vr_system_openxr::~vr_system_openxr()
 {
-	if(session_started) xrEndSession(session);
-	if(session_created) xrDestroySession(session);
-	if(instance_created) xrDestroyInstance(instance);
+	if(application_space != XR_NULL_HANDLE) { xrDestroySpace(application_space); }
+	if(session != XR_NULL_HANDLE)
+	{
+		xrEndSession(session);
+		xrDestroySession(session);
+	}
+	if(instance != XR_NULL_HANDLE) { xrDestroyInstance(instance); }
 }
 
 template <typename T>
@@ -105,7 +89,6 @@ bool vr_system_openxr::initialize()
 		return false; //we cannot recuperate from this
 	}
 	std::cout << "xrCreateInstance() == XR_SUCCESS\n";
-	instance_created = true;
 
 	//Get properties of instance
 	XrInstanceProperties instance_properties;
@@ -240,7 +223,10 @@ bool vr_system_openxr::initialize()
 	xr_graphics_binding.hGLRC = wglGetCurrentContext();
 	xr_graphics_binding.hDC	  = wglGetCurrentDC();
 #else
-//TODO linux X11 OpenGL
+	XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
+	zero_it(xr_graphics_binding);
+	//TODO test on linux X11 OpenGL with glXGetCurrentContext(); and glXGetCurrentDrawable(); Probably SDL syswminfo too
+	this_is_broken_right_here();
 #endif
 	session_create_info.next = &xr_graphics_binding;
 
@@ -249,13 +235,22 @@ bool vr_system_openxr::initialize()
 	else
 	{
 		std::cout << "XrCreateSession() == XR_SUCCESS\n";
-		session_created = true;
 	}
 
-	//reference spaces
-	//action space
-	//attach action set
+	//reference space
+	XrPosef identity_pose;
+	zero_it(identity_pose);
+	identity_pose.orientation.w = 1;
+	XrReferenceSpaceCreateInfo reference_space_create_info;
+	zero_it(reference_space_create_info);
+	reference_space_create_info.type				 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+	reference_space_create_info.referenceSpaceType	 = XR_REFERENCE_SPACE_TYPE_LOCAL;
+	reference_space_create_info.poseInReferenceSpace = identity_pose;
+	zero_it(application_space);
+	if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
+	{ std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
+	//Create swapchains
 	int64_t format[32];
 	zero_it(format, 32);
 	uint32_t format_count = 0;
@@ -272,15 +267,17 @@ bool vr_system_openxr::initialize()
 	{
 		XrSwapchainCreateInfo swapchain_create_info;
 		zero_it(swapchain_create_info);
-		swapchain_create_info.type		  = XR_TYPE_SWAPCHAIN_CREATE_INFO;
-		swapchain_create_info.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
+		swapchain_create_info.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
+		swapchain_create_info.usageFlags
+			= XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; //Transfer Destination bit. We only ever transfer rendered images to this, we don't use it as part of the rendering.
 		swapchain_create_info.mipCount	  = 1;
 		swapchain_create_info.sampleCount = 1;
-		swapchain_create_info.format	  = GL_RGBA8;
-		swapchain_create_info.faceCount	  = 1;
-		swapchain_create_info.arraySize	  = 1;
-		swapchain_create_info.width		  = eye_render_target_sizes[i].x;
-		swapchain_create_info.height	  = eye_render_target_sizes[i].y;
+		swapchain_create_info.format
+			= GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
+		swapchain_create_info.faceCount = 1;
+		swapchain_create_info.arraySize = 1;
+		swapchain_create_info.width		= eye_render_target_sizes[i].x;
+		swapchain_create_info.height	= eye_render_target_sizes[i].y;
 
 		xrCreateSwapchain(session, &swapchain_create_info, &swapchain[i]);
 
@@ -296,13 +293,7 @@ bool vr_system_openxr::initialize()
 		{
 			std::cout << "this swapchain has " << swapchain_image_count << " images.\n";
 			for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
-			{
-				swapchain_images[i].push_back(swapchain_image_opengl_khr[img_index]);
-				//auto w = eye_render_target_sizes[i].x;
-				//auto h = eye_render_target_sizes[i].y;
-				//glBindTexture(GL_TEXTURE_2D, GLuint(swapchain_image_opengl_khr[img_index].image));
-				//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-			}
+			{ swapchain_images[i].push_back(swapchain_image_opengl_khr[img_index]); }
 		}
 	}
 
@@ -314,22 +305,8 @@ bool vr_system_openxr::initialize()
 	{ std::cerr << "error : failed to begin session\n"; }
 	else
 	{
-		session_started = true;
 		std::cout << "xrBeginSession() == XR_SUCCESS\n";
 	}
-
-	//Initialize space
-	XrPosef identity_pose;
-	zero_it(identity_pose);
-	identity_pose.orientation.w = 1;
-	XrReferenceSpaceCreateInfo reference_space_create_info;
-	zero_it(reference_space_create_info);
-	reference_space_create_info.type				 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
-	reference_space_create_info.referenceSpaceType	 = XR_REFERENCE_SPACE_TYPE_LOCAL;
-	reference_space_create_info.poseInReferenceSpace = identity_pose;
-	zero_it(application_space);
-	if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
-	{ std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
 	//OpenGL resource initialization
 	glGenTextures(2, eye_render_texture);
@@ -361,6 +338,26 @@ bool vr_system_openxr::initialize()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return true;
+}
+
+void compute_projection_matrix_for_view(XrView* view, glm::mat4& output, float near_plane, float far_plane)
+{
+	output = glm::frustum(near_plane * glm::tan(view->fov.angleLeft),
+						  near_plane * glm::tan(view->fov.angleRight),
+						  near_plane * glm::tan(view->fov.angleDown),
+						  near_plane * glm::tan(view->fov.angleUp),
+						  near_plane,
+						  far_plane);
+}
+
+//Callback for the cameras
+void left_eye_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+	compute_projection_matrix_for_view(left_eye_view, output, near_plane, far_plane);
+}
+void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+	compute_projection_matrix_for_view(right_eye_view, output, near_plane, far_plane);
 }
 
 void vr_system_openxr::build_camera_node_system()
@@ -401,6 +398,7 @@ void vr_system_openxr::wait_until_next_frame()
 
 void vr_system_openxr::update_tracking()
 {
+	//Fetch the views informations
 	XrViewState view_state;
 	zero_it(view_state);
 	view_state.type				 = XR_TYPE_VIEW_STATE;
@@ -417,24 +415,32 @@ void vr_system_openxr::update_tracking()
 	XrResult status = xrLocateViews(session, &view_locate_info, &view_state, view_capacity_input, &view_count, views.data());
 	if(status != XR_SUCCESS) { std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
+	//From now, the two views contains up-to-date tracking info
+
 	for(size_t i = 0; i < 2; ++i)
 	{
-		if(!eye_camera_node[i]) continue;
+		//Thre's a nasty pointer cast here that break a const, but it's for the greater good...
+		//It just so happen that they both express vector 3D and quaternion in the same way...
 		eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position.x));
 		eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
 	}
 
+	//This updates the world matrices on everybody
 	vr_tracking_anchor->update_world_matrix();
+
+	//This is requried to update the view matrix used for renderign
 	for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
 }
 
 void vr_system_openxr::submit_frame_to_vr_system()
 {
-
 	XrResult status;
 
+	//TODO this is unfortunate, we don't really need to clear and recreate this thing.
+	//to be honest, it will only ever grew up to one, so...
 	layers.clear();
 
+	//We have two swapchain to use:
 	for(size_t i = 0; i < 2; i++)
 	{
 		uint32_t index = -1;
@@ -462,7 +468,11 @@ void vr_system_openxr::submit_frame_to_vr_system()
 		layer.subImage.imageRect.offset = { 0, 0 };
 		layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
 
+		//We **finally** got access to the texture we have to render to.
 		GLuint dst = swapchain_images[i][index].image;
+
+		//When this function has been called, the rendering of the frame to be pushed already occured,
+		//we just need to copy the data in them.
 		glCopyImageSubData(eye_render_texture[i],
 						   GL_TEXTURE_2D,
 						   0,
