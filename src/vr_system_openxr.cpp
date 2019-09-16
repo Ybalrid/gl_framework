@@ -244,7 +244,7 @@ bool vr_system_openxr::initialize()
 	XrReferenceSpaceCreateInfo reference_space_create_info;
 	zero_it(reference_space_create_info);
 	reference_space_create_info.type				 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
-	reference_space_create_info.referenceSpaceType	 = XR_REFERENCE_SPACE_TYPE_LOCAL;
+	reference_space_create_info.referenceSpaceType	 = XR_REFERENCE_SPACE_TYPE_STAGE;
 	reference_space_create_info.poseInReferenceSpace = identity_pose;
 	zero_it(application_space);
 	if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
