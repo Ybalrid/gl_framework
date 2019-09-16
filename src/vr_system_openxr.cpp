@@ -5,6 +5,29 @@
 #define max_properties_count 64
 #include "openxr/openxr_platform.h"
 
+//That's a bit ugly I know
+XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
+
+void compute_projection_matrix_for_view(XrView* view, glm::mat4& output, float near_plane, float far_plane)
+{
+	output = glm::frustum(near_plane * glm::tan(view->fov.angleLeft),
+						  near_plane * glm::tan(view->fov.angleRight),
+						  near_plane * glm::tan(view->fov.angleDown),
+						  near_plane * glm::tan(view->fov.angleUp),
+						  near_plane,
+						  far_plane);
+}
+
+void left_eye_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+	compute_projection_matrix_for_view(left_eye_view, output, near_plane, far_plane);
+}
+
+void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+	compute_projection_matrix_for_view(right_eye_view, output, near_plane, far_plane);
+}
+
 vr_system_openxr::~vr_system_openxr()
 {
 	if(session_started) xrEndSession(session);
@@ -127,9 +150,11 @@ bool vr_system_openxr::initialize()
 	zero_it(view_configuration_type, 4);
 	uint32_t view_configuration_type_count = 0;
 	status = xrEnumerateViewConfigurations(instance, system_id, 4, &view_configuration_type_count, view_configuration_type);
+
 	XrViewConfigurationType best_view_config_type = XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM;
 	if(view_configuration_type_count > 0) best_view_config_type = view_configuration_type[0];
 	std::cout << "View configuration type : " << NAMEOF_ENUM(best_view_config_type) << "\n";
+	used_view_configuration_type = best_view_config_type;
 
 	XrViewConfigurationProperties view_configuration_properties;
 	zero_it(view_configuration_properties);
@@ -150,6 +175,9 @@ bool vr_system_openxr::initialize()
 		   instance, system_id, best_view_config_type, 4, &view_configuration_view_count, view_configuration_view);
 	   status != XR_SUCCESS)
 	{ std::cerr << "error: cannot enumerate view configuration views\n"; }
+	views.resize(view_configuration_view_count, { XR_TYPE_VIEW });
+	left_eye_view  = &views[0];
+	right_eye_view = &views[1];
 
 	std::cout << "system has " << view_configuration_view_count << " " << NAMEOF_VAR_TYPE(view_configuration_view[0]) << "\n";
 	for(size_t i = 0; i < view_configuration_view_count; ++i)
@@ -290,6 +318,19 @@ bool vr_system_openxr::initialize()
 		std::cout << "xrBeginSession() == XR_SUCCESS\n";
 	}
 
+	//Initialize space
+	XrPosef identity_pose;
+	zero_it(identity_pose);
+	identity_pose.orientation.w = 1;
+	XrReferenceSpaceCreateInfo reference_space_create_info;
+	zero_it(reference_space_create_info);
+	reference_space_create_info.type				 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+	reference_space_create_info.referenceSpaceType	 = XR_REFERENCE_SPACE_TYPE_LOCAL;
+	reference_space_create_info.poseInReferenceSpace = identity_pose;
+	zero_it(application_space);
+	if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
+	{ std::cerr << NAMEOF_ENUM(status) << "\n"; }
+
 	//OpenGL resource initialization
 	glGenTextures(2, eye_render_texture);
 	glGenRenderbuffers(2, eye_render_depth);
@@ -330,8 +371,12 @@ void vr_system_openxr::build_camera_node_system()
 	eye_camera_node[1] = head_node->push_child(create_node());
 	{
 		camera l, r;
-		eye_camera[0] = eye_camera_node[0]->assign(std::move(l));
-		eye_camera[1] = eye_camera_node[1]->assign(std::move(r));
+		l.vr_eye_projection_callback = left_eye_projection;
+		r.vr_eye_projection_callback = right_eye_projection;
+		l.projection_type			 = camera::projection_mode::eye_vr;
+		r.projection_type			 = camera::projection_mode::eye_vr;
+		eye_camera[0]				 = eye_camera_node[0]->assign(std::move(l));
+		eye_camera[1]				 = eye_camera_node[1]->assign(std::move(r));
 	}
 }
 
@@ -340,12 +385,13 @@ void vr_system_openxr::wait_until_next_frame()
 	XrFrameWaitInfo frame_wait_info;
 	frame_wait_info.type = XR_TYPE_FRAME_WAIT_INFO;
 	frame_wait_info.next = nullptr;
-	XrFrameState frame_state;
-	zero_it(frame_state);
-	frame_state.type = XR_TYPE_FRAME_STATE;
+	zero_it(current_frame_state);
+	current_frame_state.type = XR_TYPE_FRAME_STATE;
 
-	if(auto status = xrWaitFrame(session, &frame_wait_info, &frame_state); status != XR_SUCCESS)
+	if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
 	{ std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n"; }
+
+	//Frame state contai
 
 	XrFrameBeginInfo frame_begin_info;
 	zero_it(frame_begin_info);
@@ -353,11 +399,42 @@ void vr_system_openxr::wait_until_next_frame()
 	xrBeginFrame(session, &frame_begin_info);
 }
 
-void vr_system_openxr::update_tracking() { vr_tracking_anchor->update_world_matrix(); }
+void vr_system_openxr::update_tracking()
+{
+	XrViewState view_state;
+	zero_it(view_state);
+	view_state.type				 = XR_TYPE_VIEW_STATE;
+	uint32_t view_capacity_input = views.size();
+	uint32_t view_count;
+
+	XrViewLocateInfo view_locate_info;
+	zero_it(view_locate_info);
+	view_locate_info.type				   = XR_TYPE_VIEW_LOCATE_INFO;
+	view_locate_info.viewConfigurationType = used_view_configuration_type;
+	view_locate_info.displayTime		   = current_frame_state.predictedDisplayTime;
+	view_locate_info.space				   = application_space;
+
+	XrResult status = xrLocateViews(session, &view_locate_info, &view_state, view_capacity_input, &view_count, views.data());
+	if(status != XR_SUCCESS) { std::cerr << NAMEOF_ENUM(status) << "\n"; }
+
+	for(size_t i = 0; i < 2; ++i)
+	{
+		if(!eye_camera_node[i]) continue;
+		eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position.x));
+		eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
+	}
+
+	vr_tracking_anchor->update_world_matrix();
+	for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
+}
 
 void vr_system_openxr::submit_frame_to_vr_system()
 {
+
 	XrResult status;
+
+	layers.clear();
+
 	for(size_t i = 0; i < 2; i++)
 	{
 		uint32_t index = -1;
@@ -376,25 +453,33 @@ void vr_system_openxr::submit_frame_to_vr_system()
 		status = xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
 		if(status != XR_SUCCESS) {}
 
-		//std::cout << "image index for swapchain " << i << " is " << index << "\n";
+		XrCompositionLayerProjectionView layer;
+		zero_it(layer);
+		layer.type						= XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+		layer.pose						= views[i].pose;
+		layer.fov						= views[i].fov;
+		layer.subImage.swapchain		= swapchain[i];
+		layer.subImage.imageRect.offset = { 0, 0 };
+		layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
 
-		//At this point swapchain_image[i][index].image is the opengl texture to use,
-		//but it seems the compositor is not initialized properly, so the following call fails:
-		//glCopyImageSubData(eye_render_texture[i],
-		//				   GL_TEXTURE_2D,
-		//				   0,
-		//				   0,
-		//				   0,
-		//				   0,
-		//				   (GLuint)swapchain_images[i][index].image,
-		//				   GL_TEXTURE_2D,
-		//				   0,
-		//				   0,
-		//				   0,
-		//				   0,
-		//				   eye_render_target_sizes[i].x,
-		//				   eye_render_target_sizes[i].y,
-		//				   0);
+		GLuint dst = swapchain_images[i][index].image;
+		glCopyImageSubData(eye_render_texture[i],
+						   GL_TEXTURE_2D,
+						   0,
+						   0,
+						   0,
+						   0,
+						   dst,
+						   GL_TEXTURE_2D,
+						   0,
+						   0,
+						   0,
+						   0,
+						   eye_render_target_sizes[i].x,
+						   eye_render_target_sizes[i].y,
+						   1);
+
+		projection_layer_views[i] = layer;
 
 		XrSwapchainImageReleaseInfo swapchain_image_release_info;
 		zero_it(swapchain_image_release_info);
@@ -405,8 +490,20 @@ void vr_system_openxr::submit_frame_to_vr_system()
 	}
 	glFlush();
 
+	XrCompositionLayerProjection layer_projection;
+	zero_it(layer_projection);
+	layer_projection.type	   = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
+	layer_projection.space	   = application_space;
+	layer_projection.viewCount = 2;
+	layer_projection.views	   = projection_layer_views;
+	layers.push_back((XrCompositionLayerBaseHeader*)&layer_projection);
+
 	XrFrameEndInfo frame_end_info;
 	zero_it(frame_end_info);
-	frame_end_info.type = XR_TYPE_FRAME_END_INFO;
-	xrEndFrame(session, &frame_end_info);
+	frame_end_info.type					= XR_TYPE_FRAME_END_INFO;
+	frame_end_info.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+	frame_end_info.layerCount			= layers.size();
+	frame_end_info.layers				= layers.data();
+
+	status = xrEndFrame(session, &frame_end_info);
 }

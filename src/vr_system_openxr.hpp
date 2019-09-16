@@ -14,12 +14,19 @@
 #include <openxr/openxr_platform.h>
 class vr_system_openxr : public vr_system
 {
-	XrInstance instance;
-	XrSession session;
-	XrSystemId system_id;
-	XrSwapchain swapchain[2];
+	XrInstance instance		 = XR_NULL_HANDLE;
+	XrSession session		 = XR_NULL_HANDLE;
+	XrSystemId system_id	 = 0;
+	XrSwapchain swapchain[2] = { 0 };
+	XrViewConfigurationType used_view_configuration_type;
+	std::vector<XrView> views;
 	std::vector<XrSwapchainImageOpenGLKHR> swapchain_images[2];
+	XrFrameState current_frame_state;
+	std::vector<XrCompositionLayerBaseHeader*> layers;
+	XrCompositionLayerProjectionView projection_layer_views[2];
+	XrSpace application_space = XR_NULL_HANDLE;
 
+	//TODO these are useless the handles can be compared against XR_NULL_HANDLE
 	bool instance_created = false;
 	bool session_created  = false;
 	bool session_started  = false;

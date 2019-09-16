@@ -3,6 +3,7 @@
 #include "vr_system_openvr.hpp"
 #include <gl/glew.h>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <nameof.hpp>
 
 #if USING_OPENVR
 
@@ -174,8 +175,8 @@ void vr_system_openvr::submit_frame_to_vr_system()
 	const auto right_error = vr::VRCompositor()->Submit(vr::Eye_Right, &texture_handlers[1]);
 	glFlush();
 
-	if(left_error != vr::VRCompositorError_None) { std::cerr << (int)left_error << "\n"; }
-	if(right_error != vr::VRCompositorError_None) { std::cerr << (int)right_error << "\n"; }
+	if(left_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(left_error) << "\n"; }
+	if(right_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(right_error) << "\n"; }
 }
 
 void vr_system_openvr::build_camera_node_system()
