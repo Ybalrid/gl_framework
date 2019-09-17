@@ -37,6 +37,8 @@ bool vr_system_openxr::initialize()
 	std::cout << "Initializing OpenXR based VR system\n";
 	std::cout << getenv("XR_RUNTIME_JSON") << "\n";
 
+	//Step one, get XrInstance up and running
+
 	//Enumerate layers and extensions
 	XrApiLayerProperties api_layer_properties[max_properties_count];
 	zero_it(api_layer_properties, max_properties_count);
@@ -104,6 +106,8 @@ bool vr_system_openxr::initialize()
 				  << XR_VERSION_PATCH(instance_properties.runtimeVersion) << "\n";
 	}
 
+	//Step two: get an XrSystem up and running
+
 	//Get a HMD-style system
 	XrSystemGetInfo system_get_info;
 	zero_it(system_get_info);
@@ -128,6 +132,8 @@ bool vr_system_openxr::initialize()
 			  << system_properties.graphicsProperties.maxSwapchainImageWidth << "\n";
 	std::cout << "Max layer count        : " << system_properties.graphicsProperties.maxLayerCount << "\n";
 
+	///Step 3 : Get information about the Views we are going to render
+
 	//Retreive view configuration
 	XrViewConfigurationType view_configuration_type[4];
 	zero_it(view_configuration_type, 4);
@@ -137,6 +143,8 @@ bool vr_system_openxr::initialize()
 	XrViewConfigurationType best_view_config_type = XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM;
 	if(view_configuration_type_count > 0) best_view_config_type = view_configuration_type[0];
 	std::cout << "View configuration type : " << NAMEOF_ENUM(best_view_config_type) << "\n";
+	//We are rendering a stereoscopic view in an HMD
+	assert(best_view_config_type == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
 	used_view_configuration_type = best_view_config_type;
 
 	XrViewConfigurationProperties view_configuration_properties;
@@ -147,6 +155,7 @@ bool vr_system_openxr::initialize()
 	{ std::cerr << "error: cannot get view configuration properties\n"; }
 	else
 	{
+		//This is a weird feature, but like, well, we have a callback to recompute the projection matrix on the fly too so, it's not a problem
 		std::cout << "Mutable FoV : " << (view_configuration_properties.fovMutable == XR_TRUE ? "YES" : "NO") << "\n";
 	}
 
@@ -192,30 +201,33 @@ bool vr_system_openxr::initialize()
 	XrEnvironmentBlendMode best_environment_blend_mode = environment_blend_mode[0];
 	std::cout << "Environement blend mode :" << NAMEOF_ENUM(best_environment_blend_mode) << "\n";
 
-	XrActionSetCreateInfo action_set_create_info;
-	zero_it(action_set_create_info);
-	action_set_create_info.type = XR_TYPE_ACTION_SET_CREATE_INFO;
-	strcpy(action_set_create_info.actionSetName, "some_action_set");
-	strcpy(action_set_create_info.localizedActionSetName, action_set_create_info.actionSetName);
-	action_set_create_info.priority = -1;
-	XrActionSet action_set;
-	xrCreateActionSet(instance, &action_set_create_info, &action_set);
-
+	//TODO need to learn about the **actions** API
+	//XrActionSetCreateInfo action_set_create_info;
+	//zero_it(action_set_create_info);
+	//action_set_create_info.type = XR_TYPE_ACTION_SET_CREATE_INFO;
+	//strcpy(action_set_create_info.actionSetName, "some_action_set");
+	//strcpy(action_set_create_info.localizedActionSetName, action_set_create_info.actionSetName);
+	//action_set_create_info.priority = -1;
+	//XrActionSet action_set;
+	//xrCreateActionSet(instance, &action_set_create_info, &action_set);
 	//TODO xrSuggestInteractionProfileBindings()
 
+	//Step 4 : Request graphcics backed requiredment for OpenGL
 	XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr;
 	zero_it(graphics_requirements_opengl_khr);
 	graphics_requirements_opengl_khr.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
 	xrGetOpenGLGraphicsRequirementsKHR(instance, system_id, &graphics_requirements_opengl_khr);
-
+	//It seems not doing the above call cause a validation error
 	std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
 			  << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
 
+	//Step 5 create session
 	XrSessionCreateInfo session_create_info;
 	zero_it(session_create_info);
 	session_create_info.type	 = XR_TYPE_SESSION_CREATE_INFO;
 	session_create_info.systemId = system_id;
 
+	//we need to get ghe graphics bindings that correspond to the choosen graphics API and windowing system
 #ifdef WIN32
 	XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding;
 	zero_it(xr_graphics_binding);
@@ -237,10 +249,11 @@ bool vr_system_openxr::initialize()
 		std::cout << "XrCreateSession() == XR_SUCCESS\n";
 	}
 
-	//reference space
+	//Step 6 define Reference space (for when we ask for tracking data
 	XrPosef identity_pose;
 	zero_it(identity_pose);
-	identity_pose.orientation.w = 1;
+	identity_pose.orientation.w = 1.f;
+
 	XrReferenceSpaceCreateInfo reference_space_create_info;
 	zero_it(reference_space_create_info);
 	reference_space_create_info.type				 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
@@ -250,11 +263,13 @@ bool vr_system_openxr::initialize()
 	if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
 	{ std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
-	//Create swapchains
-	int64_t format[32];
+	//Step 7 Create swapchains (list of images that are submited to the compositor)
+	int64_t format[32]; //32 is way too many options, there's like 10 max here, but well...
 	zero_it(format, 32);
 	uint32_t format_count = 0;
 	xrEnumerateSwapchainFormats(session, 32, &format_count, format);
+
+	//This is the format we want...
 	if(std::find(std::begin(format), std::end(format), GL_RGBA8) != std::end(format))
 	{ std::cout << "found GL_RGBA8 in possible format list\n"; }
 	else
@@ -263,6 +278,16 @@ bool vr_system_openxr::initialize()
 		return false;
 	}
 
+	//...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
+	if(std::find(std::begin(format), std::end(format), GL_SRGB8_ALPHA8) != std::end(format))
+	{ std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n"; }
+	else
+	{
+		std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
+		return false;
+	}
+
+	//We are going
 	for(size_t i = 0; i < 2; ++i)
 	{
 		XrSwapchainCreateInfo swapchain_create_info;
@@ -272,6 +297,7 @@ bool vr_system_openxr::initialize()
 			= XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; //Transfer Destination bit. We only ever transfer rendered images to this, we don't use it as part of the rendering.
 		swapchain_create_info.mipCount	  = 1;
 		swapchain_create_info.sampleCount = 1;
+		//See comments format enumeration above
 		swapchain_create_info.format
 			= GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
 		swapchain_create_info.faceCount = 1;
@@ -297,6 +323,7 @@ bool vr_system_openxr::initialize()
 		}
 	}
 
+	//Step 8 "Begin" the session itself
 	XrSessionBeginInfo xr_session_begin_info;
 	zero_it(xr_session_begin_info);
 	xr_session_begin_info.type						   = XR_TYPE_SESSION_BEGIN_INFO;
@@ -309,6 +336,9 @@ bool vr_system_openxr::initialize()
 	}
 
 	//OpenGL resource initialization
+
+	//The rest of the engine don't carea bout our "VR" hardware.
+	//It just want to bind and render to a pair of FBOs, one for left eye, one for right
 	glGenTextures(2, eye_render_texture);
 	glGenRenderbuffers(2, eye_render_depth);
 	glGenFramebuffers(2, eye_fbo);
@@ -362,6 +392,7 @@ void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
 
 void vr_system_openxr::build_camera_node_system()
 {
+	//We are not using a head rig here, the views dorectly correspond to the cameras. We could do without the head node here
 	head_node = vr_tracking_anchor->push_child(create_node());
 
 	eye_camera_node[0] = head_node->push_child(create_node());
@@ -379,6 +410,8 @@ void vr_system_openxr::build_camera_node_system()
 
 void vr_system_openxr::wait_until_next_frame()
 {
+	//We are going to start a new frame, before that, we need to be able to sync up to the VR system to improve latency
+	//Thus, we wait until the right time to start rendering
 	XrFrameWaitInfo frame_wait_info;
 	frame_wait_info.type = XR_TYPE_FRAME_WAIT_INFO;
 	frame_wait_info.next = nullptr;
@@ -388,8 +421,7 @@ void vr_system_openxr::wait_until_next_frame()
 	if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
 	{ std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n"; }
 
-	//Frame state contai
-
+	//Now the framestate contains the timing information for geting the view location, we can begin a new frame
 	XrFrameBeginInfo frame_begin_info;
 	zero_it(frame_begin_info);
 	frame_begin_info.type = XR_TYPE_FRAME_BEGIN_INFO;
@@ -409,7 +441,7 @@ void vr_system_openxr::update_tracking()
 	zero_it(view_locate_info);
 	view_locate_info.type				   = XR_TYPE_VIEW_LOCATE_INFO;
 	view_locate_info.viewConfigurationType = used_view_configuration_type;
-	view_locate_info.displayTime		   = current_frame_state.predictedDisplayTime;
+	view_locate_info.displayTime		   = current_frame_state.predictedDisplayTime; //from xrWaitFrame
 	view_locate_info.space				   = application_space;
 
 	XrResult status = xrLocateViews(session, &view_locate_info, &view_state, view_capacity_input, &view_count, views.data());
@@ -419,26 +451,26 @@ void vr_system_openxr::update_tracking()
 
 	for(size_t i = 0; i < 2; ++i)
 	{
-		//Thre's a nasty pointer cast here that break a const, but it's for the greater good...
+		//There's a nasty pointer cast here that break a const, but it's for the greater good...
 		//It just so happen that they both express vector 3D and quaternion in the same way...
-		eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position.x));
+		eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position));
 		eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
 	}
 
 	//This updates the world matrices on everybody
 	vr_tracking_anchor->update_world_matrix();
 
-	//This is requried to update the view matrix used for renderign
+	//This is requried to update the view matrix used for rendering on our cameras
+	//The camera object is not aware it's attached to a node, it only know it has a view matrix.
+	//Set world matrix on a camera update the view matrix by computing the inverse of the input
 	for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
 }
+
+#define static_array_size(static_array) sizeof(static_array) / sizeof(decltype(*static_array))
 
 void vr_system_openxr::submit_frame_to_vr_system()
 {
 	XrResult status;
-
-	//TODO this is unfortunate, we don't really need to clear and recreate this thing.
-	//to be honest, it will only ever grew up to one, so...
-	layers.clear();
 
 	//We have two swapchain to use:
 	for(size_t i = 0; i < 2; i++)
@@ -506,14 +538,14 @@ void vr_system_openxr::submit_frame_to_vr_system()
 	layer_projection.space	   = application_space;
 	layer_projection.viewCount = 2;
 	layer_projection.views	   = projection_layer_views;
-	layers.push_back((XrCompositionLayerBaseHeader*)&layer_projection);
+	layers[0]				   = ((XrCompositionLayerBaseHeader*)&layer_projection);
 
 	XrFrameEndInfo frame_end_info;
 	zero_it(frame_end_info);
 	frame_end_info.type					= XR_TYPE_FRAME_END_INFO;
 	frame_end_info.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-	frame_end_info.layerCount			= layers.size();
-	frame_end_info.layers				= layers.data();
+	frame_end_info.layerCount			= static_array_size(layers);
+	frame_end_info.layers				= layers;
 
 	status = xrEndFrame(session, &frame_end_info);
 }

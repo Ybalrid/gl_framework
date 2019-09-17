@@ -22,7 +22,7 @@ class vr_system_openxr : public vr_system
 	std::vector<XrView> views;
 	std::vector<XrSwapchainImageOpenGLKHR> swapchain_images[2];
 	XrFrameState current_frame_state;
-	std::vector<XrCompositionLayerBaseHeader*> layers;
+	XrCompositionLayerBaseHeader* layers[1];
 	XrCompositionLayerProjectionView projection_layer_views[2];
 	XrSpace application_space = XR_NULL_HANDLE;
 
