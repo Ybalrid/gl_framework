@@ -1,3 +1,4 @@
+#if USING_OPENXR
 #include "vr_system_openxr.hpp"
 #include "nameof.hpp"
 #if USING_OPENXR
@@ -549,3 +550,4 @@ void vr_system_openxr::submit_frame_to_vr_system()
 
 	status = xrEndFrame(session, &frame_end_info);
 }
+#endif

@@ -93,6 +93,7 @@ FIND_PACKAGE (Threads REQUIRED)
 
 #Create our build target
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
+TARGET_COMPILE_DEFINITIONS(${GAME_NAME}_exe PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
 
 #Add header only libraries include path
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
