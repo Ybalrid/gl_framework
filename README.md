@@ -3,8 +3,10 @@
 This repository is an open-source "base code" for making video games projects "from scratch".
 It's configured with CMake to use a number of helpful libraries.
 
-It is cross platform and supports Windows, Linux, and MacOS (and should be "trivially" adaptable
+It is cross platform and supports Windows, Linux, and MacOS(*) (and should be "trivially" adaptable
 to other platforms too!)
+
+(*) For MacOS you *may* need an updated version of Clang and LibC++. This project has been tested under 10.13 High Sierra, XCode 9.4.1 and Clang 9 installed via brew (llvm). I do not have access to more modern macs, so I am stuck with a Mid 2010 iMac 11,2, that is mostly used for entertaiment, not developement. :wink:
 
 This code will create a window, initialize an OpenGL core profile,
 be able to load GLSL shader code and glTF assets from "resource locations"
