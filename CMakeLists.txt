@@ -5,6 +5,13 @@ set(GAME_NAME "test_project")
 PROJECT (${GAME_NAME})
 SET (CMAKE_CXX_STANDARD 17)
 
+if(UNIX)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+  endif()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+  endif()
+
 #User configurable fields:
 OPTION (HAS_OPENVR "Activate the OpenVR VR system" OFF)
 OPTION (HAS_OCULUS_VR "Activate the OpenVR VR system" OFF)
