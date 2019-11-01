@@ -1,9 +1,9 @@
 #include "build_config.hpp"
 #if USING_OPENXR
+
 #include "vr_system_openxr.hpp"
 #include "nameof.hpp"
-#if USING_OPENXR
-#endif
+
 #define max_properties_count 64
 #include "openxr/openxr_platform.h"
 
