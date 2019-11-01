@@ -1,3 +1,4 @@
+#include "build_config.hpp"
 #if USING_OPENXR
 #include "vr_system_openxr.hpp"
 #include "nameof.hpp"
@@ -482,7 +483,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
     swapchain_image_acquire_info.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
 
     status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &index);
-    if(status != XR_SUCCESS) {}
+    if(status != XR_SUCCESS) { }
 
     XrSwapchainImageWaitInfo swapchain_image_wait_info;
     zero_it(swapchain_image_wait_info);
@@ -490,7 +491,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
     swapchain_image_wait_info.timeout = 1000;
 
     status = xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
-    if(status != XR_SUCCESS) {}
+    if(status != XR_SUCCESS) { }
 
     XrCompositionLayerProjectionView layer;
     zero_it(layer);
@@ -529,7 +530,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
     swapchain_image_release_info.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
 
     status = xrReleaseSwapchainImage(swapchain[i], &swapchain_image_release_info);
-    if(status != XR_SUCCESS) {}
+    if(status != XR_SUCCESS) { }
   }
   glFlush();
 
