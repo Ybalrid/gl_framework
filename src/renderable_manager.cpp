@@ -5,31 +5,31 @@ renderable_manager* renderable_manager::manager = nullptr;
 
 renderable_manager::renderable_manager()
 {
-	if(!manager)
-		manager = this;
-	else
-		throw("Can only have one renderable manager");
+  if(!manager)
+    manager = this;
+  else
+    throw("Can only have one renderable manager");
 
-	std::cout << "Initialized Renderable manager\n";
+  std::cout << "Initialized Renderable manager\n";
 }
 
 renderable_manager::~renderable_manager()
 {
-	manager = nullptr;
-	std::cout << "Deinitialized Renderable manager\n";
+  manager = nullptr;
+  std::cout << "Deinitialized Renderable manager\n";
 }
 
 renderable& renderable_manager::get_from_handle(renderable_handle r)
 {
-	if(r == invalid_renderable) throw std::runtime_error("Cannot get invalid renderable");
+  if(r == invalid_renderable) throw std::runtime_error("Cannot get invalid renderable");
 
-	return manager->renderables.at(r);
+  return manager->renderables.at(r);
 }
 
 void renderable_manager::get_rid_of(renderable_handle r)
 {
-	manager->unallocated_renderables.push_back(r);
-	get_from_handle(r) = renderable();
+  manager->unallocated_renderables.push_back(r);
+  get_from_handle(r) = renderable();
 }
 
 std::vector<renderable> const& renderable_manager::get_list() { return manager->renderables; }

@@ -4,7 +4,7 @@
 
 struct material
 {
-	float shininess = 32;
-	glm::vec3 diffuse_color{1.f};
-	glm::vec3 specular_color{1.f};
+  float shininess = 32;
+  glm::vec3 diffuse_color { 1.f };
+  glm::vec3 specular_color { 1.f };
 };
