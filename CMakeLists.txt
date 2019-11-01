@@ -1,7 +1,6 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
 set(GAME_NAME "test_project")
 
-
 PROJECT (${GAME_NAME})
 SET (CMAKE_CXX_STANDARD 17)
 
@@ -42,7 +41,6 @@ if(HAS_OPENXR)
 else()
   set(CPP_HAS_OPENXR "false")
 endif()
-
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/build_config.template.hpp ${CMAKE_SOURCE_DIR}/src/build_config.hpp )
 
@@ -132,14 +130,12 @@ if(HAS_OPENVR)
   ENDIF()
 ENDIF()
 
-
 if(HAS_OPENXR)
   message(STATUS "Including OpenXR directories")
   add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK")
   target_link_libraries(${GAME_NAME}_exe PRIVATE openxr_loader)
   target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include")
 endif()
-
 
 #link libraries
 TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
