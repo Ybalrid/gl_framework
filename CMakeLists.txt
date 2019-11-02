@@ -1,15 +1,32 @@
+# This is the main cmake file of the frameowk.
+# The main variable you want to touch in this is probably GAME_NAME.
+#
+# Depending on what you want to do, a few option are activable. These option may require additional libraries.
+# - HAS_OPENVR (bool) : Activate the code that uses OpenVR. OpenVR is shipped as a git submodule
+# - HAS_OPENXR (bool) : Activate the code that uses OpenXR. The OpenXR SDK is shipped as a git submodule
+# - HAS_OCULUS (bool) : Activate the code that uses Oculus. The Oculus OVR Native SDK is not shipped and need to be dowloaded by hand from the website.
+
 CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
-set(GAME_NAME "test_project")
+SET (GAME_NAME "test_project")
+
+if(CMAKE_GENERATOR STREQUAL Xcode)
+  message(STATUS "xcode!!!!!")
+  set(CMAKE_C_COMPILER "clang")
+  set(CMAKE_CXX_COMPILER "clang++")
+endif()
 
 PROJECT (${GAME_NAME})
-SET (CMAKE_CXX_STANDARD 17)
 
-if(UNIX)
-  if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-  endif()
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-endif()
+#Language and basic compiler configuratino
+SET (CMAKE_CXX_STANDARD 17)
+IF (UNIX)
+  IF (NOT CMAKE_BUILD_TYPE)
+    SET (CMAKE_BUILD_TYPE Release)
+  ENDIF ()
+  SET (CMAKE_CXX_FLAGS_RELEASE "-O3")
+ELSEIF (MSVC)
+  MESSAGE(STATUS "TODO activate in cmake maximum optimization settings for MSVC!!!")
+ENDIF ()
 
 #User configurable fields:
 OPTION (HAS_OPENVR "Activate the OpenVR VR system" OFF)
@@ -42,6 +59,7 @@ else()
   set(CPP_HAS_OPENXR "false")
 endif()
 
+# Generate the configured header file
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/build_config.template.hpp ${CMAKE_SOURCE_DIR}/src/build_config.hpp )
 
 #configure glm
@@ -86,8 +104,14 @@ FILE (GLOB sources
 ADD_SUBDIRECTORY (third_party/physfs/)
 
 #Get libraries
-SET (LIBRARIES_PACKAGE_DIR "path_to_libraries" CACHE PATH "path to the 3rd party libraries directory")
-LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/" "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake")
+SET (LIBRARIES_PACKAGE_DIR "path_to_libraries"
+  CACHE PATH "path to the 3rd party libraries directory")
+LIST (APPEND CMAKE_MODULE_PATH
+  "${CMAKE_SOURCE_DIR}/cmake_modules/"
+  "${LIBRARIES_PACKAGE_DIR}/OpenAL-Soft/lib/cmake"
+  )
+
+# Locate third party libraries
 FIND_PACKAGE (OpenAL REQUIRED)
 FIND_PACKAGE (SNDFILE REQUIRED)
 FIND_PACKAGE (SDL2 REQUIRED)
@@ -96,11 +120,11 @@ FIND_PACKAGE (FreeImage REQUIRED)
 FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
-#Create our build target
+# Create our build target
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
 TARGET_COMPILE_DEFINITIONS(${GAME_NAME}_exe PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
 
-#Add header only libraries include path
+# Add header only libraries include path
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
@@ -115,7 +139,7 @@ TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
 
-if(HAS_OPENVR)
+IF(HAS_OPENVR)
   MESSAGE(STATUS "Configuring OpenVR includes and libraries")
   TARGET_INCLUDE_DIRECTORIES(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/openvr/headers/")
 
@@ -128,6 +152,7 @@ if(HAS_OPENVR)
       MESSAGE(STATUS "32bit")
     ENDIF()
   ENDIF()
+
 ENDIF()
 
 if(HAS_OPENXR)
@@ -149,13 +174,15 @@ TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
   ${OPENAL_LIBRARY}
   ${FREEIMAGE_LIBRARIES}
   ${SNDFILE_LIBRARY})
+
 IF(UNIX)
   TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PUBLIC jet-live)
+
+  IF (APPLE)
+    FIND_LIBRARY(IOKit IOKit)
+    TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE ${IOKit})
+  ENDIF(APPLE)
 ENDIF()
-IF (APPLE)
-  FIND_LIBRARY (IOKit IOKit)
-  TARGET_LINK_LIBRARIES (${GAME_NAME}_exe PRIVATE ${IOKit})
-ENDIF (APPLE)
 
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
   COMMAND # add_custom_command(TARGET ${GAME_NAME}_exe POST_BUILD

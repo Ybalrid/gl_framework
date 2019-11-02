@@ -378,6 +378,10 @@ void application::create_opengl_context()
   context = window.create_context();
   context.make_current();
   std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
+  int result = sdl::Window::gl_get_attribute(SDL_GL_DEPTH_SIZE);
+
+  std::cout << "Depth buffer is " << result << "bits wide\n";
+
   glEnable(GL_MULTISAMPLE);
 }
 
