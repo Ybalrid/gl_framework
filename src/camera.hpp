@@ -18,8 +18,8 @@ class camera
   ///This function pointer is a callback to be used for feeding the projection matrix from either the Oculus or SteamVR SDKs
   void (*vr_eye_projection_callback)(glm::mat4& projection_output, float near_clip, float far_clip) = nullptr;
 
-  float near_clip = 0.15f;
-  float far_clip  = 50.f;
+  float near_clip = 0.25f;
+  float far_clip  = 100.f;
   float fov       = 45.f;
 
   ///Matrix that moves the world so that the camera look at it how you want

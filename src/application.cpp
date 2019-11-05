@@ -270,9 +270,12 @@ void application::set_opengl_attribute_configuration(const bool multisampling,
 #ifndef __APPLE__
   const auto minor = 3;
 #else
+  std::cout << "On MacOS we only use OpenGL 4.1 instead of 4.3. A few features (mostly debug) will not work.\n";
   const auto minor = 1; //Apple actively </3 OpenGL :'-(
 #endif
 
+  //Explicitly request a depth buffer of at least 24 bits, instead of the 16 bits by default SDL metion in documetation
+  sdl::Window::gl_set_attribute(SDL_GL_DEPTH_SIZE, 24);
   sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLEBUFFERS, multisampling);
   sdl::Window::gl_set_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);
   sdl::Window::gl_set_attribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
@@ -378,9 +381,8 @@ void application::create_opengl_context()
   context = window.create_context();
   context.make_current();
   std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n';
-  int result = sdl::Window::gl_get_attribute(SDL_GL_DEPTH_SIZE);
-
-  std::cout << "Depth buffer is " << result << "bits wide\n";
+  const auto bit_depth = sdl::Window::gl_get_attribute(SDL_GL_DEPTH_SIZE);
+  std::cout << "Depth buffer is " << bit_depth << " bits wide\n";
 
   glEnable(GL_MULTISAMPLE);
 }
