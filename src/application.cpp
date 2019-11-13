@@ -226,8 +226,9 @@ void application::draw_debug_ui()
   const int x = 400, y = 75;
   ImGui::SetNextWindowPos({ 0, float(window.size().y - y) });
   ImGui::SetNextWindowSize({ float(x), float(y) });
-  if(ImGui::Begin(
-         "Development build", nullptr, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
+  if(ImGui::Begin("Development build",
+                  nullptr,
+                  ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
   {
     ImGui::Text("This program is a development Debug Build.");
 #if defined(USING_JETLIVE)
@@ -315,8 +316,8 @@ void application::install_opengl_debug_callback() const
            const void* /*user_param*/) {
           if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
           std::cerr << "-----\n";
-          std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id << ") message("
-                    << std::string(message) << ")\n";
+          std::cerr << "opengl debug message: source(" << (source) << ") type(" << (type) << ") id(" << id
+                    << ") message(" << std::string(message) << ")\n";
           std::cerr << "-----" << std::endl; //flush here
         },
         nullptr);
@@ -370,9 +371,10 @@ void application::configure_and_create_window(const std::string& application_nam
   }
 
   //create window
-  window = sdl::Window(application_name,
-                       window_size,
-                       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+  window
+      = sdl::Window(application_name,
+                    window_size,
+                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -406,6 +408,7 @@ void application::initialize_gui()
 
 void application::frame_prepare()
 {
+  const profiler::tag tag(frame_event::frame_prepare);
   sun.direction               = glm::normalize(sun_direction_unormalized);
   const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
   (void)opengl_debug_tag;
@@ -431,6 +434,7 @@ void application::frame_prepare()
 
 void application::render_shadowmap()
 {
+  const profiler::tag tag(frame_event::render_shadow_map);
   const auto opengl_debug_tag = opengl_debug_group("application::render_shadowmap()");
   (void)opengl_debug_tag;
 
@@ -450,7 +454,8 @@ void application::render_shadowmap()
                                           shadow_map_ortho_scale,
                                           shadow_map_near_plane,
                                           shadow_map_far_plane);
-  glm::mat4 light_view       = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
+  glm::mat4 light_view
+      = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
   glm::mat4 light_space_matrix = light_projection * light_view;
   shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
 
@@ -480,6 +485,7 @@ void application::render_shadowmap()
 
 void application::render_draw_list(camera* render_camera)
 {
+  const profiler::tag tag(frame_event::render_draw_list);
   const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list");
   (void)opengl_debug_tag;
   for(auto [node, handle] : draw_list)
@@ -493,6 +499,7 @@ void application::render_draw_list(camera* render_camera)
 
 void application::build_draw_list_from_camera(camera* render_camera)
 {
+  const profiler::tag tag(frame_event::build_draw_list);
   const auto opengl_debug_tag = opengl_debug_group("application::build_draw_list_from_camera()");
   (void)opengl_debug_tag;
 
@@ -504,6 +511,8 @@ void application::build_draw_list_from_camera(camera* render_camera)
       using T = std::decay_t<decltype(node_attached_object)>;
       if constexpr(std::is_same_v<T, scene_object>)
       {
+        const profiler::tag tag(frame_event::cull_test);
+
         auto& object                  = static_cast<scene_object&>(node_attached_object);
         const auto obb_points_list    = object.get_obb(current_node->get_world_matrix());
         const glm::mat4 to_clip_space = render_camera->get_view_projection_matrix();
@@ -519,15 +528,21 @@ void application::build_draw_list_from_camera(camera* render_camera)
           for(glm::vec4::length_type direction = 0; direction < 3; direction++) //testing 2 planes at the same time
           {
             const bool outside_positive_plane = (clip_space_obb[0][direction] > clip_space_obb[0].w)
-                && (clip_space_obb[1][direction] > clip_space_obb[1].w) && (clip_space_obb[2][direction] > clip_space_obb[2].w)
-                && (clip_space_obb[3][direction] > clip_space_obb[3].w) && (clip_space_obb[4][direction] > clip_space_obb[4].w)
-                && (clip_space_obb[5][direction] > clip_space_obb[5].w) && (clip_space_obb[6][direction] > clip_space_obb[6].w)
+                && (clip_space_obb[1][direction] > clip_space_obb[1].w)
+                && (clip_space_obb[2][direction] > clip_space_obb[2].w)
+                && (clip_space_obb[3][direction] > clip_space_obb[3].w)
+                && (clip_space_obb[4][direction] > clip_space_obb[4].w)
+                && (clip_space_obb[5][direction] > clip_space_obb[5].w)
+                && (clip_space_obb[6][direction] > clip_space_obb[6].w)
                 && (clip_space_obb[7][direction] > clip_space_obb[7].w);
 
             const bool outside_negative_plane = (clip_space_obb[0][direction] < -clip_space_obb[0].w)
-                && (clip_space_obb[1][direction] < -clip_space_obb[1].w) && (clip_space_obb[2][direction] < -clip_space_obb[2].w)
-                && (clip_space_obb[3][direction] < -clip_space_obb[3].w) && (clip_space_obb[4][direction] < -clip_space_obb[4].w)
-                && (clip_space_obb[5][direction] < -clip_space_obb[5].w) && (clip_space_obb[6][direction] < -clip_space_obb[6].w)
+                && (clip_space_obb[1][direction] < -clip_space_obb[1].w)
+                && (clip_space_obb[2][direction] < -clip_space_obb[2].w)
+                && (clip_space_obb[3][direction] < -clip_space_obb[3].w)
+                && (clip_space_obb[4][direction] < -clip_space_obb[4].w)
+                && (clip_space_obb[5][direction] < -clip_space_obb[5].w)
+                && (clip_space_obb[6][direction] < -clip_space_obb[6].w)
                 && (clip_space_obb[7][direction] < -clip_space_obb[7].w);
 
             outside = outside || outside_positive_plane || outside_negative_plane;
@@ -538,7 +553,8 @@ void application::build_draw_list_from_camera(camera* render_camera)
           //independently of the frustum culling, draw the bouding box
           if(debug_draw_bbox)
           {
-            auto scene_obj                   = static_cast<scene_object>(node_attached_object);
+            const profiler::tag tag(frame_event::draw_oob);
+            //auto scene_obj                   = static_cast<scene_object>(node_attached_object);
             const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
             (void)opengl_debug_tag_obbs;
 
@@ -564,9 +580,11 @@ void application::build_draw_list_from_camera(camera* render_camera)
 
 void application::render_frame()
 {
+  const profiler::tag tag(frame_event::render);
   //When using VR, the VR system is the master of the framerate!
   if(vr)
   {
+    const profiler::tag tag(frame_event::vr_tracking);
     vr->wait_until_next_frame();
     vr->update_tracking();
   }
@@ -620,6 +638,7 @@ void application::render_frame()
 
 void application::run_events()
 {
+  const profiler::tag tag(frame_event::events);
   //event polling
   while(event.poll())
   {
@@ -640,6 +659,7 @@ void application::run()
 {
   while(running)
   {
+    const profiler::tag tag(frame_event::frame);
 #ifdef _DEBUG
 #ifdef USING_JETLIVE
     liveInstance.update();
@@ -690,17 +710,17 @@ void application::setup_scene()
 
   const shader_handle simple_shader
       = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
-  const renderable_handle textured_plane_primitive
-      = renderable_manager::create_renderable(simple_shader,
-                                              plane,
-                                              plane_indices,
-                                              renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
-                                              renderable::configuration { true, true, true, true },
-                                              3 + 2 + 3 + 3,
-                                              0,
-                                              3,
-                                              5,
-                                              8);
+  const renderable_handle textured_plane_primitive = renderable_manager::create_renderable(
+      simple_shader,
+      plane,
+      plane_indices,
+      renderable::vertex_buffer_extrema { { -0.9f, 0.f, -0.9f }, { 0.9f, 0.f, 0.9f } },
+      renderable::configuration { true, true, true, true },
+      3 + 2 + 3 + 3,
+      0,
+      3,
+      5,
+      8);
   renderable_manager::get_from_handle(textured_plane_primitive).set_diffuse_texture(polutropon_logo_texture);
   mesh textured_plane;
   textured_plane.add_submesh(textured_plane_primitive);
@@ -721,14 +741,21 @@ void application::setup_scene()
   }
   fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
-  inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
-  inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
+  inputs.register_keypress(SDL_SCANCODE_A,
+                           fps_camera_controller->press(camera_controller_command::movement_type::left));
+  inputs.register_keypress(SDL_SCANCODE_D,
+                           fps_camera_controller->press(camera_controller_command::movement_type::right));
   inputs.register_keypress(SDL_SCANCODE_W, fps_camera_controller->press(camera_controller_command::movement_type::up));
-  inputs.register_keypress(SDL_SCANCODE_S, fps_camera_controller->press(camera_controller_command::movement_type::down));
-  inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
-  inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
-  inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
-  inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
+  inputs.register_keypress(SDL_SCANCODE_S,
+                           fps_camera_controller->press(camera_controller_command::movement_type::down));
+  inputs.register_keyrelease(SDL_SCANCODE_A,
+                             fps_camera_controller->release(camera_controller_command::movement_type::left));
+  inputs.register_keyrelease(SDL_SCANCODE_D,
+                             fps_camera_controller->release(camera_controller_command::movement_type::right));
+  inputs.register_keyrelease(SDL_SCANCODE_W,
+                             fps_camera_controller->release(camera_controller_command::movement_type::up));
+  inputs.register_keyrelease(SDL_SCANCODE_S,
+                             fps_camera_controller->release(camera_controller_command::movement_type::down));
   inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
   inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
 
@@ -815,13 +842,17 @@ void application::pop_opengl_debug_group()
 }
 
 #ifdef _DEBUG
-application::opengl_debug_group::opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
+application::opengl_debug_group::opengl_debug_group(const char* name) : name_ { name }
+{
+  push_opengl_debug_group(name_);
+}
 application::opengl_debug_group::~opengl_debug_group() { pop_opengl_debug_group(); }
 #else
 application::opengl_debug_group::opengl_debug_group(const char* name) { (void)(name); }
 #endif
 
-application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
+application::application(int argc, char** argv, const std::string& application_name) :
+ resources(argc > 0 ? argv[0] : nullptr)
 {
   inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
   inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
@@ -854,7 +885,8 @@ application::application(int argc, char** argv, const std::string& application_n
     glGenFramebuffers(1, &shadow_depth_fbo);
     glGenTextures(1, &shadow_depth_map);
     glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

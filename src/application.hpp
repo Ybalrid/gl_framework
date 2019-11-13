@@ -31,6 +31,8 @@
 #include "camera_controller.hpp"
 #include "vr_system.hpp"
 
+#include "profiler.hpp"
+
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
 class jet_live_log_listener : public jet::ILiveListener
@@ -38,7 +40,8 @@ class jet_live_log_listener : public jet::ILiveListener
   public:
   void onLog(jet::LogSeverity severity, const std::string& message) override
   {
-    std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message << std::endl; //I'll accept the slow flush here
+    std::cerr << "jet-live " << nameof::nameof_enum(severity) << " " << message
+              << std::endl; //I'll accept the slow flush here
   }
 };
 #endif
@@ -70,6 +73,8 @@ class application
   void render_frame();
   void run_events();
   void setup_scene();
+
+  profiler p;
 
   freeimage free_img;
   resource_system resources;
@@ -133,7 +138,7 @@ class application
     {
       application* parent_;
       void execute() override;
-      toggle_console_keyboard_command_(application* parent) : parent_ { parent } {}
+      toggle_console_keyboard_command_(application* parent) : parent_ { parent } { }
     } toggle_console_keyboard_command { parent_ };
 
     struct toggle_debug_keyboard_command_ : keyboard_input_command
@@ -150,7 +155,7 @@ class application
       toggle_live_code_reload_command_(application* parent) : parent_ { parent } {};
     } toggle_live_code_reload_command { parent_ };
 
-    keyboard_debug_utilities_(application* parent) : parent_ { parent } {}
+    keyboard_debug_utilities_(application* parent) : parent_ { parent } { }
   } keyboard_debug_utilities { this };
 
   vr_system_ptr vr = nullptr;
