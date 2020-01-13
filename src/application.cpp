@@ -166,6 +166,7 @@ void application::draw_debug_ui()
     {
       ImGui::Text("FPS: %d", fps);
       ImGui::Text("%3d objects passed frustum culling", draw_list.size());
+      ImGui::Checkbox("Show profiler window", &profiler::show_profiler_window);
       ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
       ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
       ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
@@ -219,6 +220,8 @@ void application::draw_debug_ui()
     }
 
     if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
+
+    profiler::profiler_window();
   }
 
 #ifndef NON_NAGGING_DEBUG
