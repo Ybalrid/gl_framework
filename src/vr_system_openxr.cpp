@@ -7,6 +7,8 @@
 #define max_properties_count 64
 #include "openxr/openxr_platform.h"
 
+#include "imgui.h"
+
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 
@@ -302,6 +304,7 @@ bool vr_system_openxr::initialize()
     //See comments format enumeration above
     swapchain_create_info.format
         = GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
+                           //GL_RGBA8;
     swapchain_create_info.faceCount = 1;
     swapchain_create_info.arraySize = 1;
     swapchain_create_info.width     = eye_render_target_sizes[i].x;
@@ -474,15 +477,34 @@ void vr_system_openxr::submit_frame_to_vr_system()
 {
   XrResult status;
 
+#if 0
+  if(ImGui::Begin("XR Swapchain Debugger"))
+  {
+    for(size_t i = 0; i < 2; ++i)
+    {
+      constexpr auto factor = 5;
+      ImGui::Columns(2);
+      for(size_t j = 0; j < swapchain_images[i].size(); ++j)
+      {
+        ImGui::Image((ImTextureID)swapchain_images[i][j].image,
+                     { (float)eye_render_target_sizes[i].x / factor, (float)eye_render_target_sizes[i].y / factor });
+      }
+      ImGui::NextColumn();
+    }
+    ImGui::Columns(1);
+  }
+  ImGui::End();
+#endif
+
   //We have two swapchain to use:
   for(size_t i = 0; i < 2; i++)
   {
-    uint32_t index = -1;
+    uint32_t swapchain_index = -1;
     XrSwapchainImageAcquireInfo swapchain_image_acquire_info;
     zero_it(swapchain_image_acquire_info);
     swapchain_image_acquire_info.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
 
-    status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &index);
+    status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &swapchain_index);
     if(status != XR_SUCCESS) { }
 
     XrSwapchainImageWaitInfo swapchain_image_wait_info;
@@ -502,9 +524,6 @@ void vr_system_openxr::submit_frame_to_vr_system()
     layer.subImage.imageRect.offset = { 0, 0 };
     layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
 
-    //We **finally** got access to the texture we have to render to.
-    GLuint dst = swapchain_images[i][index].image;
-
     //When this function has been called, the rendering of the frame to be pushed already occured,
     //we just need to copy the data in them.
     glCopyImageSubData(eye_render_texture[i],
@@ -513,7 +532,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
                        0,
                        0,
                        0,
-                       dst,
+                       swapchain_images[i][swapchain_index].image,
                        GL_TEXTURE_2D,
                        0,
                        0,
@@ -548,6 +567,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
   frame_end_info.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
   frame_end_info.layerCount           = static_array_size(layers);
   frame_end_info.layers               = layers;
+  frame_end_info.displayTime          = current_frame_state.predictedDisplayTime;
 
   status = xrEndFrame(session, &frame_end_info);
 }
