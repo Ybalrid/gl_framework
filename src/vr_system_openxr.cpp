@@ -39,7 +39,9 @@ inline void zero_it(T obj[], size_t count)
 bool vr_system_openxr::initialize()
 {
   std::cout << "Initializing OpenXR based VR system\n";
-  std::cout << getenv("XR_RUNTIME_JSON") << "\n";
+  const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON");
+  if(xr_runtime_json_str != nullptr)
+   std::cout << xr_runtime_json_str << "\n";
 
   //Step one, get XrInstance up and running
 
@@ -220,10 +222,23 @@ bool vr_system_openxr::initialize()
   XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr;
   zero_it(graphics_requirements_opengl_khr);
   graphics_requirements_opengl_khr.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
-  xrGetOpenGLGraphicsRequirementsKHR(instance, system_id, &graphics_requirements_opengl_khr);
-  //It seems not doing the above call cause a validation error
-  std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
-            << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
+
+  //This function needs to be dynamically loaded because it's an extension?
+  PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetOpenGLGraphicsRequirementsKHR_dynamic;
+  const auto has_func = xrGetInstanceProcAddr(
+      instance, "xrGetOpenGLGraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetOpenGLGraphicsRequirementsKHR_dynamic));
+  if(has_func == XR_SUCCESS)
+  {
+    xrGetOpenGLGraphicsRequirementsKHR_dynamic(instance, system_id, &graphics_requirements_opengl_khr);
+    //It seems not doing the above call cause a validation error
+    std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
+              << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
+  }
+  else
+  {
+    std::cerr << "Cannot get pointer to xrGetOpenGLGraphicsRequirementsKHR\n";
+  }
+
 
   //Step 5 create session
   XrSessionCreateInfo session_create_info;
