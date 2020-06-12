@@ -3,7 +3,27 @@
 #include <iostream>
 
 #ifdef _WIN32
-gl_dx11_interop::gl_dx11_interop() { }
+gl_dx11_interop::gl_dx11_interop()
+{
+  //TODO we probably want this to be a singleton, it holds resources that should be unique
+}
+
+gl_dx11_interop::~gl_dx11_interop()
+{
+  for(auto& [id3d11texture, shared_texure] : gl_dx_share_cache)
+  {
+    wglDXUnregisterObjectNV(gl_dx_device, shared_texure.interop_object);
+    glDeleteTextures(1, &shared_texure.intermediate_texture_glid);
+    shared_texure.intermediate_texture->Release();
+  }
+
+  gl_dx_share_cache.clear();
+  wglDXCloseDeviceNV(gl_dx_device);
+
+  swapchain->Release();
+  context->Release();
+  device->Release();
+}
 
 bool gl_dx11_interop::init()
 {
@@ -70,39 +90,34 @@ bool gl_dx11_interop::init()
   return gl_dx_device != nullptr;
 }
 
-
-
-//Returns the last Win32 error, in string format. Returns an empty string if there is no error.
-std::string GetLastErrorAsString()
+void gl_dx11_interop::perform_copy(GLuint gl_image_source,
+                                   ID3D11Texture2D* dx_texture_dst,
+                                   sdl::Vec2i viewport,
+                                   shared_texture& sh_txt) const
 {
-  //Get the error message, if any.
-  DWORD errorMessageID = ::GetLastError();
-  if(errorMessageID == 0) return std::string(); //No error message has been recorded
+  //Copy GL texture to DX11 intermediate texture (via OpenGL)
+  wglDXLockObjectsNV(gl_dx_device, 1, &sh_txt.interop_object);
+  // clang-format off
+  glCopyImageSubData(gl_image_source, 
+                     GL_TEXTURE_2D, 
+                     0, 0, 0, 0, 
+                     sh_txt.intermediate_texture_glid, 
+                     GL_TEXTURE_2D,
+                     0, 0, 0, 0,
+                     viewport.x,
+                     viewport.y, 1);
+  // clang-format on
+  wglDXUnlockObjectsNV(gl_dx_device, 1, &sh_txt.interop_object);
 
-  LPSTR messageBuffer = nullptr;
-  size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                               NULL,
-                               errorMessageID,
-                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               (LPSTR)&messageBuffer,
-                               0,
-                               NULL);
-
-  std::string message(messageBuffer, size);
-
-  //Free the buffer.
-  LocalFree(messageBuffer);
-  return message;
+  //Copy intermediate texture to destination (via D3D11)
+  context->CopyResource(dx_texture_dst, sh_txt.intermediate_texture);
 }
-
-
 
 bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_dst, sdl::Vec2i viewport)
 {
-  const auto cached = gl_dx_share_cache.find(dx_texture_dst);
-  if(cached == std::end(gl_dx_share_cache))
+  const auto cached_texture = gl_dx_share_cache.find(dx_texture_dst);
+  if(cached_texture == std::end(gl_dx_share_cache))
   {
-    //TODO need a texture cache
     D3D11_TEXTURE2D_DESC intermediate_texture_description = {};
     intermediate_texture_description.Width                = viewport.x;
     intermediate_texture_description.Height               = viewport.y;
@@ -125,44 +140,40 @@ bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_d
 
     GLuint dx_texture_gl;
     glGenTextures(1, &dx_texture_gl);
-    BOOL set_shared_handle_result = wglDXSetResourceShareHandleNV(intermediate_texture, shared_handle);
-    HANDLE interop_object
-        = wglDXRegisterObjectNV(gl_dx_device, intermediate_texture, dx_texture_gl, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
-
-    if(interop_object == nullptr)
+    const BOOL set_shared_handle_result = wglDXSetResourceShareHandleNV(intermediate_texture, shared_handle);
+    if(set_shared_handle_result == FALSE)
     {
-      const auto Win32Error = GetLastErrorAsString();
-      std::cerr << Win32Error << std::endl;
       intermediate_texture->Release();
       glDeleteTextures(1, &dx_texture_gl);
       return false;
     }
 
-    shared_texture sh_txt;
-    sh_txt.interop_object = interop_object;
+    const HANDLE interop_object
+        = wglDXRegisterObjectNV(gl_dx_device, intermediate_texture, dx_texture_gl, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
+
+    if(interop_object == nullptr)
+    {
+      intermediate_texture->Release();
+      glDeleteTextures(1, &dx_texture_gl);
+      return false;
+    }
+
+    shared_texture sh_txt            = {};
+    sh_txt.interop_object            = interop_object;
     sh_txt.intermediate_texture_glid = dx_texture_gl;
     sh_txt.shared_handle             = shared_handle;
     sh_txt.intermediate_texture      = intermediate_texture;
 
     gl_dx_share_cache[dx_texture_dst] = sh_txt;
 
-    if(copy(gl_image_source, dx_texture_dst, viewport))
-    { return true;
-    }
-    else
-    {
-      std::cerr << "did not register shard texture properly\n";
-    }
+    if(copy(gl_image_source, dx_texture_dst, viewport)) { return true; }
+    std::cerr << "did not register shard texture properly\n";
+    return false;
   }
 
-  auto sh_txt = cached->second;
+  auto sh_txt = cached_texture->second;
 
-  wglDXLockObjectsNV(gl_dx_device, 1, &sh_txt.interop_object);
-  glCopyImageSubData(
-      gl_image_source, GL_TEXTURE_2D, 0, 0, 0, 0, sh_txt.intermediate_texture_glid, GL_TEXTURE_2D, 0, 0, 0, 0, viewport.x, viewport.y, 1);
-  wglDXUnlockObjectsNV(gl_dx_device, 1, &sh_txt.interop_object);
-
-  context->CopyResource(dx_texture_dst, sh_txt.intermediate_texture);
+  perform_copy(gl_image_source, dx_texture_dst, viewport, sh_txt);
   return true;
 }
 

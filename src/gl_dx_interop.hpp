@@ -13,19 +13,15 @@
 class gl_dx11_interop
 {
   public:
-
-
-
   gl_dx11_interop();
   gl_dx11_interop(const gl_dx11_interop&) = delete;
   gl_dx11_interop& operator=(const gl_dx11_interop&) = delete;
 
+  ~gl_dx11_interop();
+
   bool init();
 
-  ID3D11Device* get_device() const
-  {
-    return device;
-  }
+  ID3D11Device* get_device() const { return device; }
 
   bool copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_dst, sdl::Vec2i viewport);
 
@@ -46,10 +42,8 @@ class gl_dx11_interop
     GLuint intermediate_texture_glid;
   };
 
+  void perform_copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_dst, sdl::Vec2i viewport, shared_texture& sh_txt) const;
   std::unordered_map<ID3D11Texture2D*, shared_texture> gl_dx_share_cache;
-
-
-
 };
 
 #endif
