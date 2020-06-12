@@ -5,13 +5,17 @@
 //Configure XR headers
 #define XR_USE_GRAPHICS_API_OPENGL
 #ifdef WIN32
+#define XR_USE_GRAPHICS_API_D3D11
 #define XR_USE_PLATFORM_WIN32
+#include "gl_dx_interop.hpp"
 #else
 #define XR_USE_PLATFORM_XLIB
 #endif
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+
+
 class vr_system_openxr : public vr_system
 {
   XrInstance instance      = XR_NULL_HANDLE;
@@ -20,13 +24,21 @@ class vr_system_openxr : public vr_system
   XrSwapchain swapchain[2] = { 0 };
   XrViewConfigurationType used_view_configuration_type;
   std::vector<XrView> views;
-  std::vector<XrSwapchainImageOpenGLKHR> swapchain_images[2];
+  std::vector<XrSwapchainImageOpenGLKHR> swapchain_images_opengl[2];
+#ifdef _WIN32
+  std::vector<XrSwapchainImageD3D11KHR> swapchain_images_d3d11[2];
+#endif
   XrFrameState current_frame_state;
   XrCompositionLayerBaseHeader* layers[1];
   XrCompositionLayerProjectionView projection_layer_views[2];
   XrSpace application_space = XR_NULL_HANDLE;
 
   node* eye_camera_node[2] = { nullptr, nullptr };
+
+#ifdef WIN32
+  gl_dx11_interop dx11_interop;
+  bool fallback_to_dx = false;
+#endif
 
   public:
   vr_system_openxr() = default;

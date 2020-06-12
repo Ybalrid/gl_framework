@@ -94,7 +94,29 @@ bool vr_system_openxr::initialize()
   if(status = xrCreateInstance(&instance_create_info, &instance); status != XR_SUCCESS)
   {
     std::cerr << "error while creating XrInstance\n";
-    return false; //we cannot recuperate from this
+
+    //attempt to create instance in D3D11 mode...
+    extension_properties_names.back() = "XR_KHR_D3D11_enable";
+#ifdef _WIN32
+    std::cerr << "attempt directx interop fallback...\n";
+    if(dx11_interop.init())
+    {
+      if(auto dx_status = xrCreateInstance(&instance_create_info, &instance); dx_status == XR_SUCCESS)
+      {
+        fallback_to_dx = true;
+      }
+      else
+      {
+        return false; //we cannot recuperate from this
+      }
+    }
+    else
+    {
+      return false;
+    }
+#else
+    return false;
+#endif
   }
   std::cout << "xrCreateInstance() == XR_SUCCESS\n";
 
@@ -219,25 +241,55 @@ bool vr_system_openxr::initialize()
   //TODO xrSuggestInteractionProfileBindings()
 
   //Step 4 : Request graphcics backed requiredment for OpenGL
-  XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr;
-  zero_it(graphics_requirements_opengl_khr);
-  graphics_requirements_opengl_khr.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
 
-  //This function needs to be dynamically loaded because it's an extension?
-  PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetOpenGLGraphicsRequirementsKHR_dynamic;
-  const auto has_func = xrGetInstanceProcAddr(
-      instance, "xrGetOpenGLGraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetOpenGLGraphicsRequirementsKHR_dynamic));
-  if(has_func == XR_SUCCESS)
+#ifdef _WIN32
+  if(!fallback_to_dx)
   {
-    xrGetOpenGLGraphicsRequirementsKHR_dynamic(instance, system_id, &graphics_requirements_opengl_khr);
-    //It seems not doing the above call cause a validation error
-    std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
-              << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
+#endif
+    XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr;
+    zero_it(graphics_requirements_opengl_khr);
+    graphics_requirements_opengl_khr.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
+
+    //This function needs to be dynamically loaded because it's an extension?
+    PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetOpenGLGraphicsRequirementsKHR_dynamic;
+    const auto has_func
+        = xrGetInstanceProcAddr(instance,
+                                "xrGetOpenGLGraphicsRequirementsKHR",
+                                reinterpret_cast<PFN_xrVoidFunction*>(&xrGetOpenGLGraphicsRequirementsKHR_dynamic));
+    if(has_func == XR_SUCCESS)
+    {
+      xrGetOpenGLGraphicsRequirementsKHR_dynamic(instance, system_id, &graphics_requirements_opengl_khr);
+      //It seems not doing the above call cause a validation error
+      std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
+                << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
+    }
+    else
+    {
+      std::cerr << "Cannot get pointer to xrGetOpenGLGraphicsRequirementsKHR\n";
+    }
+#ifdef _WIN32
   }
   else
   {
-    std::cerr << "Cannot get pointer to xrGetOpenGLGraphicsRequirementsKHR\n";
+    XrGraphicsRequirementsD3D11KHR graphics_requirements_d3d11_khr;
+    zero_it(graphics_requirements_d3d11_khr);
+    graphics_requirements_d3d11_khr.type = XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR;
+
+    PFN_xrGetD3D11GraphicsRequirementsKHR xrGetD3D11GraphicsRequirementsKHR;
+    const auto has_func = xrGetInstanceProcAddr(
+                   instance, "xrGetD3D11GraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetD3D11GraphicsRequirementsKHR));
+    if(has_func == XR_SUCCESS)
+    {
+      xrGetD3D11GraphicsRequirementsKHR(instance, system_id, &graphics_requirements_d3d11_khr);
+      std::cout << "Minimal D3D11 feature level required " << NAMEOF_ENUM(graphics_requirements_d3d11_khr.minFeatureLevel) << "\n";
+    }
+    else
+    {
+      std::cerr << "Cannot get pointer to xrGetD3D11GraphicsRequirementsKHR\n";
+    }
+               
   }
+#endif
 
 
   //Step 5 create session
@@ -249,17 +301,22 @@ bool vr_system_openxr::initialize()
   //we need to get ghe graphics bindings that correspond to the choosen graphics API and windowing system
 #ifdef WIN32
   XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding;
+  XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11;
   zero_it(xr_graphics_binding);
+  zero_it(xr_graphics_binding_d3d11);
   xr_graphics_binding.type  = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
   xr_graphics_binding.hGLRC = wglGetCurrentContext();
   xr_graphics_binding.hDC   = wglGetCurrentDC();
+  xr_graphics_binding_d3d11.type = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
+  xr_graphics_binding_d3d11.device = dx11_interop.get_device();
+  session_create_info.next = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
 #else
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
   zero_it(xr_graphics_binding);
   //TODO test on linux X11 OpenGL with glXGetCurrentContext(); and glXGetCurrentDrawable(); Probably SDL syswminfo too
   this_is_broken_right_here();
-#endif
   session_create_info.next = &xr_graphics_binding;
+#endif
 
   if(status = xrCreateSession(instance, &session_create_info, &session); status != XR_SUCCESS)
   { std::cerr << "error: cannot create session " << NAMEOF_ENUM(status) << "\n"; }
@@ -288,25 +345,48 @@ bool vr_system_openxr::initialize()
   uint32_t format_count = 0;
   xrEnumerateSwapchainFormats(session, 32, &format_count, format);
 
+  //TODO switch between GL and D3D11
   //This is the format we want...
-  if(std::find(std::begin(format), std::end(format), GL_RGBA8) != std::end(format))
-  { std::cout << "found GL_RGBA8 in possible format list\n"; }
+#ifdef _WIN32
+  if(!fallback_to_dx)
+  {
+#endif
+    if(std::find(std::begin(format), std::end(format), GL_RGBA8) != std::end(format))
+    { std::cout << "found GL_RGBA8 in possible format list\n"; }
+    else
+    {
+      std::cerr << "OpenGL texture format GL_RGBA8 not found within the supported formats by OpenXR runtime\n";
+      return false;
+    }
+
+    //...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
+    if(std::find(std::begin(format), std::end(format), GL_SRGB8_ALPHA8) != std::end(format))
+    { std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n"; }
+    else
+    {
+      std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
+      return false;
+    }
+
+#ifdef _WIN32
+  }
   else
   {
-    std::cerr << "OpenGL texture format GL_RGBA8 not found within the supported formats by OpenXR runtime\n";
-    return false;
-  }
+    if(std::find(std::begin(format), std::end(format), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) != std::end(format))
+    { std::cout << "found DXGI_FORMAT_R8G8B8A8_UNORM_SRGB in possible format list\n"; }
+    else
+    {
+      std::cerr
+          << "DXGI Format DXGI_FORMAT_R8G8B8A8_UNORM_SRGB not found within the list of supported formats by OpenXR runtime\n";
+      return false;
+    }
 
-  //...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
-  if(std::find(std::begin(format), std::end(format), GL_SRGB8_ALPHA8) != std::end(format))
-  { std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n"; }
-  else
-  {
-    std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
-    return false;
-  }
 
-  //We are going
+    //TODO find our image format for some RGBA or BGRA or whatever we can manage to get here
+  }
+#endif
+
+  //We are going to do stereo rendering, we want one swapchain per eye
   for(size_t i = 0; i < 2; ++i)
   {
     XrSwapchainCreateInfo swapchain_create_info;
@@ -317,9 +397,11 @@ bool vr_system_openxr::initialize()
     swapchain_create_info.mipCount    = 1;
     swapchain_create_info.sampleCount = 1;
     //See comments format enumeration above
-    swapchain_create_info.format
-        = GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
-                           //GL_RGBA8;
+    swapchain_create_info.format = fallback_to_dx
+        ? (int64_t)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+        : (int64_t)
+            GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
+                             //GL_RGBA8;
     swapchain_create_info.faceCount = 1;
     swapchain_create_info.arraySize = 1;
     swapchain_create_info.width     = eye_render_target_sizes[i].x;
@@ -329,18 +411,45 @@ bool vr_system_openxr::initialize()
 
     uint32_t swapchain_image_count = 0;
     XrSwapchainImageOpenGLKHR swapchain_image_opengl_khr[8];
-    zero_it(swapchain_image_opengl_khr, 8);
-    for(auto& image_opengl : swapchain_image_opengl_khr) image_opengl.type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
-    if(status = xrEnumerateSwapchainImages(
-           swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_opengl_khr);
-       status != XR_SUCCESS)
-    { std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n"; }
+
+#ifdef _WIN32
+    XrSwapchainImageD3D11KHR swapchain_image_d3d11_khr[8];
+    if(!fallback_to_dx)
+    {
+#endif
+      zero_it(swapchain_image_opengl_khr, 8);
+      for(auto& image_opengl : swapchain_image_opengl_khr) image_opengl.type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
+      if(status = xrEnumerateSwapchainImages(
+             swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_opengl_khr);
+         status != XR_SUCCESS)
+      { std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n"; }
+      else
+      {
+        std::cout << "this swapchain has " << swapchain_image_count << " images.\n";
+        for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
+        { swapchain_images_opengl[i].push_back(swapchain_image_opengl_khr[img_index]); }
+      }
+#ifdef _WIN32
+    }
     else
     {
-      std::cout << "this swapchain has " << swapchain_image_count << " images.\n";
-      for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
-      { swapchain_images[i].push_back(swapchain_image_opengl_khr[img_index]); }
+      zero_it(swapchain_image_d3d11_khr, 8);
+      for(auto& image_d3d11 : swapchain_image_d3d11_khr)
+      {
+        if(status = xrEnumerateSwapchainImages(
+               swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_d3d11_khr);
+           status != XR_SUCCESS)
+        {
+          std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n";
+        }
+        else
+        {
+          for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
+          { swapchain_images_d3d11[i].push_back(swapchain_image_d3d11_khr[img_index]); }
+        }
+      }
     }
+#endif
   }
 
   //Step 8 "Begin" the session itself
@@ -441,7 +550,7 @@ void vr_system_openxr::wait_until_next_frame()
   if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
   { std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n"; }
 
-  //Now the framestate contains the timing information for geting the view location, we can begin a new frame
+  //Now the framestate contains the timing information for getting the view location, we can begin a new frame
   XrFrameBeginInfo frame_begin_info;
   zero_it(frame_begin_info);
   frame_begin_info.type = XR_TYPE_FRAME_BEGIN_INFO;
@@ -499,9 +608,9 @@ void vr_system_openxr::submit_frame_to_vr_system()
     {
       constexpr auto factor = 5;
       ImGui::Columns(2);
-      for(size_t j = 0; j < swapchain_images[i].size(); ++j)
+      for(size_t j = 0; j < swapchain_images_opengl[i].size(); ++j)
       {
-        ImGui::Image((ImTextureID)swapchain_images[i][j].image,
+        ImGui::Image((ImTextureID)swapchain_images_opengl[i][j].image,
                      { (float)eye_render_target_sizes[i].x / factor, (float)eye_render_target_sizes[i].y / factor });
       }
       ImGui::NextColumn();
@@ -541,21 +650,33 @@ void vr_system_openxr::submit_frame_to_vr_system()
 
     //When this function has been called, the rendering of the frame to be pushed already occured,
     //we just need to copy the data in them.
-    glCopyImageSubData(eye_render_texture[i],
-                       GL_TEXTURE_2D,
-                       0,
-                       0,
-                       0,
-                       0,
-                       swapchain_images[i][swapchain_index].image,
-                       GL_TEXTURE_2D,
-                       0,
-                       0,
-                       0,
-                       0,
-                       eye_render_target_sizes[i].x,
-                       eye_render_target_sizes[i].y,
-                       1);
+#ifdef _WIN32
+    if(!fallback_to_dx)
+    {
+#endif
+      glCopyImageSubData(eye_render_texture[i],
+                         GL_TEXTURE_2D,
+                         0,
+                         0,
+                         0,
+                         0,
+                         swapchain_images_opengl[i][swapchain_index].image,
+                         GL_TEXTURE_2D,
+                         0,
+                         0,
+                         0,
+                         0,
+                         eye_render_target_sizes[i].x,
+                         eye_render_target_sizes[i].y,
+                         1);
+
+#ifdef _WIN32
+    }
+    else
+    {
+      dx11_interop.copy(eye_render_texture[i], swapchain_images_d3d11[i][swapchain_index].texture, eye_render_target_sizes[i]);
+    }
+#endif
 
     projection_layer_views[i] = layer;
 
