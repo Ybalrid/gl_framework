@@ -11,6 +11,7 @@
 
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
+bool vr_system_openxr::need_to_vflip = false;
 
 vr_system_openxr::~vr_system_openxr()
 {
@@ -104,6 +105,7 @@ bool vr_system_openxr::initialize()
       if(auto dx_status = xrCreateInstance(&instance_create_info, &instance); dx_status == XR_SUCCESS)
       {
         fallback_to_dx = true;
+        need_to_vflip  = true;
       }
       else
       {
@@ -507,6 +509,8 @@ void compute_projection_matrix_for_view(XrView* view, glm::mat4& output, float n
                         near_plane * glm::tan(view->fov.angleUp),
                         near_plane,
                         far_plane);
+
+  if(vr_system_openxr::need_to_vflip) output[1][1] *= -1.0f;
 }
 
 //Callback for the cameras

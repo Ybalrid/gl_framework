@@ -8,15 +8,13 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
+#include <unordered_map>
+
 class gl_dx11_interop
 {
   public:
 
-  struct shared_texture
-  {
-    ID3D11Texture2D* texture;
-    HANDLE shared_handle;
-  };
+
 
   gl_dx11_interop();
   gl_dx11_interop(const gl_dx11_interop&) = delete;
@@ -39,6 +37,17 @@ class gl_dx11_interop
   HWND dummy_window                 = nullptr;
   HINSTANCE instance                = nullptr;
   HANDLE gl_dx_device               = nullptr;
+
+  struct shared_texture
+  {
+    HANDLE interop_object;
+    HANDLE shared_handle;
+    ID3D11Texture2D* intermediate_texture;
+    GLuint intermediate_texture_glid;
+  };
+
+  std::unordered_map<ID3D11Texture2D*, shared_texture> gl_dx_share_cache;
+
 
 
 };

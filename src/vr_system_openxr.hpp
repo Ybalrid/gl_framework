@@ -40,7 +40,11 @@ class vr_system_openxr : public vr_system
   bool fallback_to_dx = false;
 #endif
 
+
   public:
+
+  static bool need_to_vflip;
+
   vr_system_openxr() = default;
 
   virtual ~vr_system_openxr();
