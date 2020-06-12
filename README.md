@@ -81,6 +81,13 @@ Currently supported vr systems are:
 Support is planned support for
  - `"oculusvr"`
 
+#### OpenXR DirectX11 Fallback system
+
+On Win32 platforms, a situation can occur where the currently installed OpenXR runtime can only be rendered to using DirectX 
+(At the time of writing WMR and SteamVR do not provide the OpenGL extension). The `vr_sytem_openxr` will attempt to create an
+OpenGL version of the system first, then if it fails, it will fallback to DirectX11. Performance with DirectX11 may be slightly
+lower due to an extra texture copy being performed to share the texture between the two runtimes.
+
 ### Scripting
 
 //TODO

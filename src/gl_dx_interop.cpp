@@ -167,7 +167,7 @@ bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_d
     gl_dx_share_cache[dx_texture_dst] = sh_txt;
 
     if(copy(gl_image_source, dx_texture_dst, viewport)) { return true; }
-    std::cerr << "did not register shard texture properly\n";
+    std::cerr << "did not register shared texture properly\n";
     return false;
   }
 
