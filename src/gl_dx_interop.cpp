@@ -100,12 +100,13 @@ std::string GetLastErrorAsString()
 
 bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_dst, sdl::Vec2i viewport)
 {
+  //TODO need a texture cache
   D3D11_TEXTURE2D_DESC intermediate_texture_description = {};
   intermediate_texture_description.Width                = viewport.x;
   intermediate_texture_description.Height               = viewport.y;
   intermediate_texture_description.MipLevels            = 1;
   intermediate_texture_description.ArraySize            = 1;
-  intermediate_texture_description.Format               = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+  intermediate_texture_description.Format               = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
   intermediate_texture_description.SampleDesc.Count     = 1;
   intermediate_texture_description.Usage                = D3D11_USAGE_DEFAULT;
   intermediate_texture_description.BindFlags            = 0;
@@ -118,38 +119,38 @@ bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_d
     return false;
   }
 
-  IDXGISurface* intermediate_surface = nullptr;
-  intermediate_texture->QueryInterface(__uuidof(IDXGISurface), (void**)&intermediate_surface);
-  if(!intermediate_surface)
+  HANDLE shared_handle = 0;
+  IDXGIResource* resource = nullptr;
+  intermediate_texture->QueryInterface(__uuidof(IDXGIResource), (void**)&resource);
+  if(resource)
+  resource->GetSharedHandle(&shared_handle);
+
+  GLuint dx_texture_gl;
+  glGenTextures(1, &dx_texture_gl);
+  BOOL set_shared_handle_result = wglDXSetResourceShareHandleNV(intermediate_texture, shared_handle);
+  HANDLE interop_object
+      = wglDXRegisterObjectNV(gl_dx_device, intermediate_texture, dx_texture_gl, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
+
+  if(interop_object == nullptr)
   {
+    const auto Win32Error = GetLastErrorAsString();
+    std::cerr << Win32Error << std::endl;
+    intermediate_texture->Release();
+    glDeleteTextures(1, &dx_texture_gl);
     return false;
   }
 
-  //TODO need a cache for dx_textures
-  GLuint dx_texture_gl;
-  glGenTextures(1, &dx_texture_gl);
-  HANDLE interop_object
-      = wglDXRegisterObjectNV(gl_dx_device, intermediate_surface, dx_texture_gl, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
-
-  //if(interop_object == nullptr)
-  //{
-  //  const auto Win32Error = GetLastErrorAsString();
-  //  std::cerr << Win32Error << std::endl;
-  //  glDeleteTextures(1, &dx_texture_gl);
-  //  return false;
-  //}
-
+  wglDXLockObjectsNV(gl_dx_device, 1, &interop_object);
   glCopyImageSubData(
       gl_image_source, GL_TEXTURE_2D, 0, 0, 0, 0, dx_texture_gl, GL_TEXTURE_2D, 0, 0, 0, 0, viewport.x, viewport.y, 1);
-  glFlush();
-  if(interop_object)
+  wglDXUnlockObjectsNV(gl_dx_device, 1, &interop_object);
   wglDXUnregisterObjectNV(gl_dx_device, interop_object);
+
+
   glDeleteTextures(1, &dx_texture_gl);
 
   context->CopyResource(dx_texture_dst, intermediate_texture);
-
   intermediate_texture->Release();
-
   return true;
 }
 
