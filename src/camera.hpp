@@ -15,7 +15,7 @@ class camera
   ///By default, the projection mode of a camera is perspective
   projection_mode projection_type { perspective };
 
-  ///This function pointer is a callback to be used for feeding the projection matrix from either the Oculus or SteamVR SDKs
+  ///This function pointer is a callback to be used for feeding the projection matrix from either a VR runtime (SteamVR, Oculus, or OpenXR)
   void (*vr_eye_projection_callback)(glm::mat4& projection_output, float near_clip, float far_clip) = nullptr;
 
   float near_clip = 0.25f;
