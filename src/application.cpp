@@ -582,7 +582,10 @@ void application::render_frame()
 
   if(vr)
   {
-    //TODO use VR cameras instead
+    //We invert the culling position if the vr system returns true to must_vflip.
+    //This is because this system will do a vertical flip in the projection matrix.
+    if(vr->must_vflip()) glFrontFace(GL_CCW);
+
     const sdl::Vec2i left_size  = vr->get_eye_framebuffer_size(vr_system::eye::left),
                      right_size = vr->get_eye_framebuffer_size(vr_system::eye::right);
 
@@ -602,6 +605,7 @@ void application::render_frame()
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     vr->submit_frame_to_vr_system();
+    if(vr->must_vflip()) glFrontFace(GL_CW);
   }
 
   const auto window_size = window.size();
@@ -904,9 +908,9 @@ application::application(int argc, char** argv, const std::string& application_n
   }
 
   glEnable(GL_DEPTH_TEST);
-  //glEnable(GL_CULL_FACE);
-  //glCullFace(GL_FRONT);
-  //glFrontFace(GL_CW);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_FRONT);
+  glFrontFace(GL_CW);
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

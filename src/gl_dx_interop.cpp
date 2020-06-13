@@ -79,11 +79,11 @@ bool gl_dx11_interop::init()
     return false;
   }
 
-  if(!wglewIsSupported("WGL_NV_DX_interop"))
-  {
-    std::cerr << "WGL_NV_DX_interop is not supported by the current OpenGL context!\n";
-    return false;
-  }
+  //if(!wglewIsSupported("WGL_NV_DX_interop"))
+  //{
+  //  std::cerr << "WGL_NV_DX_interop is not supported by the current OpenGL context!\n";
+  //  return false;
+  //}
 
   gl_dx_device = wglDXOpenDeviceNV(device);
 

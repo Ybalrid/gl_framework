@@ -657,21 +657,14 @@ void vr_system_openxr::submit_frame_to_vr_system()
     if(!fallback_to_dx)
     {
 #endif
+      // clang-format off
       glCopyImageSubData(eye_render_texture[i],
-                         GL_TEXTURE_2D,
-                         0,
-                         0,
-                         0,
-                         0,
+                         GL_TEXTURE_2D, 0,0,0,0,
                          swapchain_images_opengl[i][swapchain_index].image,
-                         GL_TEXTURE_2D,
-                         0,
-                         0,
-                         0,
-                         0,
+                         GL_TEXTURE_2D, 0,0,0,0,
                          eye_render_target_sizes[i].x,
-                         eye_render_target_sizes[i].y,
-                         1);
+                         eye_render_target_sizes[i].y, 1);
+      // clang-format on
 
 #ifdef _WIN32
     }
