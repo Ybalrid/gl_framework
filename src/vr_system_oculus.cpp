@@ -13,8 +13,12 @@ struct log_ctx
   std::mutex mtx;
 } logger_lock;
 
+vr_system_oculus::vr_system_oculus() : vr_system() { std::cout << "Initialized Oculus VR based vr_system implementation\n"; }
+
 vr_system_oculus::~vr_system_oculus()
 {
+  std::cout << "Deinitialized Oculus VR based vr_system implementation\n";
+
   ovr_Destroy(session);
   ovr_Shutdown();
 }
@@ -97,44 +101,13 @@ bool vr_system_oculus::initialize()
   layer.Viewport[0]     = OVR::Recti { 0, 0, texture_sizes[0].w, texture_sizes[0].h };
   layer.Viewport[1]     = OVR::Recti { 0, 0, texture_sizes[1].w, texture_sizes[1].h };
 
-  //OpenGL resource initialization
-
-  //The rest of the engine don't care bout our "VR" hardware.
-  //It just want to bind and render to a pair of FBOs, one for left eye, one for right
-  glGenTextures(2, eye_render_texture);
-  glGenRenderbuffers(2, eye_render_depth);
-  glGenFramebuffers(2, eye_fbo);
-
-  for(size_t i = 0; i < 2; ++i)
-  {
-    auto w = eye_render_target_sizes[i].x;
-    auto h = eye_render_target_sizes[i].y;
-    //Configure textures
-    glBindFramebuffer(GL_FRAMEBUFFER, eye_fbo[i]);
-    glBindTexture(GL_TEXTURE_2D, eye_render_texture[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, eye_render_texture[i], 0);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, eye_render_depth[i]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, eye_render_depth[i]);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    { std::cerr << "eye fbo " << i << " is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "\n"; }
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
   return true;
 }
 
 void vr_system_oculus::left_eye_oculus_projection(glm::mat4& output, float near_plane, float far_plane)
 {
   const auto& fov   = layer.Fov[0];
-  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjectionModifier::ovrProjection_ClipRangeOpenGL);
+  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjection_ClipRangeOpenGL);
   output            = glm::make_mat4x4((float*)&matrix.M[0][0]);
   output            = glm::transpose(output);
 }
@@ -142,7 +115,7 @@ void vr_system_oculus::left_eye_oculus_projection(glm::mat4& output, float near_
 void vr_system_oculus::right_eye_oculus_projection(glm::mat4& output, float near_plane, float far_plane)
 {
   const auto& fov   = layer.Fov[1];
-  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjectionModifier::ovrProjection_ClipRangeOpenGL);
+  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjection_ClipRangeOpenGL);
   output            = glm::make_mat4x4((float*)&matrix.M[0][0]);
   output            = glm::transpose(output);
 }
@@ -181,9 +154,8 @@ void vr_system_oculus::update_tracking()
 
   eye_to_hmd_pose[0] = eyes[0].HmdToEyePose;
   eye_to_hmd_pose[1] = eyes[1].HmdToEyePose;
-
-  //ovr_CalcEyePoses(ts.HeadPose.ThePose, eye_to_hmd_pose, layer.RenderPose); //This changed??
   ovr_GetEyePoses(session, frame_counter, ovrTrue, eye_to_hmd_pose, layer.RenderPose, &layer.SensorSampleTime);
+
   for(auto eye = 0; eye < 2; ++eye)
   {
     eye_camera_node[eye]->local_xform.set_position(glm::make_vec3((float*)&eyes[eye].HmdToEyePose.Position));
@@ -213,13 +185,12 @@ void vr_system_oculus::submit_frame_to_vr_system()
                        GL_TEXTURE_2D,
                        0,0,0,0,
                        eye_render_target_sizes[eye].x,
-                       eye_render_target_sizes[eye].y,1);
+                       eye_render_target_sizes[eye].y, 1);
     // clang-format on
     ovr_CommitTextureSwapChain(session, swapchains[eye]);
   }
-  auto layers = &layer.Header;
+  const auto* layers = &layer.Header;
   ovr_EndFrame(session, frame_counter, nullptr, &layers, 1);
   frame_counter++;
 }
-
 #endif

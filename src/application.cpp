@@ -841,12 +841,6 @@ application::application(int argc, char** argv, const std::string& application_n
     resource_system::add_location(pak);
   }
 
-  //const auto files = resource_system::list_files("/", true);
-  //for(const auto& file : files)
-  //{
-  //	std::cout << file << '\n';
-  //}
-
   configure_and_create_window(application_name);
   create_opengl_context();
   initialize_modern_opengl();
@@ -854,7 +848,13 @@ application::application(int argc, char** argv, const std::string& application_n
   initialize_gui();
 
   //attempt init VR
-  if(vr && !vr->initialize()) vr = nullptr;
+  if(vr)
+  {
+    if(vr->initialize())
+      vr->initialize_opengl_resources();
+    else
+      vr = nullptr;
+  }
 
   try
   {

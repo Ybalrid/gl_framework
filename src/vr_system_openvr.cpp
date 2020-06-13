@@ -15,7 +15,7 @@ inline glm::mat4 get_mat4_from_34(const vr::HmdMatrix34_t& mat)
            mat.m[2][0], mat.m[2][1], mat.m[2][2], mat.m[2][3], 0.0f,        0.0f,        0.0f,        1.0f };
 }
 
-//TODO we need a "pose" abstraction instead of a tuple here
+//TODO we need a "pose" abstraction instead of a tuple here D:
 inline std::tuple<glm::vec3, glm::quat> get_translation_roation(const glm::mat4& mat)
 {
   static glm::vec3 tr, sc, sk;
@@ -23,11 +23,12 @@ inline std::tuple<glm::vec3, glm::quat> get_translation_roation(const glm::mat4&
   static glm::quat rot;
 
   glm::decompose(mat, sc, rot, tr, sk, persp);
-  rot = glm::normalize(rot);
+  rot = glm::normalize(rot); //TODO check if it doesn't break if we skip that.
   return std::tie(tr, rot);
 }
 
 vr_system_openvr::vr_system_openvr() : vr_system() { std::cout << "Initialized OpenVR based vr_system implementation\n"; }
+
 vr_system_openvr::~vr_system_openvr()
 {
   std::cout << "Deinitialized OpenVR based vr_system implementation\n";
@@ -50,7 +51,7 @@ bool vr_system_openvr::initialize()
   }
 
   std::string runtime_path;
-  char buffer[1024];
+  //char buffer[1024];
 
   if(!vr::VR_IsHmdPresent())
   {
@@ -78,10 +79,6 @@ bool vr_system_openvr::initialize()
     return false;
   }
 
-  //Create eye render textures
-  glGenTextures(2, eye_render_texture);
-  glGenRenderbuffers(2, eye_render_depth);
-  glGenFramebuffers(2, eye_fbo);
   for(size_t i = 0; i < 2; i++)
   {
     //Acquire textures sizes
@@ -89,37 +86,11 @@ bool vr_system_openvr::initialize()
     hmd->GetRecommendedRenderTargetSize(&w, &h);
     eye_render_target_sizes[i].x = w;
     eye_render_target_sizes[i].y = h;
-
-    std::cout << "Initializing FBO for eye " << i << " with pixel size " << w << "x" << h << "\n";
-
-    //Configure textures
-    glBindFramebuffer(GL_FRAMEBUFFER, eye_fbo[i]);
-    glBindTexture(GL_TEXTURE_2D, eye_render_texture[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    //glGenerateMipmap(GL_TEXTURE_2D);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, eye_render_texture[i], 0);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, eye_render_depth[i]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, eye_render_depth[i]);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    { std::cerr << "eye fbo " << i << " is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "\n"; }
-
-    //Build texture handles for SteamVR
-    texture_handlers[i].eColorSpace = vr::EColorSpace::ColorSpace_Auto;
-    texture_handlers[i].eType       = vr::ETextureType::TextureType_OpenGL;
-    texture_handlers[i].handle      = (void*)eye_render_texture[i];
   }
-  //Unbound any left bound framebuffers
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   init_success      = true;
   static_access_hmd = hmd;
+
   return init_success;
 }
 
@@ -140,44 +111,9 @@ void vr_system_openvr::deinitialize_openvr()
   }
 }
 
-void vr_system_openvr::update_tracking()
-{
-  glm::mat4 head_tracking = glm::mat4(1);
-  for(size_t i = 0; i < vr::k_unMaxTrackedDeviceCount; ++i)
-  {
-    if(tracked_device_pose_array[i].bPoseIsValid)
-    {
-      if(hmd->GetTrackedDeviceClass(i) == vr::TrackedDeviceClass_HMD)
-      { head_tracking = glm::transpose(get_mat4_from_34(tracked_device_pose_array[i].mDeviceToAbsoluteTracking)); }
-    }
-  }
-
-  //update node local transforms with openvr tracked objects
-  const auto [translation, rotation] = get_translation_roation(head_tracking);
-  head_node->local_xform.set_position(translation);
-  head_node->local_xform.set_orientation(rotation);
-
-  //update nodes world transforms
-  vr_tracking_anchor->update_world_matrix();
-
-  for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
-}
-
 void vr_system_openvr::wait_until_next_frame()
 {
   vr::VRCompositor()->WaitGetPoses(tracked_device_pose_array, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
-}
-
-#include "imgui.h"
-
-void vr_system_openvr::submit_frame_to_vr_system()
-{
-  const auto left_error  = vr::VRCompositor()->Submit(vr::Eye_Left, &texture_handlers[0]);
-  const auto right_error = vr::VRCompositor()->Submit(vr::Eye_Right, &texture_handlers[1]);
-  glFlush();
-
-  if(left_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(left_error) << "\n"; }
-  if(right_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(right_error) << "\n"; }
 }
 
 void vr_system_openvr::build_camera_node_system()
@@ -212,6 +148,14 @@ void vr_system_openvr::build_camera_node_system()
   eye_camera[1]->vr_eye_projection_callback = &get_right_eye_proj_matrix;
   eye_camera[0]->projection_type            = camera::projection_mode::eye_vr;
   eye_camera[1]->projection_type            = camera::projection_mode::eye_vr;
+
+  for(int eye = 0; eye < 2; ++eye)
+  {
+    texture_handlers[eye].handle = (void*)eye_render_texture[eye];
+    texture_handlers[eye].eType  = vr::TextureType_OpenGL;
+    texture_handlers[eye].eColorSpace = vr::ColorSpace_Auto;
+  }
+
 }
 
 void vr_system_openvr::get_left_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
@@ -222,5 +166,38 @@ void vr_system_openvr::get_left_eye_proj_matrix(glm::mat4& matrix, float near_cl
 void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
 {
   matrix = glm::transpose(glm::make_mat4((float*)static_access_hmd->GetProjectionMatrix(vr::Eye_Right, near_clip, far_clip).m));
+}
+
+void vr_system_openvr::update_tracking()
+{
+  glm::mat4 head_tracking = glm::mat4(1);
+  for(vr::TrackedDeviceIndex_t device_index = 0; device_index < vr::k_unMaxTrackedDeviceCount; ++device_index)
+  {
+    if(tracked_device_pose_array[device_index].bPoseIsValid)
+    {
+      if(hmd->GetTrackedDeviceClass(device_index) == vr::TrackedDeviceClass_HMD)
+      { head_tracking = glm::transpose(get_mat4_from_34(tracked_device_pose_array[device_index].mDeviceToAbsoluteTracking)); }
+    }
+  }
+
+  //update node local transforms with openvr tracked objects
+  const auto [translation, rotation] = get_translation_roation(head_tracking);
+  head_node->local_xform.set_position(translation);
+  head_node->local_xform.set_orientation(rotation);
+
+  //update nodes world transforms
+  vr_tracking_anchor->update_world_matrix();
+
+  for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
+}
+
+void vr_system_openvr::submit_frame_to_vr_system()
+{
+  const auto left_error  = vr::VRCompositor()->Submit(vr::Eye_Left, &texture_handlers[0]);
+  const auto right_error = vr::VRCompositor()->Submit(vr::Eye_Right, &texture_handlers[1]);
+  glFlush();
+
+  if(left_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(left_error) << "\n"; }
+  if(right_error != vr::VRCompositorError_None) { std::cerr << NAMEOF_ENUM(right_error) << "\n"; }
 }
 #endif

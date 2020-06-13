@@ -13,8 +13,12 @@
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 bool vr_system_openxr::need_to_vflip = false;
 
+vr_system_openxr::vr_system_openxr() : vr_system() { std::cout << "Initialized OpenXR based vr_system implementation\n"; }
+
 vr_system_openxr::~vr_system_openxr()
 {
+  std::cout << "Deinitialized OpenXR based vr_system implementation\n";
+
   if(application_space != XR_NULL_HANDLE) { xrDestroySpace(application_space); }
   if(session != XR_NULL_HANDLE)
   {
@@ -74,7 +78,7 @@ bool vr_system_openxr::initialize()
   std::vector<const char*> extension_properties_names((size_t)extension_properties_count);
   for(size_t i = 0; i < extension_properties_count; i++) extension_properties_names[i] = extension_properties[i].extensionName;
 
-  //This is required to use OpenGL in OpenXR
+  //Last extension in the list will be the Graphics API to use: OpenGL
   extension_properties_names.push_back("XR_KHR_opengl_enable");
   extension_properties_count++;
 
@@ -95,11 +99,20 @@ bool vr_system_openxr::initialize()
   {
     std::cerr << "error while creating XrInstance\n";
 
-    //attempt to create instance in D3D11 mode...
-    extension_properties_names.back() = "XR_KHR_D3D11_enable";
 #ifdef _WIN32
+    /*
+     * On the Windows platform, many of the early implementations of OpenXR are not available with
+     * OpenGL. The common denominator between those seems to be DirectX 11. Thus, we added a special
+     * system that permit to get the rendered images from the engine *into* DirectX11 from OpenGL.
+     *
+     * See the `gl_dx_interop` class for more info.
+     */
+
     std::cerr << "attempt directx interop fallback...\n";
-    if(dx11_interop.init())
+    extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
+
+    //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
+    if(dx11_interop.init()) 
     {
       if(auto dx_status = xrCreateInstance(&instance_create_info, &instance); dx_status == XR_SUCCESS)
       {
@@ -145,7 +158,7 @@ bool vr_system_openxr::initialize()
   if(status = xrGetSystem(instance, &system_get_info, &system_id); status != XR_SUCCESS)
   { std::cerr << "error while getting system info for HMD form factor\n"; }
 
-  //Retreive system properties
+  //Retrieve system properties
   XrSystemProperties system_properties;
   zero_it(system_properties);
   system_properties.type = XR_TYPE_SYSTEM_PROPERTIES;
@@ -163,7 +176,7 @@ bool vr_system_openxr::initialize()
 
   ///Step 3 : Get information about the Views we are going to render
 
-  //Retreive view configuration
+  //Retrieve view configuration
   XrViewConfigurationType view_configuration_type[4];
   zero_it(view_configuration_type, 4);
   uint32_t view_configuration_type_count = 0;
@@ -310,10 +323,10 @@ bool vr_system_openxr::initialize()
   xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
   xr_graphics_binding_d3d11.device = dx11_interop.get_device();
   session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
-#else
+#else //I want this to work on Linux sooo bad. But I cannot test it.
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
   zero_it(xr_graphics_binding);
-  //TODO test on linux X11 OpenGL with glXGetCurrentContext(); and glXGetCurrentDrawable(); Probably SDL syswminfo too
+  //TODO test on linux X11 OpenGL with glXGetCurrentContext(); and glXGetCurrentDrawable(); Probably SDL syswminfo too?
   this_is_broken_right_here();
   session_create_info.next = &xr_graphics_binding;
 #endif
@@ -339,7 +352,7 @@ bool vr_system_openxr::initialize()
   if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
   { std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
-  //Step 7 Create swapchains (list of images that are submited to the compositor)
+  //Step 7 Create swapchains (list of images that are submitted to the compositor)
   int64_t format[32]; //32 is way too many options, there's like 10 max here, but well...
   zero_it(format, 32);
   uint32_t format_count = 0;
@@ -459,37 +472,6 @@ bool vr_system_openxr::initialize()
     std::cout << "xrBeginSession() == XR_SUCCESS\n";
   }
 
-  //OpenGL resource initialization
-
-  //The rest of the engine don't care bout our "VR" hardware.
-  //It just want to bind and render to a pair of FBOs, one for left eye, one for right
-  glGenTextures(2, eye_render_texture);
-  glGenRenderbuffers(2, eye_render_depth);
-  glGenFramebuffers(2, eye_fbo);
-
-  for(size_t i = 0; i < 2; ++i)
-  {
-    auto w = eye_render_target_sizes[i].x;
-    auto h = eye_render_target_sizes[i].y;
-    //Configure textures
-    glBindFramebuffer(GL_FRAMEBUFFER, eye_fbo[i]);
-    glBindTexture(GL_TEXTURE_2D, eye_render_texture[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, eye_render_texture[i], 0);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, eye_render_depth[i]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, eye_render_depth[i]);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    { std::cerr << "eye fbo " << i << " is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "\n"; }
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
   return true;
 }
 
@@ -559,7 +541,7 @@ void vr_system_openxr::update_tracking()
   XrViewState view_state;
   zero_it(view_state);
   view_state.type              = XR_TYPE_VIEW_STATE;
-  uint32_t view_capacity_input = views.size();
+  uint32_t view_capacity_input = (uint32_t)views.size();
   uint32_t view_count;
 
   XrViewLocateInfo view_locate_info;
@@ -596,25 +578,6 @@ void vr_system_openxr::update_tracking()
 void vr_system_openxr::submit_frame_to_vr_system()
 {
   XrResult status;
-
-#if 0
-  if(ImGui::Begin("XR Swapchain Debugger"))
-  {
-    for(size_t i = 0; i < 2; ++i)
-    {
-      constexpr auto factor = 5;
-      ImGui::Columns(2);
-      for(size_t j = 0; j < swapchain_images_opengl[i].size(); ++j)
-      {
-        ImGui::Image((ImTextureID)swapchain_images_opengl[i][j].image,
-                     { (float)eye_render_target_sizes[i].x / factor, (float)eye_render_target_sizes[i].y / factor });
-      }
-      ImGui::NextColumn();
-    }
-    ImGui::Columns(1);
-  }
-  ImGui::End();
-#endif
 
   //We have two swapchain to use:
   for(size_t i = 0; i < 2; i++)

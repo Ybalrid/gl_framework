@@ -10,28 +10,36 @@
 class vr_system
 {
   protected:
+
+  constexpr static GLuint invalid_name { std::numeric_limits<GLuint>::max() };
+
   ///Any VR system needs a reference point in the scene to sync tracking between real and virtual world
   node* vr_tracking_anchor = nullptr;
   ///Pair or camera objects to render in stereoscopy
   camera* eye_camera[2] = { nullptr, nullptr };
+
   ///Framebuffer objects to render to texture
-  GLuint eye_fbo[2] = { 0, 0 };
+  GLuint eye_fbo[2] = { invalid_name, invalid_name };
   ///Render texture
-  GLuint eye_render_texture[2] = { 0, 0 };
+  GLuint eye_render_texture[2] = { invalid_name, invalid_name };
   ///Render buffer for depth
-  GLuint eye_render_depth[2] = { 0, 0 };
+  GLuint eye_render_depth[2] = { invalid_name, invalid_name };
+
   ///Size of the above buffers in pixels
   sdl::Vec2i eye_render_target_sizes[2] {};
 
   node* head_node    = nullptr;
   node* hand_node[2] = { nullptr, nullptr };
 
+  bool initialized_opengl_resources = false;
+
   public:
+
   //Nothing special to do in ctor/dtor
   vr_system()          = default;
-  virtual ~vr_system() = default;
+  virtual ~vr_system();
 
-  enum class eye { left, right };
+  enum class eye { left = 0, right  = 1};
 
   //--- the following is generic and should work as-is for all vr systems
   ///Get the eye frame buffers
@@ -44,7 +52,8 @@ class vr_system
   camera* get_eye_camera(eye output);
 
   //--- the following is the abstract interface that require implementation specific work
-  ///Call this once OpenGL is fully setup. This function ini the VR and create the textures, framebuffers
+  ///Call this once OpenGL is fully setup. This function ini the VR system, and populate the `eye_render_target_sizes`.
+  ///Please call initialize_opengl_resources() once this has run to create the eye render buffers
   virtual bool initialize() = 0;
   ///Only call this after `set_anchor` to a non-null pointer
   virtual void build_camera_node_system() = 0;
@@ -56,6 +65,8 @@ class vr_system
   virtual void submit_frame_to_vr_system() = 0;
   ///Return true if this VR system will peform an image vflip in the projection matrix. This changes face culling order.
   [[nodiscard]] virtual bool must_vflip() const = 0;
+
+  void initialize_opengl_resources();
 };
 
 using vr_system_ptr = std::unique_ptr<vr_system>;

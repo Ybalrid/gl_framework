@@ -42,8 +42,9 @@ class vr_system_openxr : public vr_system
   public:
   static bool need_to_vflip;
 
-  vr_system_openxr() = default;
+  vr_system_openxr();
   virtual ~vr_system_openxr();
+
   bool initialize() final;
   void build_camera_node_system() final;
   void wait_until_next_frame() final;

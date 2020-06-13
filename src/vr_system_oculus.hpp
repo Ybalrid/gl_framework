@@ -20,22 +20,20 @@ class vr_system_oculus : public vr_system
   ovrEyeRenderDesc eyes[2];
   static ovrLayerEyeFov layer;
 
-  node* eye_camera_node[2] = {nullptr, nullptr};
+  node* eye_camera_node[2] = { nullptr, nullptr };
 
   long long frame_counter = 0;
   ovrTrackingState ts;
   double display_time;
   ovrPosef eye_to_hmd_pose[2];
 
-  int current_index[2] = {0, 0};
+  int current_index[2] = { 0, 0 };
 
   static void left_eye_oculus_projection(glm::mat4&, float, float);
   static void right_eye_oculus_projection(glm::mat4&, float, float);
- 
 
   public:
-
-  vr_system_oculus() = default;
+  vr_system_oculus();
   virtual ~vr_system_oculus();
   bool initialize() final;
   void build_camera_node_system() final;
