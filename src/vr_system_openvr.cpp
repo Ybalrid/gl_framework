@@ -15,6 +15,7 @@ inline glm::mat4 get_mat4_from_34(const vr::HmdMatrix34_t& mat)
            mat.m[2][0], mat.m[2][1], mat.m[2][2], mat.m[2][3], 0.0f,        0.0f,        0.0f,        1.0f };
 }
 
+//TODO we need a "pose" abstraction instead of a tuple here
 inline std::tuple<glm::vec3, glm::quat> get_translation_roation(const glm::mat4& mat)
 {
   static glm::vec3 tr, sc, sk;

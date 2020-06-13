@@ -27,7 +27,7 @@ class vr_system_openvr : public vr_system
   void wait_until_next_frame() final;
   void submit_frame_to_vr_system() final;
   void build_camera_node_system() final;
-  bool must_vflip() const final { return false; }
+  [[nodiscard]] virtual bool must_vflip() const final { return false; }
 
   static void get_left_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip);
   static void get_right_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip);

@@ -15,7 +15,6 @@
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
-
 class vr_system_openxr : public vr_system
 {
   XrInstance instance      = XR_NULL_HANDLE;
@@ -40,14 +39,10 @@ class vr_system_openxr : public vr_system
   bool fallback_to_dx = false;
 #endif
 
-
   public:
-
   static bool need_to_vflip;
 
-
   vr_system_openxr() = default;
-
   virtual ~vr_system_openxr();
   bool initialize() final;
   void build_camera_node_system() final;
@@ -55,9 +50,6 @@ class vr_system_openxr : public vr_system
   void update_tracking() final;
   void submit_frame_to_vr_system() final;
 
-  bool must_vflip() const final
-  {
-    return need_to_vflip;
-  }
+  [[nodiscard]] virtual bool must_vflip() const final { return need_to_vflip; }
 };
 #endif

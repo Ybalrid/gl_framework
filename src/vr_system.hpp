@@ -54,8 +54,8 @@ class vr_system
   virtual void update_tracking() = 0;
   ///Send content of the framebuffers to the VR system
   virtual void submit_frame_to_vr_system() = 0;
-
-  virtual bool must_vflip() const = 0;
+  ///Return true if this VR system will peform an image vflip in the projection matrix. This changes face culling order.
+  [[nodiscard]] virtual bool must_vflip() const = 0;
 };
 
 using vr_system_ptr = std::unique_ptr<vr_system>;
@@ -72,6 +72,3 @@ using vr_system_ptr = std::unique_ptr<vr_system>;
 #if USING_OPENXR
 #include "vr_system_openxr.hpp"
 #endif
-
-//TODO OpenHMD?
-//TODO OpenXR?
