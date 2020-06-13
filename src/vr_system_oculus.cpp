@@ -6,6 +6,8 @@
 #include <string>
 #include <sstream>
 
+ovrLayerEyeFov vr_system_oculus::layer;
+
 struct log_ctx
 {
   std::mutex mtx;
@@ -20,12 +22,13 @@ vr_system_oculus::~vr_system_oculus()
 bool vr_system_oculus::initialize()
 {
   ovrInitParams init_params = {};
-  init_params.Flags         = ovrInit_FocusAware;
-#if !defined(NDEBUG)
-  init_params.Flags |= ovrInit_Debug;
-#endif
+  init_params.Flags         = 0;
+  //init_params.Flags         = ovrInit_FocusAware;
+  //#if !defined(NDEBUG)
+  //  init_params.Flags |= ovrInit_Debug;
+  //#endif
 
-  init_params.LogCallback   = [](uintptr_t ctx_ptr, int level, const char* message) {
+  init_params.LogCallback = [](uintptr_t ctx_ptr, int level, const char* message) {
     log_ctx* ctx = (log_ctx*)ctx_ptr;
     std::lock_guard<std::mutex> stack_lock { ctx->mtx };
     std::cerr << "Oculus [" << level << "] : " << message << "\n";
@@ -54,12 +57,12 @@ bool vr_system_oculus::initialize()
   std::cout << "Created session for OculusVR headset:\n";
   std::cout << "\t - manufacturer: " << hmdDesc.Manufacturer << "\n"
             << "\t - product name: " << hmdDesc.ProductName << "\n"
-            << "\t - display     : " << hmdDesc.Resolution.w << "x" << hmdDesc.Resolution.h << " " << hmdDesc.DisplayRefreshRate<< "Hz\n"
+            << "\t - display     : " << hmdDesc.Resolution.w << "x" << hmdDesc.Resolution.h << " " << hmdDesc.DisplayRefreshRate
+            << "Hz\n"
             << "\t - firmware    : " << hmdDesc.FirmwareMajor << "." << hmdDesc.FirmwareMinor << "\n";
 
   ovr_SetTrackingOriginType(session, ovrTrackingOrigin_FloorLevel);
   ovr_GetSessionStatus(session, &session_status);
-
 
   for(size_t eye = 0; eye < 2; ++eye)
   {
@@ -75,19 +78,29 @@ bool vr_system_oculus::initialize()
     texture_swap_chain_desc.MipLevels               = 1;
     texture_swap_chain_desc.SampleCount             = 1;
     texture_swap_chain_desc.StaticImage             = ovrFalse;
-    ovr_CreateTextureSwapChainGL(session, &texture_swap_chain_desc, &swapchains[eye]);
+    if(OVR_FAILURE(ovr_CreateTextureSwapChainGL(session, &texture_swap_chain_desc, &swapchains[eye])))
+    {
+      std::cerr << "Wasn't able to create OpenGL swapchains\n";
+      return false;
+    }
 
     eyes[eye] = ovr_GetRenderDesc(session, (ovrEyeType)(eye), hmdDesc.DefaultEyeFov[eye]);
   }
 
   //Define one Oculus Compositor layer for the user's FoV
   layer.Header.Type     = ovrLayerType_EyeFov;
-  layer.Header.Flags    = 0;
+  layer.Header.Flags    = ovrLayerFlag_TextureOriginAtBottomLeft;
   layer.ColorTexture[0] = swapchains[0];
   layer.ColorTexture[1] = swapchains[1];
   layer.Fov[0]          = eyes[0].Fov;
   layer.Fov[1]          = eyes[1].Fov;
+  layer.Viewport[0]     = OVR::Recti { 0, 0, texture_sizes[0].w, texture_sizes[0].h };
+  layer.Viewport[1]     = OVR::Recti { 0, 0, texture_sizes[1].w, texture_sizes[1].h };
 
+  //OpenGL resource initialization
+
+  //The rest of the engine don't care bout our "VR" hardware.
+  //It just want to bind and render to a pair of FBOs, one for left eye, one for right
   glGenTextures(2, eye_render_texture);
   glGenRenderbuffers(2, eye_render_depth);
   glGenFramebuffers(2, eye_fbo);
@@ -118,6 +131,22 @@ bool vr_system_oculus::initialize()
   return true;
 }
 
+void vr_system_oculus::left_eye_oculus_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+  const auto& fov   = layer.Fov[0];
+  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjectionModifier::ovrProjection_ClipRangeOpenGL);
+  output            = glm::make_mat4x4((float*)&matrix.M[0][0]);
+  output            = glm::transpose(output);
+}
+
+void vr_system_oculus::right_eye_oculus_projection(glm::mat4& output, float near_plane, float far_plane)
+{
+  const auto& fov   = layer.Fov[1];
+  const auto matrix = ovrMatrix4f_Projection(fov, near_plane, far_plane, ovrProjectionModifier::ovrProjection_ClipRangeOpenGL);
+  output            = glm::make_mat4x4((float*)&matrix.M[0][0]);
+  output            = glm::transpose(output);
+}
+
 void vr_system_oculus::build_camera_node_system()
 {
   head_node = vr_tracking_anchor->push_child(create_node());
@@ -127,9 +156,13 @@ void vr_system_oculus::build_camera_node_system()
     camera cam;
     //TODO setup custom projection matrix callback
     eye_camera[i] = eye_camera_node[i]->assign(std::move(cam));
-
-    hand_node[i] = head_node->push_child(create_node());
+    hand_node[i]  = head_node->push_child(create_node());
   }
+
+  eye_camera[0]->vr_eye_projection_callback = &left_eye_oculus_projection;
+  eye_camera[1]->vr_eye_projection_callback = &right_eye_oculus_projection;
+  eye_camera[0]->projection_type            = camera::projection_mode::eye_vr;
+  eye_camera[1]->projection_type            = camera::projection_mode::eye_vr;
 }
 
 void vr_system_oculus::wait_until_next_frame()
@@ -143,7 +176,14 @@ void vr_system_oculus::update_tracking()
   display_time = ovr_GetPredictedDisplayTime(session, frame_counter);
   ts           = ovr_GetTrackingState(session, display_time, ovrTrue);
 
-  ovr_CalcEyePoses(ts.HeadPose.ThePose, eye_to_hmd_pose, layer.RenderPose);
+  eyes[0] = ovr_GetRenderDesc(session, ovrEye_Left, hmdDesc.DefaultEyeFov[0]);
+  eyes[1] = ovr_GetRenderDesc(session, ovrEye_Right, hmdDesc.DefaultEyeFov[1]);
+
+  eye_to_hmd_pose[0] = eyes[0].HmdToEyePose;
+  eye_to_hmd_pose[1] = eyes[1].HmdToEyePose;
+
+  //ovr_CalcEyePoses(ts.HeadPose.ThePose, eye_to_hmd_pose, layer.RenderPose); //This changed??
+  ovr_GetEyePoses(session, frame_counter, ovrTrue, eye_to_hmd_pose, layer.RenderPose, &layer.SensorSampleTime);
   for(auto eye = 0; eye < 2; ++eye)
   {
     eye_camera_node[eye]->local_xform.set_position(glm::make_vec3((float*)&eyes[eye].HmdToEyePose.Position));
@@ -153,32 +193,28 @@ void vr_system_oculus::update_tracking()
   head_node->local_xform.set_position(glm::make_vec3((float*)&ts.HeadPose.ThePose.Position));
   head_node->local_xform.set_orientation(glm::make_quat((float*)&ts.HeadPose.ThePose.Orientation));
 
+  //update nodes world transforms
+  vr_tracking_anchor->update_world_matrix();
+  for(auto eye = 0; eye < 2; ++eye) eye_camera[eye]->set_world_matrix(eye_camera_node[eye]->get_world_matrix());
 }
 
 void vr_system_oculus::submit_frame_to_vr_system()
 {
-  ovr_GetSessionStatus(session, &session_status);
-  int index = -1;
-  GLuint oculus_owned_texture = -1;
-  for(auto eye = 0; eye < 2; ++eye) 
+  for(auto eye = 0; eye < 2; ++eye)
   {
-    //ovr_GetTextureSwapChainCurrentIndex(session, swapchains[eye], &index);
-    ovr_GetTextureSwapChainBufferGL(session, swapchains[eye], index, &oculus_owned_texture);
+    GLuint oculus_owned_texture = -1;
+    ovr_GetTextureSwapChainCurrentIndex(session, swapchains[eye], &current_index[eye]);
+    ovr_GetTextureSwapChainBufferGL(session, swapchains[eye], current_index[eye], &oculus_owned_texture);
+    // clang-format off
     glCopyImageSubData(eye_render_texture[eye],
                        GL_TEXTURE_2D,
-                       0,
-                       0,
-                       0,
-                       0,
+                       0,0,0,0,
                        oculus_owned_texture,
                        GL_TEXTURE_2D,
-                       0,
-                       0,
-                       0,
-                       0,
+                       0,0,0,0,
                        eye_render_target_sizes[eye].x,
-                       eye_render_target_sizes[eye].y,
-                       1);
+                       eye_render_target_sizes[eye].y,1);
+    // clang-format on
     ovr_CommitTextureSwapChain(session, swapchains[eye]);
   }
   auto layers = &layer.Header;

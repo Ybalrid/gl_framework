@@ -41,8 +41,7 @@ bool vr_system_openxr::initialize()
 {
   std::cout << "Initializing OpenXR based VR system\n";
   const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON");
-  if(xr_runtime_json_str != nullptr)
-   std::cout << xr_runtime_json_str << "\n";
+  if(xr_runtime_json_str != nullptr) std::cout << xr_runtime_json_str << "\n";
 
   //Step one, get XrInstance up and running
 
@@ -279,20 +278,19 @@ bool vr_system_openxr::initialize()
 
     PFN_xrGetD3D11GraphicsRequirementsKHR xrGetD3D11GraphicsRequirementsKHR;
     const auto has_func = xrGetInstanceProcAddr(
-                   instance, "xrGetD3D11GraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetD3D11GraphicsRequirementsKHR));
+        instance, "xrGetD3D11GraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetD3D11GraphicsRequirementsKHR));
     if(has_func == XR_SUCCESS)
     {
       xrGetD3D11GraphicsRequirementsKHR(instance, system_id, &graphics_requirements_d3d11_khr);
-      std::cout << "Minimal D3D11 feature level required " << NAMEOF_ENUM(graphics_requirements_d3d11_khr.minFeatureLevel) << "\n";
+      std::cout << "Minimal D3D11 feature level required " << NAMEOF_ENUM(graphics_requirements_d3d11_khr.minFeatureLevel)
+                << "\n";
     }
     else
     {
       std::cerr << "Cannot get pointer to xrGetD3D11GraphicsRequirementsKHR\n";
     }
-               
   }
 #endif
-
 
   //Step 5 create session
   XrSessionCreateInfo session_create_info;
@@ -306,12 +304,12 @@ bool vr_system_openxr::initialize()
   XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11;
   zero_it(xr_graphics_binding);
   zero_it(xr_graphics_binding_d3d11);
-  xr_graphics_binding.type  = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
-  xr_graphics_binding.hGLRC = wglGetCurrentContext();
-  xr_graphics_binding.hDC   = wglGetCurrentDC();
-  xr_graphics_binding_d3d11.type = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
+  xr_graphics_binding.type         = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
+  xr_graphics_binding.hGLRC        = wglGetCurrentContext();
+  xr_graphics_binding.hDC          = wglGetCurrentDC();
+  xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
   xr_graphics_binding_d3d11.device = dx11_interop.get_device();
-  session_create_info.next = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
+  session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
 #else
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
   zero_it(xr_graphics_binding);
@@ -383,7 +381,6 @@ bool vr_system_openxr::initialize()
       return false;
     }
 
-
     //TODO find our image format for some RGBA or BGRA or whatever we can manage to get here
   }
 #endif
@@ -436,19 +433,15 @@ bool vr_system_openxr::initialize()
     else
     {
       zero_it(swapchain_image_d3d11_khr, 8);
-      for(auto& image_d3d11 : swapchain_image_d3d11_khr)
+      for(auto& image_d3d11 : swapchain_image_d3d11_khr) image_d3d11.type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
+      if(status = xrEnumerateSwapchainImages(
+             swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_d3d11_khr);
+         status != XR_SUCCESS)
+      { std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n"; }
+      else
       {
-        if(status = xrEnumerateSwapchainImages(
-               swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_d3d11_khr);
-           status != XR_SUCCESS)
-        {
-          std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n";
-        }
-        else
-        {
-          for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
-          { swapchain_images_d3d11[i].push_back(swapchain_image_d3d11_khr[img_index]); }
-        }
+        for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
+        { swapchain_images_d3d11[i].push_back(swapchain_image_d3d11_khr[img_index]); }
       }
     }
 #endif
@@ -468,7 +461,7 @@ bool vr_system_openxr::initialize()
 
   //OpenGL resource initialization
 
-  //The rest of the engine don't carea bout our "VR" hardware.
+  //The rest of the engine don't care bout our "VR" hardware.
   //It just want to bind and render to a pair of FBOs, one for left eye, one for right
   glGenTextures(2, eye_render_texture);
   glGenRenderbuffers(2, eye_render_depth);

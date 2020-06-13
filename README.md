@@ -1,14 +1,15 @@
 # SDL OpenGL Project Skeleton
 
-This repository is an open-source "base code" for making video games projects "from scratch".
+This repository is an open-source "base code" (As my university teacher used to call this kind of frameworks) for making video games projects "from scratch".
 It's configured with CMake to use a number of helpful libraries.
 
 It is cross platform and supports Windows, Linux, and MacOS(*) (and should be "trivially" adaptable
 to other platforms too!)
 
-(*) For MacOS you *may* need an updated version of Clang and LibC++. This project has been tested under 10.13 High Sierra, XCode 9.4.1 and Clang 9 installed via brew (llvm). I do not have access to more modern macs, so I am stuck with a Mid 2010 iMac 11,2, that is mostly used for entertaiment, not developement. :wink:
+(*) For MacOS you *may* need an updated version of Clang and LibC++. This project has been tested under 10.13 High Sierra, XCode 9.4.1 and Clang 9 installed via brew (llvm). 
+I do not have access to more modern macs, so I am stuck with a Mid 2010 iMac 11,2, that is mostly used for entertaiment, not developement. :wink:
 
-This code will create a window, initialize an OpenGL core profile,
+This code will create a window, initialize an OpenGL core profile context,
 be able to load GLSL shader code and glTF assets from "resource locations"
 from a virtual file system, and represent a scene as a standard directed acyclic graph.
 
@@ -49,7 +50,7 @@ an easy distribution-version agnostic way of distributing applications using it.
  - [x] Propper Input system
  - [x] OpenVR
  - [x] OpenXR
- - [ ] Oculus VR
+ - [x] Oculus VR
  - [ ] Proper level/environement loader/unloader system
  - [ ] Script attachement system to "objects" in scene
  - [ ] Physics
@@ -64,6 +65,12 @@ an easy distribution-version agnostic way of distributing applications using it.
 
 ### VR
 
+VR rendering is an optional component. To be activated in your build, you need to set the apropriate CMake cache variables to "ON"
+
+ - `HAS_OPENVR`
+ - `HAS_OPENXR`
+ - `HAS_OCULUS_VR`
+
 Preliminary VR support has been added. Engine configuration file (config.toml) must have the following keys inserted : 
 
 ```toml
@@ -77,22 +84,33 @@ as a Git Submodule in the third_party directory.
 Currently supported vr systems are:
  - `"openvr"`
  - `"openxr"`
+ - `"oculus"`
 
-Support is planned support for
- - `"oculusvr"`
+#### OpenXR
 
-#### OpenXR DirectX11 Fallback system
+The OpenXR loader will be statically linked into the game EXE.
+
+Linux support is untested.
+
+#### DirectX11 Fallback
 
 On Win32 platforms, a situation can occur where the currently installed OpenXR runtime can only be rendered to using DirectX 
 (At the time of writing WMR and SteamVR do not provide the OpenGL extension). The `vr_sytem_openxr` will attempt to create an
 OpenGL version of the system first, then if it fails, it will fallback to DirectX11. Performance with DirectX11 may be slightly
 lower due to an extra texture copy being performed to share the texture between the two runtimes.
 
+#### Oculus
+
+The Oculus SDK is not shipped with inside this repository. To use the Oculus SDK, you will need to downlad it from the website, and extract the content of the zip into `third_party/oculus_sdk`. 
+Version `1.43.0` is known to work at this time.
+
+You will need to put the `OpenVR_API.dll` (or platform equivalent on Linux) next to your executable (or in the build directory when testing with Visual Studio on Windows)
+
 ### Scripting
 
 //TODO
 
-## Licencing situation
+## Open Source dependancies
 
 This framework is fully bassed on *Free* and *Open-Source software*.  These peices of software
 have various licences and distribution terms that vary in rights and permissions.
@@ -112,8 +130,8 @@ how it is used as part of this project:
  - GLM : The Happy Bunny License *or* MIT
  - tinygltf : MIT
  - FreeImage : FIPL license
- - OpenAL-Soft : GNU LGPL
- - libsndfile : GNU LGPL
+ - OpenAL-Soft : GNU LGPL (but dynamically linked)
+ - libsndfile : GNU LGPL (but dynamically linked)
  - ChaiScript : BSD 3-Clause
  - ImGui : MIT
  - ImGuizmo : MIT

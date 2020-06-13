@@ -18,7 +18,7 @@ class vr_system_oculus : public vr_system
   float resolution_scale = 1.f;
   ovrTextureSwapChain swapchains[2];
   ovrEyeRenderDesc eyes[2];
-  ovrLayerEyeFov layer;
+  static ovrLayerEyeFov layer;
 
   node* eye_camera_node[2] = {nullptr, nullptr};
 
@@ -26,6 +26,13 @@ class vr_system_oculus : public vr_system
   ovrTrackingState ts;
   double display_time;
   ovrPosef eye_to_hmd_pose[2];
+
+  int current_index[2] = {0, 0};
+
+  static void left_eye_oculus_projection(glm::mat4&, float, float);
+  static void right_eye_oculus_projection(glm::mat4&, float, float);
+ 
+
   public:
 
   vr_system_oculus() = default;
