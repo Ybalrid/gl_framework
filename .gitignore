@@ -1,3 +1,4 @@
 build/
 *.user
 src/build_config.hpp
+third_part/oculus_sdk/*
