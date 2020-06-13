@@ -162,6 +162,12 @@ if(HAS_OPENXR)
   target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include")
 endif()
 
+if(HAS_OCULUS_VR)
+  message(STATUS "Including Oculus SDK")
+  target_link_libraries(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Lib/Windows/x64/Release/VS2017/LibOVR.lib")
+  target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Include/")
+endif()
+
 #link libraries
 TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
   PRIVATE Threads::Threads

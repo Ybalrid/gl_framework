@@ -360,6 +360,10 @@ void application::configure_and_create_window(const std::string& application_nam
 #if USING_OPENXR
       if(system_name == "openxr") { vr = std::make_unique<vr_system_openxr>(); }
 #endif
+#if USING_OCULUS_VR
+      if(system_name == "oculus") { vr = std::make_unique<vr_system_oculus>(); }
+#endif
+
 
       if(!vr)
       {

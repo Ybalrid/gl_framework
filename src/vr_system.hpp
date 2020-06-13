@@ -67,6 +67,7 @@ using vr_system_ptr = std::unique_ptr<vr_system>;
 
 #if USING_OCULUS_VR
 //#include ovr based implementation of above interface
+#include "vr_system_oculus.hpp"
 #endif
 
 #if USING_OPENXR
