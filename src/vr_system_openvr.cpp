@@ -160,7 +160,7 @@ void vr_system_openvr::build_camera_node_system()
 
   for(int eye = 0; eye < 2; ++eye)
   {
-    texture_handlers[eye].handle = (void*)eye_render_texture[eye];
+    texture_handlers[eye].handle = reinterpret_cast<void*>(static_cast<unsigned long long>(eye_render_texture[eye]));
     texture_handlers[eye].eType  = vr::TextureType_OpenGL;
     texture_handlers[eye].eColorSpace = vr::ColorSpace_Auto;
   }
