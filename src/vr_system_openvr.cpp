@@ -64,6 +64,17 @@ bool vr_system_openvr::initialize()
   vr::EVRInitError error;
   hmd = vr::VR_Init(&error, vr::EVRApplicationType::VRApplication_Scene);
 
+
+  char buffer[512];
+  vr::ETrackedPropertyError prop_error;
+  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String, buffer, 512, &prop_error);
+  std::cout << "System Name  : " << buffer << "\n";
+  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ManufacturerName_String, buffer, 512, &prop_error);
+  std::cout << "Manufacturer : " << buffer << "\n";
+  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ModelNumber_String, buffer, 512, &prop_error);
+  std::cout << "Model Number : " << buffer << "\n";
+
+
   //Init of OpenVR sucessfull
   if(!hmd)
   {
@@ -158,12 +169,16 @@ void vr_system_openvr::build_camera_node_system()
 
 void vr_system_openvr::get_left_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
 {
-  matrix = glm::transpose(glm::make_mat4((float*)static_access_hmd->GetProjectionMatrix(vr::Eye_Left, near_clip, far_clip).m));
+  float left, right, top, bottom;
+  static_access_hmd->GetProjectionRaw(vr::Eye_Left, &left, &right, &top, &bottom);
+  matrix = glm::frustum(near_clip * left, near_clip * right, near_clip * -bottom, near_clip * -top, near_clip, far_clip);
 }
 
 void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip)
 {
-  matrix = glm::transpose(glm::make_mat4((float*)static_access_hmd->GetProjectionMatrix(vr::Eye_Right, near_clip, far_clip).m));
+  float left, right, top, bottom;
+  static_access_hmd->GetProjectionRaw(vr::Eye_Right, &left, &right, &top, &bottom);
+  matrix = glm::frustum(near_clip * left, near_clip * right, near_clip * -bottom, near_clip * -top, near_clip, far_clip);
 }
 
 void vr_system_openvr::update_tracking()
