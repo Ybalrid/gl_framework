@@ -16,14 +16,13 @@ inline glm::mat4 get_mat4_from_34(const vr::HmdMatrix34_t& mat)
 }
 
 //TODO we need a "pose" abstraction instead of a tuple here D:
-inline std::tuple<glm::vec3, glm::quat> get_translation_roation(const glm::mat4& mat)
+inline std::tuple<glm::vec3, glm::quat> get_translation_rotation(const glm::mat4& mat)
 {
   static glm::vec3 tr, sc, sk;
   static glm::vec4 persp;
   static glm::quat rot;
 
   glm::decompose(mat, sc, rot, tr, sk, persp);
-  rot = glm::normalize(rot); //TODO check if it doesn't break if we skip that.
   return std::tie(tr, rot);
 }
 
@@ -181,7 +180,7 @@ void vr_system_openvr::update_tracking()
   }
 
   //update node local transforms with openvr tracked objects
-  const auto [translation, rotation] = get_translation_roation(head_tracking);
+  const auto [translation, rotation] = get_translation_rotation(head_tracking);
   head_node->local_xform.set_position(translation);
   head_node->local_xform.set_orientation(rotation);
 

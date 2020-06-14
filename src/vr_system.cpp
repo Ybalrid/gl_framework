@@ -34,8 +34,8 @@ void vr_system::initialize_opengl_resources()
 
   for(size_t i = 0; i < 2; ++i)
   {
-    auto w = eye_render_target_sizes[i].x;
-    auto h = eye_render_target_sizes[i].y;
+    const auto w = eye_render_target_sizes[i].x;
+    const auto h = eye_render_target_sizes[i].y;
     //Configure textures
     glBindFramebuffer(GL_FRAMEBUFFER, eye_fbo[i]);
     glBindTexture(GL_TEXTURE_2D, eye_render_texture[i]);
