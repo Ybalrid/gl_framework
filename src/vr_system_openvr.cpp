@@ -122,7 +122,6 @@ void vr_system_openvr::build_camera_node_system()
   {
     eye_camera_node[i] = head_node->push_child(create_node());
     camera cam;
-    //TODO setup custom projection matrix callback
     eye_camera[i] = eye_camera_node[i]->assign(std::move(cam));
 
     hand_node[i] = head_node->push_child(create_node());
@@ -135,13 +134,13 @@ void vr_system_openvr::build_camera_node_system()
   const auto left_eye_full_transform = (glm::transpose(get_mat4_from_34(left_eye_matrix_34)));
   glm::decompose(left_eye_full_transform, sc, rot, tr, sk, persp);
   eye_camera_node[0]->local_xform.set_position(tr);
-  eye_camera_node[0]->local_xform.set_orientation(glm::normalize(rot));
+  eye_camera_node[0]->local_xform.set_orientation(rot);
 
   const auto right_eye_matrix_34      = hmd->GetEyeToHeadTransform(vr::Eye_Right);
   const auto right_eye_full_transform = (glm::transpose(get_mat4_from_34(right_eye_matrix_34)));
   glm::decompose(right_eye_full_transform, sc, rot, tr, sk, persp);
   eye_camera_node[1]->local_xform.set_position(tr);
-  eye_camera_node[1]->local_xform.set_orientation(glm::normalize(rot));
+  eye_camera_node[1]->local_xform.set_orientation(rot);
 
   eye_camera[0]->vr_eye_projection_callback = &get_left_eye_proj_matrix;
   eye_camera[1]->vr_eye_projection_callback = &get_right_eye_proj_matrix;
