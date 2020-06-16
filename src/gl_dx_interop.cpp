@@ -3,9 +3,12 @@
 #include <iostream>
 
 #ifdef _WIN32
+
+gl_dx11_interop* gl_dx11_interop::singleton = nullptr;
 gl_dx11_interop::gl_dx11_interop()
 {
-  //TODO we probably want this to be a singleton, it holds resources that should be unique
+  if(singleton != nullptr) throw std::runtime_error("Can only have one instance of gl_dx11_interop");
+  singleton = this;
 }
 
 gl_dx11_interop::~gl_dx11_interop()
@@ -27,6 +30,7 @@ gl_dx11_interop::~gl_dx11_interop()
 
 bool gl_dx11_interop::init()
 {
+  if(initialized) return true;
 
   instance                   = GetModuleHandleW(nullptr);
   WNDCLASSW window_class     = { 0 };
@@ -175,6 +179,55 @@ bool gl_dx11_interop::copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_d
 
   perform_copy(gl_image_source, dx_texture_dst, viewport, sh_txt);
   return true;
+}
+
+void gl_dx11_interop::remove_from_cache(ID3D11Texture2D* dx_texture)
+{
+  const auto found_in_cache = gl_dx_share_cache.find(dx_texture);
+  if(found_in_cache != std::end(gl_dx_share_cache))
+  {
+    const auto& shared_texture = found_in_cache->second;
+    wglDXUnregisterObjectNV(gl_dx_device, shared_texture.interop_object);
+    glDeleteTextures(1, &shared_texture.intermediate_texture_glid);
+    shared_texture.intermediate_texture->Release();
+    gl_dx_share_cache.erase(found_in_cache);
+  }
+}
+
+std::tuple<ID3D11Texture2D*, HANDLE>
+gl_dx11_interop::create_shared_d3d_texture(DXGI_FORMAT format, sdl::Vec2<UINT> size, D3D11_USAGE usage) const
+{
+  ID3D11Texture2D* texture = nullptr;
+  HANDLE share             = nullptr;
+
+  try
+  {
+    D3D11_TEXTURE2D_DESC desc ={};
+    desc.Width            = size.x;
+    desc.Height           = size.y;
+    desc.MipLevels        = 1;
+    desc.ArraySize        = 1;
+    desc.Format           = format;
+    desc.Usage            = usage;
+    desc.SampleDesc.Count = 1;
+    desc.BindFlags        = 0;
+    desc.MiscFlags        = D3D11_RESOURCE_MISC_SHARED;
+
+    if(FAILED(device->CreateTexture2D(&desc, nullptr, &texture))) 
+        throw std::runtime_error("Cannot create D3D11 texture!");
+
+    IDXGIResource* resource = nullptr;
+    if(FAILED(texture->QueryInterface(__uuidof(IDXGIResource), (void**)&resource)))
+      throw std::runtime_error("Cannot get DXGI resource from created texture!");
+    resource->GetSharedHandle(&share);
+  }
+  catch(const std::exception& e)
+  {
+    const auto error_state = GetLastError();
+    std::cerr << "exception when creating shared texture : " << e.what() << "; WIN32 error is " << error_state << std::endl;
+  }
+
+  return std::tie(texture, share);
 }
 
 #endif

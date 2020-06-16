@@ -24,7 +24,7 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
   {
     case perspective: projection = glm::perspective(glm::radians(fov), ratio, near_clip, far_clip); break;
 
-    case ortho: {
+    case orthographic: {
       //Orthographic projection that respect the viewport geometry, with (0,0) in the center of the screen,
       //in the normal opengl coordinates
       const float width  = ratio / 2.f;
@@ -45,7 +45,7 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
     }
     break;
 
-    case eye_vr: {
+    case vr_eye_projection: {
       if(vr_eye_projection_callback) vr_eye_projection_callback(projection, near_clip, far_clip);
     }
     break;

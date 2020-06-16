@@ -6,11 +6,16 @@
 #include "node.hpp"
 #include <glm/glm.hpp>
 
+#ifdef _WIN32
+#include "gl_dx_interop.hpp"
+#endif
+
+#include "shader_program_manager.hpp"
+
 //This is the interface for all VR systems
 class vr_system
 {
   protected:
-
   constexpr static GLuint invalid_name { std::numeric_limits<GLuint>::max() };
 
   ///Any VR system needs a reference point in the scene to sync tracking between real and virtual world
@@ -30,6 +35,22 @@ class vr_system
 
   node* head_node    = nullptr;
   node* hand_node[2] = { nullptr, nullptr };
+
+#ifdef _WIN32
+  node* mr_camera_node = nullptr;
+  camera* mr_camera     = nullptr;
+  GLuint mr_fbo        = invalid_name;
+  GLuint mr_depth       = invalid_name;
+  GLuint mr_render_texture = invalid_name;
+  GLuint mr_separation_plane_buffer = invalid_name;
+  sdl::Vec2i mr_texture_size = {};
+
+  shader_handle depth_plane_shader = shader_program_manager::invalid_shader;
+
+  //LIV specific
+  ID3D11Texture2D* LIV_Texture;
+  HANDLE LIV_Texture_SharedHandle;
+#endif
 
   bool initialized_opengl_resources = false;
 
@@ -51,6 +72,7 @@ class vr_system
   ///get the camera to use for rendering
   camera* get_eye_camera(eye output);
 
+
   //--- the following is the abstract interface that require implementation specific work
   ///Call this once OpenGL is fully setup. This function ini the VR system, and populate the `eye_render_target_sizes`.
   ///Please call initialize_opengl_resources() once this has run to create the eye render buffers
@@ -67,6 +89,21 @@ class vr_system
   [[nodiscard]] virtual bool must_vflip() const = 0;
 
   void initialize_opengl_resources();
+
+
+  //Mixed Reality
+#ifdef _WIN32
+  bool is_mr_active() const;
+  bool try_start_mr();
+  camera* get_mr_camera();
+  GLuint get_mr_fbo();
+  void depth_buffer_write_depth_plane();
+  void mr_depth_buffer_clear();
+  void submit_to_LIV() const;
+  sdl::Vec2i get_mr_size() const;
+
+  virtual void update_mr_camera() = 0;
+#endif
 };
 
 using vr_system_ptr = std::unique_ptr<vr_system>;

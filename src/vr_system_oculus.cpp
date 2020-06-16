@@ -134,8 +134,8 @@ void vr_system_oculus::build_camera_node_system()
 
   eye_camera[0]->vr_eye_projection_callback = &left_eye_oculus_projection;
   eye_camera[1]->vr_eye_projection_callback = &right_eye_oculus_projection;
-  eye_camera[0]->projection_type            = camera::projection_mode::eye_vr;
-  eye_camera[1]->projection_type            = camera::projection_mode::eye_vr;
+  eye_camera[0]->projection_type            = camera::projection_mode::vr_eye_projection;
+  eye_camera[1]->projection_type            = camera::projection_mode::vr_eye_projection;
 }
 
 void vr_system_oculus::wait_until_next_frame()

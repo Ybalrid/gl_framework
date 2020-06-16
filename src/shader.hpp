@@ -37,6 +37,7 @@ class shader
     point_light_2,
     point_light_3,
     debug_color,
+    debug_float_0,
 
     // Add uniforms on top of this one, and do not forget to glGetUniformLocation
     // at the end of the constructor of the shader class

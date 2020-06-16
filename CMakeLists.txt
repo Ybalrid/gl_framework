@@ -4,7 +4,7 @@
 # Depending on what you want to do, a few option are activable. These option may require additional libraries.
 # - HAS_OPENVR (bool) : Activate the code that uses OpenVR. OpenVR is shipped as a git submodule
 # - HAS_OPENXR (bool) : Activate the code that uses OpenXR. The OpenXR SDK is shipped as a git submodule
-# - HAS_OCULUS (bool) : Activate the code that uses Oculus. The Oculus OVR Native SDK is not shipped and need to be dowloaded by hand from the website.
+# - HAS_OCULUS_VR (bool) : Activate the code that uses Oculus. The Oculus OVR Native SDK is not shipped and need to be dowloaded by hand from the website.
 
 CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
 SET (GAME_NAME "test_project")
@@ -93,7 +93,7 @@ FILE (GLOB sources
   CONFIGURE_DEPENDS
   ./src/*.cpp
   ./src/*.hpp
-  ./unpacked_res/shaders/*.glsl
+  ./unpacked_res/shaders/*
   ./third_party/imgui/imgui*.cpp
   ./third_party/imgui/examples/imgui_impl_sdl.cpp
   ./third_party/imgui/examples/imgui_impl_opengl3.cpp
@@ -120,8 +120,9 @@ FIND_PACKAGE (FreeImage REQUIRED)
 FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
 
+
 # Create our build target
-ADD_EXECUTABLE (${GAME_NAME}_exe ${sources})
+ADD_EXECUTABLE (${GAME_NAME}_exe ${sources}  "${CMAKE_SOURCE_DIR}/third_party/LIV_v1/SharedTextureProtocol.cpp")
 TARGET_COMPILE_DEFINITIONS(${GAME_NAME}_exe PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
 
 # Add header only libraries include path
@@ -134,6 +135,7 @@ TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/imgui")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ImGuizmo")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpptoml/include")
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/LIV_v1/")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
 TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
@@ -189,6 +191,8 @@ IF(UNIX)
     TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE ${IOKit})
   ENDIF(APPLE)
 ENDIF()
+
+
 
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
   COMMAND # add_custom_command(TARGET ${GAME_NAME}_exe POST_BUILD

@@ -112,7 +112,8 @@ bool vr_system_openxr::initialize()
     extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
 
     //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
-    if(dx11_interop.init()) 
+    dx11_interop = gl_dx11_interop::get();
+    if(dx11_interop->init()) 
     {
       if(auto dx_status = xrCreateInstance(&instance_create_info, &instance); dx_status == XR_SUCCESS)
       {
@@ -321,7 +322,7 @@ bool vr_system_openxr::initialize()
   xr_graphics_binding.hGLRC        = wglGetCurrentContext();
   xr_graphics_binding.hDC          = wglGetCurrentDC();
   xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
-  xr_graphics_binding_d3d11.device = dx11_interop.get_device();
+  xr_graphics_binding_d3d11.device = dx11_interop->get_device();
   session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
 #else //I want this to work on Linux sooo bad. But I cannot test it.
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
@@ -508,8 +509,8 @@ void vr_system_openxr::build_camera_node_system()
     camera l, r;
     l.vr_eye_projection_callback = left_eye_projection;
     r.vr_eye_projection_callback = right_eye_projection;
-    l.projection_type            = camera::projection_mode::eye_vr;
-    r.projection_type            = camera::projection_mode::eye_vr;
+    l.projection_type            = camera::projection_mode::vr_eye_projection;
+    r.projection_type            = camera::projection_mode::vr_eye_projection;
     eye_camera[0]                = eye_camera_node[0]->assign(std::move(l));
     eye_camera[1]                = eye_camera_node[1]->assign(std::move(r));
   }
@@ -626,7 +627,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
     }
     else
     {
-      dx11_interop.copy(eye_render_texture[i], swapchain_images_d3d11[i][swapchain_index].texture, eye_render_target_sizes[i]);
+      dx11_interop->copy(eye_render_texture[i], swapchain_images_d3d11[i][swapchain_index].texture, eye_render_target_sizes[i]);
     }
 #endif
 

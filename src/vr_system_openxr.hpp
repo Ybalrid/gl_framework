@@ -35,7 +35,7 @@ class vr_system_openxr : public vr_system
   node* eye_camera_node[2] = { nullptr, nullptr };
 
 #ifdef WIN32
-  gl_dx11_interop dx11_interop;
+  gl_dx11_interop* dx11_interop;
   bool fallback_to_dx = false;
 #endif
 
@@ -52,5 +52,9 @@ class vr_system_openxr : public vr_system
   void submit_frame_to_vr_system() final;
 
   [[nodiscard]] virtual bool must_vflip() const final { return need_to_vflip; }
+
+#ifdef WIN32
+  void update_mr_camera() final {};
+#endif
 };
 #endif

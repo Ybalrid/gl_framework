@@ -10,7 +10,7 @@ class camera
   static int last_w, last_h, last_x, last_y;
 
   ///parameters that can be changed at will
-  enum projection_mode { perspective, ortho, hud, eye_vr };
+  enum projection_mode { perspective, orthographic, hud, vr_eye_projection };
 
   ///By default, the projection mode of a camera is perspective
   projection_mode projection_type { perspective };
@@ -23,11 +23,11 @@ class camera
   float fov       = 45.f;
 
   ///Matrix that moves the world so that the camera look at it how you want
-  glm::mat4 get_view_matrix() const;
+  [[nodiscard]] glm::mat4 get_view_matrix() const;
   ///Matrix that move everything into a [-1;1] cube
-  glm::mat4 get_projection_matrix() const;
+  [[nodiscard]] glm::mat4 get_projection_matrix() const;
   ///Multiplication of the projection and the view matrices
-  glm::mat4 get_view_projection_matrix() const;
+  [[nodiscard]] glm::mat4 get_view_projection_matrix() const;
   ///Set the global transform (model matrix) of the camera
   void set_world_matrix(const glm::mat4& matrix);
   ///Set the view matrix of the camera (it actually set the model matrix internally)

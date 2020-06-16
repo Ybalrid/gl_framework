@@ -25,7 +25,22 @@ class gl_dx11_interop
 
   bool copy(GLuint gl_image_source, ID3D11Texture2D* dx_texture_dst, sdl::Vec2i viewport);
 
+  void remove_from_cache(ID3D11Texture2D* dx_texture);
+
+  static gl_dx11_interop* get()
+  {
+    if(singleton) return singleton;
+    return new gl_dx11_interop;
+  }
+
+  std::tuple<ID3D11Texture2D*, HANDLE>
+  create_shared_d3d_texture(DXGI_FORMAT format, sdl::Vec2<UINT> size, D3D11_USAGE usage = D3D11_USAGE_DEFAULT) const;
+
   private:
+
+  static gl_dx11_interop* singleton;
+  bool initialized = false;
+
   ID3D11Device* device;
   ID3D11DeviceContext* context;
   IDXGISwapChain* swapchain;

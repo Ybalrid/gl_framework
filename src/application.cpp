@@ -586,30 +586,59 @@ void application::render_frame()
 
   if(vr)
   {
-    //We invert the culling position if the vr system returns true to must_vflip.
-    //This is because this system will do a vertical flip in the projection matrix.
-    if(vr->must_vflip()) glFrontFace(GL_CCW);
+    {
+      opengl_debug_group group("MR rendering");
+      //We invert the culling position if the vr system returns true to must_vflip.
+      //This is because this system will do a vertical flip in the projection matrix.
+      if(vr->must_vflip()) glFrontFace(GL_CCW);
 
-    const sdl::Vec2i left_size  = vr->get_eye_framebuffer_size(vr_system::eye::left),
-                     right_size = vr->get_eye_framebuffer_size(vr_system::eye::right);
+      const sdl::Vec2i left_size  = vr->get_eye_framebuffer_size(vr_system::eye::left),
+                       right_size = vr->get_eye_framebuffer_size(vr_system::eye::right);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
-    left_eye->update_projection(left_size.x, left_size.y);
-    build_draw_list_from_camera(left_eye);
-    render_draw_list(left_eye);
+      glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
+      left_eye->update_projection(left_size.x, left_size.y);
+      build_draw_list_from_camera(left_eye);
+      render_draw_list(left_eye);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
-    right_eye->update_projection(right_size.x, right_size.y);
-    build_draw_list_from_camera(right_eye);
-    render_draw_list(right_eye);
+      glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
+      right_eye->update_projection(right_size.x, right_size.y);
+      build_draw_list_from_camera(right_eye);
+      render_draw_list(right_eye);
+
+      vr->submit_frame_to_vr_system();
+      if(vr->must_vflip()) glFrontFace(GL_CW);
+    }
+
+    if(!vr->is_mr_active()) { vr->try_start_mr(); }
+
+    if(vr->is_mr_active())
+    {
+      const opengl_debug_group group("MR render");
+      vr->update_mr_camera();
+      glBindFramebuffer(GL_FRAMEBUFFER, vr->get_mr_fbo());
+      auto* mr_camera    = vr->get_mr_camera();
+      const auto mr_size = vr->get_mr_size();
+      const auto saved_clear_color = clear_color;
+      set_clear_color(glm::vec4(0,0,0,0));
+      mr_camera->update_projection(mr_size.x, mr_size.y / 2, 0, mr_size.y / 2);
+      glClear(GL_COLOR_BUFFER_BIT);
+      set_clear_color(saved_clear_color);
+      vr->mr_depth_buffer_clear();
+      vr->depth_buffer_write_depth_plane();
+      build_draw_list_from_camera(mr_camera);
+      render_draw_list(mr_camera);
+      mr_camera->update_projection(mr_size.x, mr_size.y / 2);
+      vr->mr_depth_buffer_clear();
+      render_draw_list(mr_camera);
+
+      vr->submit_to_LIV();
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    vr->submit_frame_to_vr_system();
-    if(vr->must_vflip()) glFrontFace(GL_CW);
   }
 
   const auto window_size = window.size();

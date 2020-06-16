@@ -87,6 +87,7 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   //special shader uniforms
   uniform_indices[int(uniform::debug_color)]        = glGetUniformLocation(program, "debug_color");
   uniform_indices[int(uniform::light_space_matrix)] = glGetUniformLocation(program, "light_space_matrix");
+  uniform_indices[int(uniform::debug_float_0)] = glGetUniformLocation(program, "debug_float_0");
 
   //one directional lights
   main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
@@ -107,6 +108,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
     point_light_list_uniform_locations[i].diffuse   = glGetUniformLocation(program, (point_light_name + "diffuse").c_str());
     point_light_list_uniform_locations[i].specular  = glGetUniformLocation(program, (point_light_name + "specular").c_str());
   }
+
+
 
   use();
   set_uniform(uniform::material_diffuse, material_diffuse_texture_slot);

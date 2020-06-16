@@ -41,6 +41,10 @@ class vr_system_oculus : public vr_system
   void update_tracking() final;
   void submit_frame_to_vr_system() final;
   [[nodiscard]] bool must_vflip() const final { return false; }
+
+#ifdef WIN32
+  void update_mr_camera() final {};
+#endif
 };
 
 #endif

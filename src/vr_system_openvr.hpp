@@ -14,6 +14,10 @@ class vr_system_openvr : public vr_system
 
   node* eye_camera_node[2] = { nullptr, nullptr };
 
+#ifdef WIN32
+
+#endif
+
   public:
   vr_system_openvr();
 
@@ -31,6 +35,10 @@ class vr_system_openvr : public vr_system
 
   static void get_left_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip);
   static void get_right_eye_proj_matrix(glm::mat4& matrix, float near_clip, float far_clip);
+
+#ifdef WIN32
+  void update_mr_camera() final;
+#endif
 };
 
 #endif
