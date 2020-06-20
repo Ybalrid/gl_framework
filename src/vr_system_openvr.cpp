@@ -159,6 +159,7 @@ void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_c
   matrix = glm::frustum(near_clip * left, near_clip * right, near_clip * -bottom, near_clip * -top, near_clip, far_clip);
 }
 
+#ifdef _WIN32
 vr::TrackedDeviceIndex_t find_liv_tracker()
 {
   struct device
@@ -263,6 +264,7 @@ void vr_system_openvr::update_mr_camera()
     mr_camera->fov = 60; //TODO set this dynamically
   }
 }
+#endif
 
 void vr_system_openvr::update_tracking()
 {   

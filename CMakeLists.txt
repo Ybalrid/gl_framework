@@ -153,6 +153,8 @@ IF(HAS_OPENVR)
       TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE ${CMAKE_SOURCE_DIR}/third_party/openvr/lib/win32/openvr_api.lib)
       MESSAGE(STATUS "32bit")
     ENDIF()
+    ELSE() #assume linux x64
+      TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE ${CMAKE_SOURCE_DIR}/third_party/openvr/lib/linux64/libopenvr_api.so)
   ENDIF()
 
 ENDIF()
