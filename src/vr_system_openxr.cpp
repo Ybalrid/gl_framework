@@ -41,7 +41,7 @@ inline void zero_it(T obj[], size_t count)
   memset(reinterpret_cast<void*>(obj), 0, sizeof(T) * count);
 }
 
-bool vr_system_openxr::initialize()
+bool vr_system_openxr::initialize(sdl::Window& window)
 {
   std::cout << "Initializing OpenXR based VR system\n";
   const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON");
@@ -327,8 +327,16 @@ bool vr_system_openxr::initialize()
 #else //I want this to work on Linux sooo bad. But I cannot test it.
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
   zero_it(xr_graphics_binding);
-  //TODO test on linux X11 OpenGL with glXGetCurrentContext(); and glXGetCurrentDrawable(); Probably SDL syswminfo too?
-  this_is_broken_right_here();
+  //If needed:
+  //SDL_SysWMinfo wm_info;
+  //SDL_GetWindowWMInfo(window.ptr(), &wm_info);
+  
+  xr_graphics_binding.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR;
+  xr_graphics_binding.xDisplay = XOpenDisplay(NULL);
+  xr_graphics_binding.glxContext = glXGetCurrentContext();
+  xr_graphics_binding.glxDrawable = glXGetCurrentDrawable();
+  //Note: the monado example do not set the FBCofnig and visualid on this structure
+
   session_create_info.next = &xr_graphics_binding;
 #endif
 
@@ -370,7 +378,7 @@ bool vr_system_openxr::initialize()
     else
     {
       std::cerr << "OpenGL texture format GL_RGBA8 not found within the supported formats by OpenXR runtime\n";
-      return false;
+      //return false;
     }
 
     //...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
@@ -379,7 +387,12 @@ bool vr_system_openxr::initialize()
     else
     {
       std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
-      return false;
+      //return false;
+    }
+
+    for(int i = 0; i < 32; ++i)
+    {
+      std::cout << "fomrat " << i << ": " << format[i] << std::endl;
     }
 
 #ifdef _WIN32
@@ -410,11 +423,15 @@ bool vr_system_openxr::initialize()
     swapchain_create_info.mipCount    = 1;
     swapchain_create_info.sampleCount = 1;
     //See comments format enumeration above
+    #ifdef _WIN32
     swapchain_create_info.format = fallback_to_dx
         ? (int64_t)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
         : (int64_t)
             GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
                              //GL_RGBA8;
+    #else
+    swapchain_create_info.format = GL_SRGB8_ALPHA8;
+    #endif
     swapchain_create_info.faceCount = 1;
     swapchain_create_info.arraySize = 1;
     swapchain_create_info.width     = eye_render_target_sizes[i].x;

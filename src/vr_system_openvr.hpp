@@ -23,7 +23,7 @@ class vr_system_openvr : public vr_system
 
   virtual ~vr_system_openvr();
 
-  bool initialize() final;
+  bool initialize(sdl::Window& window) final;
 
   void deinitialize_openvr();
 

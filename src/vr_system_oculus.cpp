@@ -23,7 +23,7 @@ vr_system_oculus::~vr_system_oculus()
   ovr_Shutdown();
 }
 
-bool vr_system_oculus::initialize()
+bool vr_system_oculus::initialize(sdl::Window& window)
 {
   ovrInitParams init_params = {};
   init_params.Flags         = 0;

@@ -880,7 +880,7 @@ application::application(int argc, char** argv, const std::string& application_n
   //attempt init VR
   if(vr)
   {
-    if(vr->initialize())
+    if(vr->initialize(window))
       vr->initialize_opengl_resources();
     else
       vr = nullptr;

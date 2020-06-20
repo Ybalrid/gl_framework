@@ -76,7 +76,7 @@ class vr_system
   //--- the following is the abstract interface that require implementation specific work
   ///Call this once OpenGL is fully setup. This function ini the VR system, and populate the `eye_render_target_sizes`.
   ///Please call initialize_opengl_resources() once this has run to create the eye render buffers
-  virtual bool initialize() = 0;
+  virtual bool initialize(sdl::Window& window) = 0;
   ///Only call this after `set_anchor` to a non-null pointer
   virtual void build_camera_node_system() = 0;
   ///Needs to be called before any rendering, sync with the headset. On some platform, this also acquire tracking states

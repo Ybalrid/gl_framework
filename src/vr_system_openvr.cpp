@@ -40,7 +40,7 @@ vr_system_openvr::~vr_system_openvr()
   if(vr_tracking_anchor) vr_tracking_anchor->clean_child_list();
 }
 
-bool vr_system_openvr::initialize()
+bool vr_system_openvr::initialize(sdl::Window& window)
 {
   //Pre-init fastchecks
   if(!vr::VR_IsRuntimeInstalled())

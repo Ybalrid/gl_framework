@@ -35,7 +35,7 @@ class vr_system_oculus : public vr_system
   public:
   vr_system_oculus();
   virtual ~vr_system_oculus();
-  bool initialize() final;
+  bool initialize(sdl::Window& window) final;
   void build_camera_node_system() final;
   void wait_until_next_frame() final;
   void update_tracking() final;

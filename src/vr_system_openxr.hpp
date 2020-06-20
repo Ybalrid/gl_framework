@@ -10,6 +10,8 @@
 #include "gl_dx_interop.hpp"
 #else
 #define XR_USE_PLATFORM_XLIB
+#include <GL/glew.h>
+#include <GL/glx.h>
 #endif
 
 #include <openxr/openxr.h>
@@ -45,7 +47,7 @@ class vr_system_openxr : public vr_system
   vr_system_openxr();
   virtual ~vr_system_openxr();
 
-  bool initialize() final;
+  bool initialize(sdl::Window& window) final;
   void build_camera_node_system() final;
   void wait_until_next_frame() final;
   void update_tracking() final;
