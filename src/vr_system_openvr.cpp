@@ -1,7 +1,7 @@
 #include <cpp-sdl2/sdl.hpp>
 #include <iostream>
 #include "vr_system_openvr.hpp"
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <nameof.hpp>
 

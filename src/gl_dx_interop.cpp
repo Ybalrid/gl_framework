@@ -1,8 +1,9 @@
 #include "gl_dx_interop.hpp"
-#include <gl/wglew.h>
-#include <iostream>
+
 
 #ifdef _WIN32
+#include <gl/wglew.h>
+#include <iostream>
 
 gl_dx11_interop* gl_dx11_interop::singleton = nullptr;
 gl_dx11_interop::gl_dx11_interop()

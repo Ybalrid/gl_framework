@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include "image.hpp"
 #include <array>
+#include <limits>
 
 ///A texture in GPU memory
 class texture

@@ -3,6 +3,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <array>
 #include "resource_system.hpp"
+#include <cstring>
 
 void audio_system::steal_guts(audio_system& other)
 {

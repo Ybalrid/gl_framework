@@ -612,7 +612,7 @@ void application::render_frame()
       vr->submit_frame_to_vr_system();
       if(vr->must_vflip()) glFrontFace(GL_CW);
     }
-
+#ifdef _WIN32
     if(!vr->is_mr_active()) { vr->try_start_mr(); }
 
     if(vr->is_mr_active())
@@ -637,6 +637,7 @@ void application::render_frame()
 
       vr->submit_to_LIV();
     }
+  #endif
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
