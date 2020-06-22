@@ -71,13 +71,17 @@ bool vr_system_openvr::initialize(sdl::Window& window)
   }
 
   //Init of OpenVR successful
-  char buffer[512];
+  constexpr size_t buffer_size = 512;
+  char buffer[buffer_size];
   vr::ETrackedPropertyError prop_error;
-  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String, buffer, 512, &prop_error);
+  hmd->GetStringTrackedDeviceProperty(
+      vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String, buffer, buffer_size, &prop_error);
   std::cout << "System Name  : " << buffer << "\n";
-  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ManufacturerName_String, buffer, 512, &prop_error);
+  hmd->GetStringTrackedDeviceProperty(
+      vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ManufacturerName_String, buffer, buffer_size, &prop_error);
   std::cout << "Manufacturer : " << buffer << "\n";
-  hmd->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ModelNumber_String, buffer, 512, &prop_error);
+  hmd->GetStringTrackedDeviceProperty(
+      vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_ModelNumber_String, buffer, buffer_size, &prop_error);
   std::cout << "Model Number : " << buffer << "\n";
 
   if(!vr::VRCompositor())
@@ -135,7 +139,7 @@ void vr_system_openvr::build_camera_node_system()
     glm::decompose(eye_full_transform, sc, rot, tr, sk, p);
     eye_camera_node[eye]->local_xform.set_position(tr);
     eye_camera_node[eye]->local_xform.set_orientation(rot);
-    eye_camera[eye]->projection_type            = camera::projection_mode::vr_eye_projection;
+    eye_camera[eye]->projection_type  = camera::projection_mode::vr_eye_projection;
     texture_handlers[eye].handle      = reinterpret_cast<void*>(static_cast<unsigned long long>(eye_render_texture[eye]));
     texture_handlers[eye].eType       = vr::TextureType_OpenGL;
     texture_handlers[eye].eColorSpace = vr::ColorSpace_Auto;
@@ -260,8 +264,8 @@ void vr_system_openvr::update_mr_camera()
   static const auto liv_tracker_index = find_liv_tracker();
   if(tracked_device_pose_array[liv_tracker_index].bPoseIsValid)
   {
-    const auto [translation, rotation]
-        = get_translation_rotation(glm::transpose(get_mat4_from_34(tracked_device_pose_array[liv_tracker_index].mDeviceToAbsoluteTracking)));
+    const auto [translation, rotation] = get_translation_rotation(
+        glm::transpose(get_mat4_from_34(tracked_device_pose_array[liv_tracker_index].mDeviceToAbsoluteTracking)));
     mr_camera_node->local_xform.set_position(translation);
     mr_camera_node->local_xform.set_orientation(rotation);
     vr_tracking_anchor->update_world_matrix();
@@ -271,7 +275,7 @@ void vr_system_openvr::update_mr_camera()
 #endif
 
 void vr_system_openvr::update_tracking()
-{   
+{
   glm::mat4 head_tracking = glm::mat4(1);
   for(vr::TrackedDeviceIndex_t device_index = 0; device_index < vr::k_unMaxTrackedDeviceCount; ++device_index)
   {

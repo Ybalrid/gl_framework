@@ -167,15 +167,5 @@ class application
 
   static void pop_opengl_debug_group();
 
-  struct opengl_debug_group
-  {
-#ifdef _DEBUG
-    const char* name_;
-    opengl_debug_group(const char* name);
 
-    ~opengl_debug_group();
-#else
-    opengl_debug_group(const char* name);
-#endif
-  };
 };

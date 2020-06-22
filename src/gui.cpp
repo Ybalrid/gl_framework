@@ -12,6 +12,7 @@
 #include <cpp-sdl2/sdl.hpp>
 
 #include "gizmo.hpp"
+#include "opengl_debug_group.hpp"
 
 void gui::set_script_engine_ptr(script_system* s) { scripting_engine = s; }
 
@@ -257,7 +258,7 @@ const char is_imgui[] = "ImGui code";
 
 void gui::frame()
 {
-  const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
+  const auto opengl_debug_tag = opengl_debug_group(is_imgui);
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame(w);
@@ -270,7 +271,7 @@ void gui::frame()
 
 void gui::render() const
 {
-  const auto opengl_debug_tag = application::opengl_debug_group(is_imgui);
+  const auto opengl_debug_tag = opengl_debug_group(is_imgui);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -1,4 +1,7 @@
 #include "vr_system.hpp"
+
+#include "opengl_debug_group.hpp"
+
 #if _WIN32
 #include "shlwapi.h"
 #include <fstream>
@@ -6,7 +9,7 @@
 #pragma comment(lib, "Shlwapi.lib")
 #endif
 
-float fov_value = 60;
+float mr_camera_fov_value = 60.F;
 
 vr_system::~vr_system()
 {
@@ -15,6 +18,15 @@ vr_system::~vr_system()
     glDeleteFramebuffers(2, eye_fbo);
     glDeleteRenderbuffers(2, eye_render_depth);
     glDeleteTextures(2, eye_render_texture);
+  }
+
+  if(LIV_Texture)
+  {
+    gl_dx11_interop::get()->remove_from_cache(LIV_Texture);
+    LIV_Texture->Release();
+    glDeleteFramebuffers(1, &mr_fbo);
+    glDeleteRenderbuffers(1, &mr_depth);
+    glDeleteTextures(1, &mr_render_texture);
   }
 }
 
@@ -32,8 +44,6 @@ camera* vr_system::get_eye_camera(eye output) { return eye_camera[(size_t)output
 
 void vr_system::initialize_opengl_resources()
 {
-  //OpenGL resource initialization
-
   //The rest of the engine don't care bout our "VR" hardware.
   //It just want to bind and render to a pair of FBOs, one for left eye, one for right
   glGenTextures(2, eye_render_texture);
@@ -62,7 +72,6 @@ void vr_system::initialize_opengl_resources()
     { std::cerr << "eye fbo " << i << " is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "\n"; }
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
   initialized_opengl_resources = true;
 }
 
@@ -76,9 +85,11 @@ GLuint vr_system::get_mr_fbo() const { return mr_fbo; }
 
 void vr_system::depth_buffer_write_depth_plane() const
 {
+  const auto debug_group         = opengl_debug_group("MR depth separation plane");
   static bool window_open        = true;
   static bool hide_cliping_plane = true;
   static float z_offset          = 0;
+
   if(window_open)
   {
     ImGui::Begin("LIV background/forground separator", &window_open);
@@ -149,7 +160,7 @@ void vr_system::read_configuration()
 
   if(configuration_file_stream.is_open())
   {
-    configuration.clear();
+    external_camera_configuration.clear();
     std::string buffer, key, value;
     while(!configuration_file_stream.eof())
     {
@@ -159,7 +170,7 @@ void vr_system::read_configuration()
       std::getline(read_buffer, key, '=');
       std::getline(read_buffer, value);
 
-      if(!key.empty() && !value.empty()) configuration[key] = value;
+      if(!key.empty() && !value.empty()) external_camera_configuration[key] = value;
     }
 
     update_fov();
@@ -169,16 +180,15 @@ void vr_system::read_configuration()
 void vr_system::update_fov()
 {
   std::lock_guard<std::mutex> lock_guard(fov_mutex);
-  const auto fov_it = configuration.find("fov");
-  if(fov_it != configuration.end())
+  const auto fov_it = external_camera_configuration.find("fov");
+  if(fov_it != external_camera_configuration.end())
   {
-    fov_value = std::stof(fov_it->second);
-    std::cout << "Updated MR camera FOV to " << fov_value << "\n";
+    mr_camera_fov_value = std::stof(fov_it->second);
+    std::cout << "Updated MR camera FOV to " << mr_camera_fov_value << "\n";
   }
 }
 
-float vr_system::get_mr_fov()
-{ return fov_value; }
+float vr_system::get_mr_fov() { return mr_camera_fov_value; }
 
 bool vr_system::is_mr_active() const
 {
@@ -254,17 +264,14 @@ bool vr_system::try_start_mr()
           switch(WaitForSingleObject(exe_dir_change_notification, INFINITE))
           {
             default:
-            case WAIT_TIMEOUT:
-              break;
+            case WAIT_TIMEOUT: break;
             case WAIT_OBJECT_0:
               read_configuration();
               CloseHandle(exe_dir_change_notification);
               subscribe_directory_watcher();
               break;
-            case WAIT_FAILED:
-              fprintf(stderr, "Watching for directory changes resulted in error %d\n", GetLastError()); break;
-            case WAIT_ABANDONED:
-              fprintf(stderr, "We are in WAIT_ABANDONED state. This doesn't make much sense here...\n"); break;
+            case WAIT_FAILED: fprintf(stderr, "Watching for directory changes resulted in error %d\n", GetLastError()); break;
+            case WAIT_ABANDONED: fprintf(stderr, "We are in WAIT_ABANDONED state. This doesn't make much sense here...\n"); break;
           }
         }
       } };
@@ -273,10 +280,9 @@ bool vr_system::try_start_mr()
 
       return fb_status;
     }
-
-    //Well, if we're here, it means that we did not initialize anything
-    return false;
   }
+  //Well, if we're here, it means that we did not initialize anything
+  return false;
 }
 
 void vr_system::submit_to_LIV() const

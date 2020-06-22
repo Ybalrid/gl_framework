@@ -64,7 +64,7 @@ class vr_system
   std::mutex fov_mutex;
   std::atomic_bool watcher_alive;
   std::thread watcher;
-  std::unordered_map<std::string, std::string> configuration;
+  std::unordered_map<std::string, std::string> external_camera_configuration;
 
 #endif
 

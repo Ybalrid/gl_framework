@@ -11,6 +11,8 @@
 #include "light.hpp"
 #include <chrono>
 
+#include "opengl_debug_group.hpp"
+
 //just a test
 
 float shadow_map_ortho_scale          = 50;
@@ -364,7 +366,6 @@ void application::configure_and_create_window(const std::string& application_nam
       if(system_name == "oculus") { vr = std::make_unique<vr_system_oculus>(); }
 #endif
 
-
       if(!vr)
       {
         std::cerr << "application is VR, but VR system named " << system_name
@@ -373,10 +374,7 @@ void application::configure_and_create_window(const std::string& application_nam
     }
   }
 
-  if(vr)
-  {
-   mr_activated = configuration_table->get_as<bool>("use_LIV").value_or(false);
-  }
+  if(vr) { mr_activated = configuration_table->get_as<bool>("use_LIV").value_or(false); }
 
   //create window
   window = sdl::Window(application_name,
@@ -622,8 +620,7 @@ void application::render_frame()
     if(mr_activated)
     {
       //In case we haven't initialized Mixed Reality : This poke the SharedTextureProtocol to know if LIV is capturing
-      if(!vr->is_mr_active())
-        vr->try_start_mr();
+      if(!vr->is_mr_active()) vr->try_start_mr();
 
       if(vr->is_mr_active())
       {
@@ -634,8 +631,8 @@ void application::render_frame()
 
         //Configure camera to draw on correct framebuffer object
         glBindFramebuffer(GL_FRAMEBUFFER, vr->get_mr_fbo());
-        auto* mr_camera              = vr->get_mr_camera();
-        const auto mr_viewport_size           = vr->get_mr_size();
+        auto* mr_camera             = vr->get_mr_camera();
+        const auto mr_viewport_size = vr->get_mr_size();
         build_draw_list_from_camera(mr_camera); //frustum culling
 
         //Clear the MR texture with transparent black
@@ -658,7 +655,7 @@ void application::render_frame()
         vr->submit_to_LIV(); //This causes resource copy from GL to DX
       }
     }
-  #endif
+#endif
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
@@ -855,30 +852,6 @@ void application::set_clear_color(glm::vec4 color)
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
   }
 }
-
-void application::push_opengl_debug_group(const char* name)
-{
-#ifdef _DEBUG
-  if(glPushDebugGroup) //likely to fail on macos without this test, as opengl 4.1 shouldn't have access to this
-    glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, GLsizei(0), GLsizei(strlen(name)), name);
-#else
-  (void)name;
-#endif
-}
-
-void application::pop_opengl_debug_group()
-{
-#ifdef _DEBUG
-  if(glPopDebugGroup) glPopDebugGroup();
-#endif
-}
-
-#ifdef _DEBUG
-application::opengl_debug_group::opengl_debug_group(const char* name) : name_ { name } { push_opengl_debug_group(name_); }
-application::opengl_debug_group::~opengl_debug_group() { pop_opengl_debug_group(); }
-#else
-application::opengl_debug_group::opengl_debug_group(const char* name) { (void)(name); }
-#endif
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
