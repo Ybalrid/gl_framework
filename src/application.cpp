@@ -373,6 +373,11 @@ void application::configure_and_create_window(const std::string& application_nam
     }
   }
 
+  if(vr)
+  {
+   mr_activated = configuration_table->get_as<bool>("use_LIV").value_or(false);
+  }
+
   //create window
   window = sdl::Window(application_name,
                        window_size,
@@ -587,7 +592,7 @@ void application::render_frame()
   if(vr)
   {
     {
-      opengl_debug_group group("MR rendering");
+      opengl_debug_group group("VR rendering");
       //We invert the culling position if the vr system returns true to must_vflip.
       //This is because this system will do a vertical flip in the projection matrix.
       if(vr->must_vflip()) glFrontFace(GL_CCW);
@@ -612,30 +617,46 @@ void application::render_frame()
       vr->submit_frame_to_vr_system();
       if(vr->must_vflip()) glFrontFace(GL_CW);
     }
-#ifdef _WIN32
-    if(!vr->is_mr_active()) { vr->try_start_mr(); }
 
-    if(vr->is_mr_active())
+#ifdef _WIN32 //LIV.app only exist on Windows
+    if(mr_activated)
     {
-      const opengl_debug_group group("MR render");
-      vr->update_mr_camera();
-      glBindFramebuffer(GL_FRAMEBUFFER, vr->get_mr_fbo());
-      auto* mr_camera    = vr->get_mr_camera();
-      const auto mr_size = vr->get_mr_size();
-      const auto saved_clear_color = clear_color;
-      set_clear_color(glm::vec4(0,0,0,0));
-      mr_camera->update_projection(mr_size.x, mr_size.y / 2, 0, mr_size.y / 2);
-      glClear(GL_COLOR_BUFFER_BIT);
-      set_clear_color(saved_clear_color);
-      vr->mr_depth_buffer_clear();
-      vr->depth_buffer_write_depth_plane();
-      build_draw_list_from_camera(mr_camera);
-      render_draw_list(mr_camera);
-      mr_camera->update_projection(mr_size.x, mr_size.y / 2);
-      vr->mr_depth_buffer_clear();
-      render_draw_list(mr_camera);
+      //In case we haven't initialized Mixed Reality : This poke the SharedTextureProtocol to know if LIV is capturing
+      if(!vr->is_mr_active())
+        vr->try_start_mr();
 
-      vr->submit_to_LIV();
+      if(vr->is_mr_active())
+      {
+        const opengl_debug_group group("MR rendering");
+
+        //Updade mixed reality tracking - Will only work if vr is a `vr_system_openvr`
+        vr->update_mr_camera();
+
+        //Configure camera to draw on correct framebuffer object
+        glBindFramebuffer(GL_FRAMEBUFFER, vr->get_mr_fbo());
+        auto* mr_camera              = vr->get_mr_camera();
+        const auto mr_viewport_size           = vr->get_mr_size();
+        build_draw_list_from_camera(mr_camera); //frustum culling
+
+        //Clear the MR texture with transparent black
+        const auto saved_clear_color = clear_color;
+        set_clear_color(glm::vec4(0, 0, 0, 0));
+        glClear(GL_COLOR_BUFFER_BIT);
+        set_clear_color(saved_clear_color);
+
+        //Render "foreground" pass to the bottom half of render target
+        mr_camera->update_projection(mr_viewport_size.x, mr_viewport_size.y / 2, 0, mr_viewport_size.y / 2);
+        vr->mr_depth_buffer_clear();
+        vr->depth_buffer_write_depth_plane(); //This fill the depth buffer so only object in front of user are drawn
+        render_draw_list(mr_camera);
+
+        //Render everything to the background pass
+        mr_camera->update_projection(mr_viewport_size.x, mr_viewport_size.y / 2);
+        vr->mr_depth_buffer_clear();
+        render_draw_list(mr_camera);
+
+        vr->submit_to_LIV(); //This causes resource copy from GL to DX
+      }
     }
   #endif
 

@@ -83,7 +83,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   extension_properties_count++;
 
   //Create OpenXR instance
-  const char engine_name[] = "the //TODO engine";
+  const char engine_name[] = "The //TODO engine";
   XrInstanceCreateInfo instance_create_info;
   zero_it(instance_create_info);
   instance_create_info.applicationInfo.apiVersion = XR_MAKE_VERSION(1, 0, 0);

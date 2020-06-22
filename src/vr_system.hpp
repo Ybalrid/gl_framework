@@ -10,6 +10,10 @@
 #include "gl_dx_interop.hpp"
 #endif
 
+#include <atomic>
+#include <mutex>
+#include <thread>
+
 #include "shader_program_manager.hpp"
 
 //This is the interface for all VR systems
@@ -37,30 +41,41 @@ class vr_system
   node* hand_node[2] = { nullptr, nullptr };
 
 #ifdef _WIN32
-  node* mr_camera_node = nullptr;
-  camera* mr_camera     = nullptr;
-  GLuint mr_fbo        = invalid_name;
-  GLuint mr_depth       = invalid_name;
-  GLuint mr_render_texture = invalid_name;
+  node* mr_camera_node              = nullptr;
+  camera* mr_camera                 = nullptr;
+  GLuint mr_fbo                     = invalid_name;
+  GLuint mr_depth                   = invalid_name;
+  GLuint mr_render_texture          = invalid_name;
   GLuint mr_separation_plane_buffer = invalid_name;
-  sdl::Vec2i mr_texture_size = {};
+  sdl::Vec2i mr_texture_size        = {};
 
   shader_handle depth_plane_shader = shader_program_manager::invalid_shader;
 
   //LIV specific
   ID3D11Texture2D* LIV_Texture;
   HANDLE LIV_Texture_SharedHandle;
+
+  //Directory watcher to read FOV updates
+  bool fov_from_file                      = false;
+  static constexpr char* config_file_name = "ExternalCamera.cfg";
+  HMODULE exe_module                      = NULL;
+  char exe_dir_path[MAX_PATH];
+  HANDLE exe_dir_change_notification;
+  std::mutex fov_mutex;
+  std::atomic_bool watcher_alive;
+  std::thread watcher;
+  std::unordered_map<std::string, std::string> configuration;
+
 #endif
 
   bool initialized_opengl_resources = false;
 
   public:
-
   //Nothing special to do in ctor/dtor
-  vr_system()          = default;
+  vr_system() = default;
   virtual ~vr_system();
 
-  enum class eye { left = 0, right  = 1};
+  enum class eye { left = 0, right = 1 };
 
   //--- the following is generic and should work as-is for all vr systems
   ///Get the eye frame buffers
@@ -71,7 +86,6 @@ class vr_system
   void set_anchor(node* node);
   ///get the camera to use for rendering
   camera* get_eye_camera(eye output);
-
 
   //--- the following is the abstract interface that require implementation specific work
   ///Call this once OpenGL is fully setup. This function ini the VR system, and populate the `eye_render_target_sizes`.
@@ -90,19 +104,26 @@ class vr_system
 
   void initialize_opengl_resources();
 
-
   //Mixed Reality
 #ifdef _WIN32
   bool is_mr_active() const;
   bool try_start_mr();
-  camera* get_mr_camera();
-  GLuint get_mr_fbo();
-  void depth_buffer_write_depth_plane();
-  void mr_depth_buffer_clear();
+  camera* get_mr_camera() const;
+  GLuint get_mr_fbo() const;
+  void depth_buffer_write_depth_plane() const;
+  void mr_depth_buffer_clear() const;
   void submit_to_LIV() const;
   sdl::Vec2i get_mr_size() const;
 
+  void subscribe_directory_watcher();
+  void read_configuration();
+  void update_fov();
+
+  float get_mr_fov();
+
+  //Interface for underlying VR system
   virtual void update_mr_camera() = 0;
+
 #endif
 };
 

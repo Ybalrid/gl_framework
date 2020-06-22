@@ -154,6 +154,7 @@ class application
   } keyboard_debug_utilities { this };
 
   vr_system_ptr vr = nullptr;
+  bool mr_activated = false;
 
   public:
   static scene* get_main_scene();

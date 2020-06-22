@@ -250,8 +250,13 @@ vr::TrackedDeviceIndex_t find_liv_tracker()
   return vr::k_unTrackedDeviceIndexInvalid;
 }
 
+#include "imgui.h"
 void vr_system_openvr::update_mr_camera()
 {
+  mr_camera->fov = get_mr_fov();
+
+  ImGui::SliderFloat("MR Fov", &mr_camera->fov, 1, 179);
+
   static const auto liv_tracker_index = find_liv_tracker();
   if(tracked_device_pose_array[liv_tracker_index].bPoseIsValid)
   {
@@ -261,7 +266,6 @@ void vr_system_openvr::update_mr_camera()
     mr_camera_node->local_xform.set_orientation(rotation);
     vr_tracking_anchor->update_world_matrix();
     mr_camera->set_world_matrix(mr_camera_node->get_world_matrix());
-    mr_camera->fov = 60; //TODO set this dynamically
   }
 }
 #endif
