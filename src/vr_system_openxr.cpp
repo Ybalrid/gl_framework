@@ -314,16 +314,19 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
   //we need to get ghe graphics bindings that correspond to the choosen graphics API and windowing system
 #ifdef WIN32
-  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding;
+  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding_opengl;
   XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11;
-  zero_it(xr_graphics_binding);
-  zero_it(xr_graphics_binding_d3d11);
-  xr_graphics_binding.type         = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
-  xr_graphics_binding.hGLRC        = wglGetCurrentContext();
-  xr_graphics_binding.hDC          = wglGetCurrentDC();
-  xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
-  xr_graphics_binding_d3d11.device = dx11_interop->get_device();
-  session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding;
+  zero_it(xr_graphics_binding_opengl);
+  xr_graphics_binding_opengl.type  = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
+  xr_graphics_binding_opengl.hGLRC = wglGetCurrentContext();
+  xr_graphics_binding_opengl.hDC   = wglGetCurrentDC();
+  if(fallback_to_dx)
+  {
+    zero_it(xr_graphics_binding_d3d11);
+    xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
+    xr_graphics_binding_d3d11.device = dx11_interop->get_device();
+  }
+  session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding_opengl;
 #else //I want this to work on Linux sooo bad. But I cannot test it.
   XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
   zero_it(xr_graphics_binding);
