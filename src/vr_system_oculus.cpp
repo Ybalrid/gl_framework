@@ -127,7 +127,6 @@ void vr_system_oculus::build_camera_node_system()
   {
     eye_camera_node[i] = head_node->push_child(create_node());
     camera cam;
-    //TODO setup custom projection matrix callback
     eye_camera[i] = eye_camera_node[i]->assign(std::move(cam));
     hand_node[i]  = head_node->push_child(create_node());
   }

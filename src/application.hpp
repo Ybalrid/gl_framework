@@ -9,7 +9,7 @@
 #include <glm/glm.hpp>
 
 #include <GL/glew.h>
-#define CPP_SDL2_GL_WINDOW
+#define CPP_SDL2_ENABLE_OPENGL
 #include <cpp-sdl2/sdl.hpp>
 
 #include <vector>
@@ -103,7 +103,7 @@ class application
 
   camera* main_camera = nullptr;
   node* cam_node      = nullptr;
-  directional_light sun;
+  directional_light sun{};
   std::array<point_light*, 4> p_lights { nullptr, nullptr, nullptr, nullptr };
 
   audio_system audio;
@@ -162,10 +162,5 @@ class application
   application(int argc, char** argv, const std::string& application_name);
   static std::vector<std::string> resource_paks;
   static void set_clear_color(glm::vec4 color);
-
-  static void push_opengl_debug_group(const char* name);
-
-  static void pop_opengl_debug_group();
-
 
 };

@@ -585,7 +585,7 @@ void application::render_frame()
   frame_prepare();
   render_shadowmap();
 
-  //this apply frustrum culling algorithm and build a "objets to draw list" CPU side
+  //this apply frustum culling algorithm and build a "objects to draw list" CPU side
 
   if(vr)
   {
