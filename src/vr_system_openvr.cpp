@@ -35,8 +35,11 @@ vr_system_openvr::~vr_system_openvr()
 {
   std::cout << "Deinitialized OpenVR based vr_system implementation\n";
 
-  deinitialize_openvr();
-
+  if(init_success)
+  {
+    //openvr cleanup
+    vr::VR_Shutdown();
+  }
   if(vr_tracking_anchor) vr_tracking_anchor->clean_child_list();
 }
 
@@ -106,14 +109,6 @@ bool vr_system_openvr::initialize(sdl::Window& window)
   return init_success;
 }
 
-void vr_system_openvr::deinitialize_openvr()
-{
-  if(init_success)
-  {
-    //openvr cleanup
-    vr::VR_Shutdown();
-  }
-}
 
 void vr_system_openvr::wait_until_next_frame()
 {

@@ -25,8 +25,6 @@ class vr_system_openvr : public vr_system
 
   bool initialize(sdl::Window& window) final;
 
-  void deinitialize_openvr();
-
   void update_tracking() final;
   void wait_until_next_frame() final;
   void submit_frame_to_vr_system() final;
