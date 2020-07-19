@@ -1,0 +1,3 @@
+- rename all shaders to .vert/.frag convetion to be more compatible with tools
+- create real material system that includes "the shader to be used"
+- create pbr metal/rough shader
