@@ -1,10 +1,6 @@
 #include <GL/glew.h>
 #include "camera.hpp"
 
-int camera::last_w = -1;
-int camera::last_h = -1;
-int camera::last_x = -1;
-int camera::last_y = -1;
 
 glm::mat4 camera::get_view_matrix() const { return glm::inverse(world_model_matrix); }
 
@@ -52,6 +48,11 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
   }
 }
 
+//Save the "global" state of the last time we ran `set_gl_viewport`
+int camera::last_w = -1;
+int camera::last_h = -1;
+int camera::last_x = -1;
+int camera::last_y = -1;
 void camera::set_gl_viewport(int x, int y, int w, int h)
 {
   if(last_w != w || last_h != h || last_x != x || last_y != y)

@@ -19,7 +19,7 @@ vr_system::~vr_system()
     glDeleteRenderbuffers(2, eye_render_depth);
     glDeleteTextures(2, eye_render_texture);
   }
-
+#ifdef WIN32
   if(LIV_Texture)
   {
     gl_dx11_interop::get()->remove_from_cache(LIV_Texture);
@@ -28,6 +28,7 @@ vr_system::~vr_system()
     glDeleteRenderbuffers(1, &mr_depth);
     glDeleteTextures(1, &mr_render_texture);
   }
+#endif
 }
 
 GLuint vr_system::get_eye_framebuffer(eye output) { return eye_fbo[(size_t)output]; }
