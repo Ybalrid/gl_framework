@@ -1,6 +1,6 @@
 build/
 *.user
 src/build_config.hpp
-third_party/oculus_sdk/*a
+third_party/oculus_sdk/*
 
 .vscode

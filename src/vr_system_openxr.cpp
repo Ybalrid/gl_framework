@@ -37,7 +37,6 @@ inline void zero_it(T& obj)
 template <typename T>
 inline void zero_it(T obj[], size_t count)
 {
-
   memset(reinterpret_cast<void*>(obj), 0, sizeof(T) * count);
 }
 
@@ -113,7 +112,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
     //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
     dx11_interop = gl_dx11_interop::get();
-    if(dx11_interop->init()) 
+    if(dx11_interop->init())
     {
       if(auto dx_status = xrCreateInstance(&instance_create_info, &instance); dx_status == XR_SUCCESS)
       {
@@ -326,21 +325,21 @@ bool vr_system_openxr::initialize(sdl::Window& window)
     xr_graphics_binding_d3d11.type   = XR_TYPE_GRAPHICS_BINDING_D3D11_KHR;
     xr_graphics_binding_d3d11.device = dx11_interop->get_device();
   }
-  session_create_info.next         = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding_opengl;
+  session_create_info.next = fallback_to_dx ? (void*)&xr_graphics_binding_d3d11 : (void*)&xr_graphics_binding_opengl;
 #else //I want this to work on Linux sooo bad. But I cannot test it.
-  XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding;
-  zero_it(xr_graphics_binding);
+  XrGraphicsBindingOpenGLXlibKHR xr_graphics_binding_opengl;
+  zero_it(xr_graphics_binding_opengl);
   //If needed:
   //SDL_SysWMinfo wm_info;
   //SDL_GetWindowWMInfo(window.ptr(), &wm_info);
-  
-  xr_graphics_binding.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR;
-  xr_graphics_binding.xDisplay = XOpenDisplay(NULL);
-  xr_graphics_binding.glxContext = glXGetCurrentContext();
-  xr_graphics_binding.glxDrawable = glXGetCurrentDrawable();
+
+  xr_graphics_binding_opengl.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR;
+  xr_graphics_binding_opengl.xDisplay = XOpenDisplay(NULL);
+  xr_graphics_binding_opengl.glxContext = glXGetCurrentContext();
+  xr_graphics_binding_opengl.glxDrawable = glXGetCurrentDrawable();
   //Note: the monado example do not set the FBCofnig and visualid on this structure
 
-  session_create_info.next = &xr_graphics_binding;
+  session_create_info.next = &xr_graphics_binding_opengl;
 #endif
 
   if(status = xrCreateSession(instance, &session_create_info, &session); status != XR_SUCCESS)
@@ -393,10 +392,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
       //return false;
     }
 
-    for(int i = 0; i < 32; ++i)
-    {
-      std::cout << "fomrat " << i << ": " << format[i] << std::endl;
-    }
+    for(int i = 0; i < 32; ++i) { std::cout << "fomrat " << i << ": " << format[i] << std::endl; }
 
 #ifdef _WIN32
   }
@@ -425,16 +421,16 @@ bool vr_system_openxr::initialize(sdl::Window& window)
         = XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT; //Transfer Destination bit. We only ever transfer rendered images to this, we don't use it as part of the rendering.
     swapchain_create_info.mipCount    = 1;
     swapchain_create_info.sampleCount = 1;
-    //See comments format enumeration above
-    #ifdef _WIN32
+//See comments format enumeration above
+#ifdef _WIN32
     swapchain_create_info.format = fallback_to_dx
         ? (int64_t)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
         : (int64_t)
             GL_SRGB8_ALPHA8; //TODO check the spec about SRGB/Linear color spaces. The missmatch here is intentional, image's too bright without this
                              //GL_RGBA8;
-    #else
+#else
     swapchain_create_info.format = GL_SRGB8_ALPHA8;
-    #endif
+#endif
     swapchain_create_info.faceCount = 1;
     swapchain_create_info.arraySize = 1;
     swapchain_create_info.width     = eye_render_target_sizes[i].x;
@@ -588,13 +584,13 @@ void vr_system_openxr::update_tracking()
   //This updates the world matrices on everybody
   vr_tracking_anchor->update_world_matrix();
 
-  //This is requried to update the view matrix used for rendering on our cameras
+  //This is required to update the view matrix used for rendering on our cameras
   //The camera object is not aware it's attached to a node, it only know it has a view matrix.
   //Set world matrix on a camera update the view matrix by computing the inverse of the input
   for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
 }
 
-#define static_array_size(static_array) sizeof(static_array) / sizeof(decltype(*static_array))
+#define static_array_size(static_array) (sizeof(static_array) / sizeof(decltype(*static_array)))
 
 void vr_system_openxr::submit_frame_to_vr_system()
 {
