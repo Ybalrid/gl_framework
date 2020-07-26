@@ -24,10 +24,24 @@ struct keyboard_input_command : input_command
 
 ///Button input command
 struct gamepad_button_command : input_command //this one exist for API consistency.
-{};
+{ };
+
+enum class axis_range
+{
+  zero_to_one, //Like an analog trigger
+  minus_one_to_one //Like a hotas throttle 
+};
 
 ///Axis input command, contains the value of the axis
-struct gamepad_axis_command : input_command
+struct gamepad_1d_axis_command : input_command
 {
-  int16_t value = 0;
+  float value = 0;
+  axis_range range;
+};
+
+///2D stick input command
+struct gamepad_2d_stick_command : input_command
+{
+  float x = 0;
+  float y = 0;
 };

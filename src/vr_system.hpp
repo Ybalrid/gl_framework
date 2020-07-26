@@ -15,6 +15,30 @@
 #include <thread>
 
 #include "shader_program_manager.hpp"
+#include "input_command.hpp"
+
+struct vr_controller
+{
+  //This is the scene graph node that represent this controller, as VR controllers are object tracked within a VR system
+  node* pose_node = nullptr;
+  //These commands are made to directly mimic the physical inputs of whatever controllers are used. The corresponding names 
+  std::vector<gamepad_button_command> buttons;
+  std::vector<std::string> button_names;
+  std::vector<gamepad_1d_axis_command> triggers;
+  std::vector<std::string> trigger_names;
+  std::vector<gamepad_2d_stick_command> sticks;
+  std::vector<std::string> stick_names;
+
+  //These commands are things hing level bindings to actions like "teleport", "pet the cat", "reverse the polarity of the neutron flow"
+  std::vector<input_command*> generic_commands;
+  std::vector<std::string> generic_command_names;
+
+  //A name for the controller, may be displayed to the user
+  std::string controller_name;
+
+  enum class hand_side { unknown, left, right };
+  hand_side side { hand_side::unknown };
+};
 
 //This is the interface for all VR systems
 class vr_system
@@ -39,6 +63,10 @@ class vr_system
 
   node* head_node    = nullptr;
   node* hand_node[2] = { nullptr, nullptr };
+
+  node* get_hand(vr_controller::hand_side side);
+
+  vr_controller* hand_controllers[2] = { nullptr, nullptr };
 
 #ifdef _WIN32
   node* mr_camera_node              = nullptr;

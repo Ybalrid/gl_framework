@@ -127,7 +127,6 @@ void vr_system_openvr::build_camera_node_system()
     eye_camera_node[eye] = head_node->push_child(create_node());
     camera cam;
     eye_camera[eye] = eye_camera_node[eye]->assign(std::move(cam));
-    hand_node[eye]  = head_node->push_child(create_node());
 
     const auto eye_matrix_34      = hmd->GetEyeToHeadTransform(vr::EVREye(eye));
     const auto eye_full_transform = (glm::transpose(get_mat4_from_34(eye_matrix_34)));
@@ -138,6 +137,13 @@ void vr_system_openvr::build_camera_node_system()
     texture_handlers[eye].handle      = reinterpret_cast<void*>(static_cast<unsigned long long>(eye_render_texture[eye]));
     texture_handlers[eye].eType       = vr::TextureType_OpenGL;
     texture_handlers[eye].eColorSpace = vr::ColorSpace_Auto;
+  }
+
+  for(size_t hand = 0; hand < 2; ++hand)
+  {
+    hand_node[hand]              = vr_tracking_anchor->push_child(create_node());
+    hand_controllers[hand]       = new vr_controller;
+    hand_controllers[hand]->side = vr_controller::hand_side(hand + 1);
   }
 
   eye_camera[0]->vr_eye_projection_callback = &get_left_eye_proj_matrix;
@@ -271,20 +277,51 @@ void vr_system_openvr::update_mr_camera()
 
 void vr_system_openvr::update_tracking()
 {
-  glm::mat4 head_tracking = glm::mat4(1);
+  glm::mat4 head_tracking    = glm::mat4(1);
+  glm::mat4 hand_tracking[2] = { glm::mat4(1), glm::mat4(1) };
   for(vr::TrackedDeviceIndex_t device_index = 0; device_index < vr::k_unMaxTrackedDeviceCount; ++device_index)
   {
     if(tracked_device_pose_array[device_index].bPoseIsValid)
     {
-      if(hmd->GetTrackedDeviceClass(device_index) == vr::TrackedDeviceClass_HMD)
-      { head_tracking = glm::transpose(get_mat4_from_34(tracked_device_pose_array[device_index].mDeviceToAbsoluteTracking)); }
+      switch(hmd->GetTrackedDeviceClass(device_index))
+      {
+        case vr::TrackedDeviceClass_HMD:
+          head_tracking = glm::transpose(get_mat4_from_34(tracked_device_pose_array[device_index].mDeviceToAbsoluteTracking));
+          break;
+
+        case vr::TrackedDeviceClass_Controller:
+          switch(hmd->GetControllerRoleForTrackedDeviceIndex(device_index))
+          {
+            case vr::TrackedControllerRole_LeftHand:
+              hand_tracking[0]
+                  = glm::transpose(get_mat4_from_34(tracked_device_pose_array[device_index].mDeviceToAbsoluteTracking));
+              break;
+            case vr::TrackedControllerRole_RightHand:
+              hand_tracking[1]
+                  = glm::transpose(get_mat4_from_34(tracked_device_pose_array[device_index].mDeviceToAbsoluteTracking));
+              break;
+            default: break;
+          }
+          break;
+        default: break;
+      }
     }
   }
 
   //update node local transforms with OpenVR tracked objects
-  const auto [translation, rotation] = get_translation_rotation(head_tracking);
-  head_node->local_xform.set_position(translation);
-  head_node->local_xform.set_orientation(rotation);
+  const auto [head_translation, head_rotation] = get_translation_rotation(head_tracking);
+  head_node->local_xform.set_position(head_translation);
+  head_node->local_xform.set_orientation(head_rotation);
+
+  for(auto hand : { vr_controller::hand_side::left, vr_controller::hand_side::right })
+  {
+    if(node* hand_node = get_hand(hand); hand_node != nullptr)
+    {
+      const auto [hand_translation, hand_rotation] = get_translation_rotation(hand_tracking[size_t(hand) - 1]);
+      hand_node->local_xform.set_position(hand_translation);
+      hand_node->local_xform.set_orientation(hand_rotation);
+    }
+  }
 
   //update nodes world transforms
   vr_tracking_anchor->update_world_matrix();

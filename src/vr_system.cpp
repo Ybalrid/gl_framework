@@ -11,6 +11,18 @@
 
 float mr_camera_fov_value = 60.F;
 
+node* vr_system::get_hand(vr_controller::hand_side side)
+{
+  switch(side)
+  {
+    case vr_controller::hand_side::left: return hand_node[0];
+    case vr_controller::hand_side::right: return hand_node[1];
+    case vr_controller::hand_side::unknown:
+    default:
+    return nullptr;
+  }
+}
+
 vr_system::~vr_system()
 {
   if(initialized_opengl_resources)

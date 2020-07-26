@@ -14,10 +14,6 @@ class vr_system_openvr : public vr_system
 
   node* eye_camera_node[2] = { nullptr, nullptr };
 
-#ifdef WIN32
-
-#endif
-
   public:
   vr_system_openvr();
 
