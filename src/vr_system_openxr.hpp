@@ -17,8 +17,11 @@
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
+#include <vector>
+
 class vr_system_openxr : public vr_system
 {
+  std::vector<const char*> enabled_extension_properties_names;
   XrInstance instance      = XR_NULL_HANDLE;
   XrSession session        = XR_NULL_HANDLE;
   XrSystemId system_id     = 0;

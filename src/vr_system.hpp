@@ -99,7 +99,7 @@ class vr_system
   virtual void update_tracking() = 0;
   ///Send content of the framebuffers to the VR system
   virtual void submit_frame_to_vr_system() = 0;
-  ///Return true if this VR system will peform an image vflip in the projection matrix. This changes face culling order.
+  ///Return true if this VR system will perform an image vflip in the projection matrix. This changes face culling order.
   [[nodiscard]] virtual bool must_vflip() const = 0;
 
   void initialize_opengl_resources();

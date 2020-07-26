@@ -9,6 +9,9 @@
 
 #include "imgui.h"
 
+using PFN_xrTestMeLIV = XrResult(*)(XrInstance, const char**);
+static PFN_xrTestMeLIV xrTestMeLIV = nullptr;
+
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 bool vr_system_openxr::need_to_vflip = false;
@@ -43,43 +46,48 @@ inline void zero_it(T obj[], size_t count)
 bool vr_system_openxr::initialize(sdl::Window& window)
 {
   std::cout << "Initializing OpenXR based VR system\n";
-  const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON");
-  if(xr_runtime_json_str != nullptr) std::cout << xr_runtime_json_str << "\n";
+  if(const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON"); xr_runtime_json_str != nullptr) std::cout << xr_runtime_json_str << "\n";
+  if(const char* xr_api_layer_path = getenv("XR_API_LAYER_PATH"); xr_api_layer_path) std::cout << xr_api_layer_path << "\n";
 
   //Step one, get XrInstance up and running
-
-  //Enumerate layers and extensions
-  XrApiLayerProperties api_layer_properties[max_properties_count];
-  zero_it(api_layer_properties, max_properties_count);
-  api_layer_properties->type = XR_TYPE_API_LAYER_PROPERTIES;
-  uint32_t api_layer_count   = 0;
   XrResult status;
 
-  if(status = xrEnumerateApiLayerProperties(max_properties_count, &api_layer_count, api_layer_properties); status != XR_SUCCESS)
-  { std::cerr << "error while enumerating API properties\n"; }
-
-  std::vector<const char*> api_layer_names((size_t)api_layer_count);
-  for(size_t i = 0; i < api_layer_count; ++i) api_layer_names[i] = api_layer_properties[i].layerName;
-
-  XrExtensionProperties extension_properties[max_properties_count];
-  zero_it(extension_properties, max_properties_count);
-  uint32_t extension_properties_count = 0;
-
-  if(api_layer_count > 0) //So, it seems that if there's no layers to use, there's not point getting extension properties?
+  //Enumerate layers and extensions
+  uint32_t api_layer_count = 0;
+  xrEnumerateApiLayerProperties(0, &api_layer_count, nullptr);
+  std::vector<XrApiLayerProperties> available_api_layer_properties(api_layer_count);
+  for(auto& layer_property : available_api_layer_properties)
   {
-
-    //the nullptr here is actually the layer name we want to have, but it *can* be null according to documentation
-    if(status
-       = xrEnumerateInstanceExtensionProperties(nullptr, max_properties_count, &extension_properties_count, extension_properties);
-       status != XR_SUCCESS)
-    { std::cerr << "error while enumerating instance extension properties\n"; }
+    zero_it(layer_property);
+    layer_property.type = XR_TYPE_API_LAYER_PROPERTIES;
   }
-  std::vector<const char*> extension_properties_names((size_t)extension_properties_count);
-  for(size_t i = 0; i < extension_properties_count; i++) extension_properties_names[i] = extension_properties[i].extensionName;
+  status = xrEnumerateApiLayerProperties(api_layer_count, &api_layer_count, available_api_layer_properties.data());
+  std::cout << "List of available API Layers:\n";
+  for(const auto& api_layer : available_api_layer_properties)
+  {
+    std::cout << "\t- " << api_layer.layerName << "\n";
+  }
+
+  std::vector<const char*> available_api_layer_names((size_t)api_layer_count);
+  for(size_t i = 0; i < api_layer_count; ++i) available_api_layer_names[i] = available_api_layer_properties[i].layerName;
+
+  uint32_t extension_properties_count = 0;
+  xrEnumerateInstanceExtensionProperties(nullptr, extension_properties_count, &extension_properties_count, nullptr);
+  std::vector<XrExtensionProperties> available_extension_properties(extension_properties_count);
+  for(auto& extension_property : available_extension_properties) 
+  {
+    zero_it(extension_property);
+    extension_property.type = XR_TYPE_EXTENSION_PROPERTIES;
+  }
+  XrResult result = xrEnumerateInstanceExtensionProperties(nullptr, (uint32_t)available_extension_properties.size(), &extension_properties_count, available_extension_properties.data());
+  std::cout << "List of available instance extensions:\n";
+  for(const auto& extension_properties : available_extension_properties)
+  {
+    std::cout << "\t- " << extension_properties.extensionName << "\n";
+  }
 
   //Last extension in the list will be the Graphics API to use: OpenGL
-  extension_properties_names.push_back("XR_KHR_opengl_enable");
-  extension_properties_count++;
+  enabled_extension_properties_names.push_back("XR_KHR_opengl_enable");
 
   //Create OpenXR instance
   const char engine_name[] = "The //TODO engine";
@@ -89,10 +97,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   strcpy(instance_create_info.applicationInfo.engineName, engine_name);
   strcpy(instance_create_info.applicationInfo.applicationName, GAME_NAME);
   instance_create_info.type                  = XR_TYPE_INSTANCE_CREATE_INFO;
-  instance_create_info.enabledApiLayerCount  = api_layer_count;
-  instance_create_info.enabledApiLayerNames  = api_layer_names.data();
-  instance_create_info.enabledExtensionCount = extension_properties_count;
-  instance_create_info.enabledExtensionNames = extension_properties_names.data();
+  instance_create_info.enabledApiLayerCount  = static_cast<uint32_t>(available_api_layer_names.size());
+  instance_create_info.enabledApiLayerNames  = available_api_layer_names.data();
+  instance_create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_properties_names.size());
+  instance_create_info.enabledExtensionNames = enabled_extension_properties_names.data();
 
   if(status = xrCreateInstance(&instance_create_info, &instance); status != XR_SUCCESS)
   {
@@ -108,7 +116,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
      */
 
     std::cerr << "attempt directx interop fallback...\n";
-    extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
+    enabled_extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
 
     //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
     dx11_interop = gl_dx11_interop::get();
@@ -133,6 +141,19 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 #endif
   }
   std::cout << "xrCreateInstance() == XR_SUCCESS\n";
+
+  //Now that the instance is created, we are going to try to load a function provided by the LIV layer
+  PFN_xrVoidFunction function_pointer;
+  if(XR_SUCCESS == xrGetInstanceProcAddr(instance, "xrTestMeLIV", &function_pointer))
+    xrTestMeLIV = reinterpret_cast<PFN_xrTestMeLIV>(function_pointer);
+
+  //If the function is available
+  if(xrTestMeLIV)
+  {
+    const char* fundamental_truth = nullptr;
+    if(XR_SUCCESS == xrTestMeLIV(instance, &fundamental_truth))
+      std::cout << "the fact that " << fundamental_truth << " is a fundamental truth\n";
+  }
 
   //Get properties of instance
   XrInstanceProperties instance_properties;
@@ -516,7 +537,7 @@ void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
 
 void vr_system_openxr::build_camera_node_system()
 {
-  //We are not using a head rig here, the views dorectly correspond to the cameras. We could do without the head node here
+  //We are not using a head rig here, the views directly correspond to the cameras. We could do without the head node here
   head_node = vr_tracking_anchor->push_child(create_node());
 
   eye_camera_node[0] = head_node->push_child(create_node());
