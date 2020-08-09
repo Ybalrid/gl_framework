@@ -21,6 +21,7 @@ struct vr_controller
 {
   //This is the scene graph node that represent this controller, as VR controllers are object tracked within a VR system
   node* pose_node = nullptr;
+
   //These commands are made to directly mimic the physical inputs of whatever controllers are used. The corresponding names 
   std::vector<gamepad_button_command> buttons;
   std::vector<std::string> button_names;
@@ -64,7 +65,6 @@ class vr_system
   node* head_node    = nullptr;
   node* hand_node[2] = { nullptr, nullptr };
 
-  node* get_hand(vr_controller::hand_side side);
 
   vr_controller* hand_controllers[2] = { nullptr, nullptr };
 
@@ -115,6 +115,9 @@ class vr_system
   ///get the camera to use for rendering
   camera* get_eye_camera(eye output);
 
+  node* get_hand(vr_controller::hand_side side);
+
+
   //--- the following is the abstract interface that require implementation specific work
   ///Call this once OpenGL is fully setup. This function ini the VR system, and populate the `eye_render_target_sizes`.
   ///Please call initialize_opengl_resources() once this has run to create the eye render buffers
@@ -129,6 +132,7 @@ class vr_system
   virtual void submit_frame_to_vr_system() = 0;
   ///Return true if this VR system will perform an image vflip in the projection matrix. This changes face culling order.
   [[nodiscard]] virtual bool must_vflip() const = 0;
+
 
   void initialize_opengl_resources();
 

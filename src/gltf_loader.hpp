@@ -62,7 +62,7 @@ class gltf_loader
   ///Load a full model
   bool load_model(const std::string& virtual_path, tinygltf::Model& model);
   ///Load one mesh
-  mesh load_mesh(const std::string& virtual_path, int index);
+  mesh load_mesh(const std::string& virtual_path, int index = 0);
   ///Load one mesh
   mesh load_mesh(const std::string& virtual_path, const std::string& name);
 

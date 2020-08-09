@@ -286,28 +286,35 @@ mesh gltf_loader::build_mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Mo
       if(gltf_mesh.primitives[i].material >= 0)
       {
 
-        const auto material      = model.materials[gltf_mesh.primitives[i].material];
-        const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
-        const auto color_image   = model.images[color_texture.source];
-
         texture_handle diffuse_texture_handle = texture_manager::invalid_texture;
         texture_handle normal_texture_handle  = texture_manager::invalid_texture;
+
+        const auto material     = model.materials[gltf_mesh.primitives[i].material];
+        int color_texture_index = -1;
+        auto color_texture_it   = material.values.find("baseColorTexture");
+        if(color_texture_it != material.values.end()) color_texture_index = color_texture_it->second.TextureIndex();
+        if(color_texture_index >= 0)
         {
-          const auto cached = model_texture_cache.find(color_texture.source);
-          if(cached == std::end(model_texture_cache))
+          const auto color_texture = model.textures[material.values.at("baseColorTexture").TextureIndex()];
+          const auto color_image   = model.images[color_texture.source];
+
           {
-            GLuint tex             = load_to_gl_texture(color_image);
-            diffuse_texture_handle = texture_manager::create_texture(tex);
+            const auto cached = model_texture_cache.find(color_texture.source);
+            if(cached == std::end(model_texture_cache))
             {
-              auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
-              diffuse_texture_object.generate_mipmaps();
-              diffuse_texture_object.set_filtering_parameters();
+              GLuint tex             = load_to_gl_texture(color_image);
+              diffuse_texture_handle = texture_manager::create_texture(tex);
+              {
+                auto& diffuse_texture_object = texture_manager::get_from_handle(diffuse_texture_handle);
+                diffuse_texture_object.generate_mipmaps();
+                diffuse_texture_object.set_filtering_parameters();
+              }
+              model_texture_cache[color_texture.source] = diffuse_texture_handle;
             }
-            model_texture_cache[color_texture.source] = diffuse_texture_handle;
-          }
-          else
-          {
-            diffuse_texture_handle = cached->second;
+            else
+            {
+              diffuse_texture_handle = cached->second;
+            }
           }
         }
 

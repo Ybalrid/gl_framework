@@ -446,7 +446,7 @@ void application::render_shadowmap()
   glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
   glClear(GL_DEPTH_BUFFER_BIT);
 
-  auto& shader = shader_program_manager::get_from_handle(shadow_shader);
+  auto& shader = shader_program_manager::get_from_handle(shadowmap_shader);
   shader.use();
   //set the matrices and everything
 
@@ -709,7 +709,7 @@ void application::run()
 
 void application::setup_scene()
 {
-  //TODO everything about this sould be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
+  //TODO everything about this should be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
   main_scene = &s;
 
   if(vr)
@@ -793,19 +793,19 @@ void application::setup_scene()
   plane0->assign(scene_object(textured_plane));
 
   auto corset_node = s.scene_root->push_child(create_node());
-  auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb", 0);
+  auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb");
   corset_node->assign(scene_object(corset_mesh));
   corset_node->local_xform.translate(glm::vec3(-4, 0, 0));
   corset_node->local_xform.scale(50.f * transform::UNIT_SCALE);
 
   auto antique_camera_node = s.scene_root->push_child(create_node());
-  auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb", 0);
+  auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb");
   antique_camera_node->assign(scene_object(antique_camera_mesh));
   antique_camera_node->local_xform.translate(glm::vec3(4, 0, 0));
   antique_camera_node->local_xform.scale(0.25f * transform::UNIT_SCALE);
 
   auto damaged_helmet_node = s.scene_root->push_child(create_node());
-  auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb", 0);
+  auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb");
   damaged_helmet_node->assign(scene_object(damaged_helmet_mesh));
   damaged_helmet_node->local_xform.translate(glm::vec3(8.f, 1.f, 0));
   damaged_helmet_node->local_xform.rotate(glm::angleAxis(glm::radians(90.f), transform::X_AXIS));
@@ -837,11 +837,22 @@ void application::setup_scene()
   lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
   auto sponza_root       = s.scene_root->push_child(create_node());
-  const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf", 0);
+  const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf");
   sponza_root->assign(scene_object(sponza_mesh));
 
   sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
   glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
+  if(vr)
+  {
+    //Load some geometry and assign it to the hand nodes
+    const auto vr_controller_mesh = gltf.load_mesh("gltf/vague_controller.glb"); //place holder red arrow thing
+
+    if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand) 
+        left_hand->assign(scene_object(vr_controller_mesh));
+    if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand) 
+        right_hand->assign(scene_object(vr_controller_mesh));
+  }
 }
 
 void application::set_clear_color(glm::vec4 color)
@@ -882,7 +893,7 @@ application::application(int argc, char** argv, const std::string& application_n
 
   try
   {
-    shadow_shader = shader_program_manager::create_shader("/shaders/shadow.vert.glsl", "/shaders/shadow.frag.glsl");
+    shadowmap_shader = shader_program_manager::create_shader("/shaders/shadow.vert.glsl", "/shaders/shadow.frag.glsl");
     glGenFramebuffers(1, &shadow_depth_fbo);
     glGenTextures(1, &shadow_depth_map);
     glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
@@ -899,7 +910,7 @@ application::application(int argc, char** argv, const std::string& application_n
   }
   catch(const std::exception& e)
   {
-    sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create shadowing shader!", e.what());
+    sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create shadowmap shader!", e.what());
     throw;
   }
 

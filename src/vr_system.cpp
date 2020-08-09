@@ -55,6 +55,7 @@ void vr_system::set_anchor(node* node)
 
 camera* vr_system::get_eye_camera(eye output) { return eye_camera[(size_t)output]; }
 
+
 void vr_system::initialize_opengl_resources()
 {
   //The rest of the engine don't care bout our "VR" hardware.

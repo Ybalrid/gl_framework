@@ -4,3 +4,5 @@ src/build_config.hpp
 third_party/oculus_sdk/*
 
 .vscode
+
+*.blend1

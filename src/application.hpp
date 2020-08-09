@@ -119,7 +119,7 @@ class application
   std::vector<draw_operation> draw_list;
 
   bool debug_draw_bbox        = false;
-  shader_handle shadow_shader = shader_program_manager::invalid_shader;
+  shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
   static constexpr unsigned int shadow_width = 1024, shadow_height = 1024;

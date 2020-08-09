@@ -4,5 +4,5 @@ samples = 4
 resolution = [1024, 768]
 fullscreen = false
 is_vr = true
-vr_system = "openxr"
+vr_system = "openvr"
 use_LIV = true
