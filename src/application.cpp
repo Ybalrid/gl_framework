@@ -338,8 +338,10 @@ void application::configure_and_create_window(const std::string& application_nam
 
   //extract config values
   const auto multisampling    = configuration_table->get_as<bool>("multisampling").value_or(true);
-  const auto samples          = configuration_table->get_as<int>("samples").value_or(8);
+  const auto samples          = configuration_table->get_as<int>("samples").value_or(1);
   const auto srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
+  const auto hidpi            = configuration_table->get_as<bool>("hidpi").value_or(false);
+
 
   //extract window config
   set_opengl_attribute_configuration(multisampling, samples, srgb_framebuffer);
@@ -379,7 +381,9 @@ void application::configure_and_create_window(const std::string& application_nam
   //create window
   window = sdl::Window(application_name,
                        window_size,
-                       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+                       SDL_WINDOW_OPENGL 
+			| (hidpi ? SDL_WINDOW_ALLOW_HIGHDPI : 0) 
+			| (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -660,8 +664,13 @@ void application::render_frame()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 
-  const auto window_size = window.size();
-  main_camera->update_projection(window_size.x, window_size.y);
+  //TODO add a function to sdl::Window's GL api to not do that
+  int gl_w, gl_h;
+  SDL_GL_GetDrawableSize(window.ptr(), &gl_w, &gl_h);
+  
+  ImGui::Text("Currently rendering at %d x %d", gl_w, gl_h);
+
+  main_camera->update_projection(gl_w, gl_h);
   build_draw_list_from_camera(main_camera);
   render_draw_list(main_camera);
 

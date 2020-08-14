@@ -6,3 +6,4 @@ fullscreen = false
 is_vr = true
 vr_system = "openvr"
 use_LIV = true
+hidpi = false
