@@ -369,7 +369,7 @@ void application::configure_and_create_window(const std::string& application_nam
       if(!vr)
       {
         std::cerr << "application is VR, but VR system named " << system_name
-                  << "is unknown to the framework. Check build options, and check config.toml for correctness\n";
+                  << " is unknown to the framework. Check build options, and check config.toml for correctness\n";
       }
     }
   }
