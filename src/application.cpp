@@ -109,7 +109,7 @@ void application::draw_debug_ui()
     {
       const auto& textures      = texture_manager::get_list();
       const auto texture_number = textures.size();
-      ImGui::Text("Loaded %d textures", texture_number);
+      ImGui::Text("Loaded %lu textures", texture_number);
       for(size_t i = 0; i < texture_number; ++i)
       {
         std::string header_name
@@ -132,7 +132,7 @@ void application::draw_debug_ui()
     {
       const auto& list             = renderable_manager::get_list();
       const auto renderable_number = list.size();
-      ImGui::Text("Loaded %d renderables", renderable_number);
+      ImGui::Text("Loaded %lu renderables", renderable_number);
       if(ImGui::CollapsingHeader("Content"))
         for(size_t i = 0; i < renderable_number; i++)
         {
@@ -156,9 +156,9 @@ void application::draw_debug_ui()
             const auto normal   = renderable.get_normal_texture();
 
             ImGui::Text("Textures:");
-            ImGui::Text("Diffuse : %d", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
-            ImGui::Text("Specular : %d", specular == texture_mgr.invalid_texture ? -1 : specular);
-            ImGui::Text("Normal : %d", normal == texture_mgr.invalid_texture ? -1 : normal);
+            ImGui::Text("Diffuse : %lu", diffuse == texture_mgr.invalid_texture ? -1 : diffuse);
+            ImGui::Text("Specular : %lu", specular == texture_mgr.invalid_texture ? -1 : specular);
+            ImGui::Text("Normal : %lu", normal == texture_mgr.invalid_texture ? -1 : normal);
           }
         }
     }
@@ -167,7 +167,7 @@ void application::draw_debug_ui()
     if(ImGui::Begin("Debugger Window", &debug_ui))
     {
       ImGui::Text("FPS: %d", fps);
-      ImGui::Text("%3d objects passed frustum culling", draw_list.size());
+      ImGui::Text("%3lu objects passed frustum culling", draw_list.size());
       ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
       ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
       ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
@@ -342,7 +342,6 @@ void application::configure_and_create_window(const std::string& application_nam
   const auto srgb_framebuffer = false; //nope, sorry. Shader will take care of gamma correction ;)
   const auto hidpi            = configuration_table->get_as<bool>("hidpi").value_or(false);
 
-
   //extract window config
   set_opengl_attribute_configuration(multisampling, samples, srgb_framebuffer);
   const auto fullscreen = configuration_table->get_as<bool>("fullscreen").value_or(false);
@@ -381,9 +380,8 @@ void application::configure_and_create_window(const std::string& application_nam
   //create window
   window = sdl::Window(application_name,
                        window_size,
-                       SDL_WINDOW_OPENGL 
-			| (hidpi ? SDL_WINDOW_ALLOW_HIGHDPI : 0) 
-			| (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
+                       SDL_WINDOW_OPENGL | (hidpi ? SDL_WINDOW_ALLOW_HIGHDPI : 0)
+                           | (fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE));
 }
 
 void application::create_opengl_context()
@@ -667,7 +665,7 @@ void application::render_frame()
   //TODO add a function to sdl::Window's GL api to not do that
   int gl_w, gl_h;
   SDL_GL_GetDrawableSize(window.ptr(), &gl_w, &gl_h);
-  
+
   ImGui::Text("Currently rendering at %d x %d", gl_w, gl_h);
 
   main_camera->update_projection(gl_w, gl_h);
@@ -857,10 +855,10 @@ void application::setup_scene()
     //Load some geometry and assign it to the hand nodes
     const auto vr_controller_mesh = gltf.load_mesh("gltf/vague_controller.glb"); //place holder red arrow thing
 
-    if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand) 
-        left_hand->assign(scene_object(vr_controller_mesh));
-    if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand) 
-        right_hand->assign(scene_object(vr_controller_mesh));
+    if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand)
+      left_hand->assign(scene_object(vr_controller_mesh));
+    if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand)
+      right_hand->assign(scene_object(vr_controller_mesh));
   }
 }
 
