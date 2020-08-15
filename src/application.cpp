@@ -662,13 +662,8 @@ void application::render_frame()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 
-  //TODO add a function to sdl::Window's GL api to not do that
-  int gl_w, gl_h;
-  SDL_GL_GetDrawableSize(window.ptr(), &gl_w, &gl_h);
-
-  ImGui::Text("Currently rendering at %d x %d", gl_w, gl_h);
-
-  main_camera->update_projection(gl_w, gl_h);
+  const auto size = window.gl_get_drawable_size();
+  main_camera->update_projection(size.x, size.y);
   build_draw_list_from_camera(main_camera);
   render_draw_list(main_camera);
 
@@ -870,6 +865,19 @@ void application::set_clear_color(glm::vec4 color)
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
   }
 }
+void application::splash_frame()
+{
+  sdl::Event e;
+  while(e.poll())
+  {
+    //empty the message queue
+  }
+
+  glClearColor(0, 0, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT);
+  //TODO render splash ?
+  window.gl_swap();
+}
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
@@ -887,6 +895,9 @@ application::application(int argc, char** argv, const std::string& application_n
   create_opengl_context();
   initialize_modern_opengl();
   texture_manager::initialize_dummy_texture();
+
+  splash_frame();
+
   initialize_gui();
 
   //attempt init VR

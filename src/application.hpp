@@ -103,7 +103,7 @@ class application
 
   camera* main_camera = nullptr;
   node* cam_node      = nullptr;
-  directional_light sun{};
+  directional_light sun {};
   std::array<point_light*, 4> p_lights { nullptr, nullptr, nullptr, nullptr };
 
   audio_system audio;
@@ -118,7 +118,7 @@ class application
 
   std::vector<draw_operation> draw_list;
 
-  bool debug_draw_bbox        = false;
+  bool debug_draw_bbox           = false;
   shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
@@ -133,7 +133,7 @@ class application
     {
       application* parent_;
       void execute() override;
-      toggle_console_keyboard_command_(application* parent) : parent_ { parent } {}
+      toggle_console_keyboard_command_(application* parent) : parent_ { parent } { }
     } toggle_console_keyboard_command { parent_ };
 
     struct toggle_debug_keyboard_command_ : keyboard_input_command
@@ -150,11 +150,13 @@ class application
       toggle_live_code_reload_command_(application* parent) : parent_ { parent } {};
     } toggle_live_code_reload_command { parent_ };
 
-    keyboard_debug_utilities_(application* parent) : parent_ { parent } {}
+    keyboard_debug_utilities_(application* parent) : parent_ { parent } { }
   } keyboard_debug_utilities { this };
 
-  vr_system_ptr vr = nullptr;
+  vr_system_ptr vr  = nullptr;
   bool mr_activated = false;
+
+  void splash_frame();
 
   public:
   static scene* get_main_scene();
@@ -162,5 +164,4 @@ class application
   application(int argc, char** argv, const std::string& application_name);
   static std::vector<std::string> resource_paks;
   static void set_clear_color(glm::vec4 color);
-
 };
