@@ -865,7 +865,7 @@ void application::set_clear_color(glm::vec4 color)
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
   }
 }
-void application::splash_frame()
+void application::splash_frame(const char* image_path)
 {
   sdl::Event e;
   while(e.poll())
@@ -875,8 +875,54 @@ void application::splash_frame()
 
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
-  //TODO render splash ?
+
+  try
+  {
+    const auto splash_txt_handle = texture_mgr.create_texture();
+    auto& splash_txt             = texture_mgr.get_from_handle(splash_txt_handle);
+
+    const auto default_splash = image(image_path);
+    std::cerr << "default splash dimentions is " << default_splash.get_width() << "x" << default_splash.get_height() << "\n";
+    splash_txt.load_from(default_splash, true, GL_TEXTURE_2D);
+    splash_txt.generate_mipmaps(GL_TEXTURE_2D);
+
+
+    auto splash_shader_handle = shader_program_manager::create_shader("shaders/splash.vert.glsl", "shaders/splash.frag.glsl");
+    auto& splash_shader       = shader_program_manager::get_from_handle(splash_shader_handle);
+
+    float vtx_obj[] = 
+    { -1, -1, 0, 0,
+      3, -1, 2, 0,
+      -1, 3, 0, -2 };
+
+    GLuint splash_buffer, splash_buffer_vao;
+    glGenVertexArrays(1, &splash_buffer_vao);
+    glGenBuffers(1, &splash_buffer);
+    glBindVertexArray(splash_buffer_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, splash_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vtx_obj), vtx_obj, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    splash_txt.bind(0, GL_TEXTURE_2D);
+    splash_shader.use();
+    const auto raw_program = splash_shader._get_program();
+    glUniform1i(glGetUniformLocation(raw_program, "splash"), 0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << "did not load shader for splash! :" << e.what() << "\n";
+  }
+
   window.gl_swap();
+  glGetError();
+  while(e.poll())
+  {
+    //empty the message queue
+  }
 }
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)

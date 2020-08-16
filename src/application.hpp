@@ -156,7 +156,7 @@ class application
   vr_system_ptr vr  = nullptr;
   bool mr_activated = false;
 
-  void splash_frame();
+  void splash_frame(const char* image_path = "/textures/splash.png");
 
   public:
   static scene* get_main_scene();

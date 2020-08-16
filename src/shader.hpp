@@ -107,4 +107,7 @@ class shader
   GLint uniform_indices[int(uniform::MAX_UNIFORM_LOCATION_COUNT)] {};
   directional_light_uniform_locations main_directional_light_uniform_locations;
   point_light_uniform_locations point_light_list_uniform_locations[NB_POINT_LIGHT];
+
+public:
+  GLuint _get_program() { return program; }//This is to get access to the shader object OpenGL side, in case you want to mess with it directly... Not recommended
 };
