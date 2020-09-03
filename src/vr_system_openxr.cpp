@@ -334,8 +334,8 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
   //we need to get ghe graphics bindings that correspond to the choosen graphics API and windowing system
 #ifdef WIN32
-  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding_opengl;
-  XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11;
+  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding_opengl{};
+  XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11{};
   zero_it(xr_graphics_binding_opengl);
   xr_graphics_binding_opengl.type  = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
   xr_graphics_binding_opengl.hGLRC = wglGetCurrentContext();
@@ -592,13 +592,16 @@ void vr_system_openxr::update_tracking()
   XrResult status = xrLocateViews(session, &view_locate_info, &view_state, view_capacity_input, &view_count, views.data());
   if(status != XR_SUCCESS) { std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
-  //From now, the two views contains up-to-date tracking info
 
+  //From now, the two views contains up-to-date tracking info
   for(size_t i = 0; i < 2; ++i)
   {
     //There's a nasty pointer cast here that break a const, but it's for the greater good...
     //It just so happen that they both express vector 3D and quaternion in the same way...
-    eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position));
+
+    if((XR_VIEW_STATE_POSITION_VALID_BIT|XR_VIEW_STATE_POSITION_TRACKED_BIT) & view_state.viewStateFlags)
+      eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position));
+    if((XR_VIEW_STATE_ORIENTATION_VALID_BIT|XR_VIEW_STATE_ORIENTATION_TRACKED_BIT) & view_state.viewStateFlags)
     eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
   }
 
