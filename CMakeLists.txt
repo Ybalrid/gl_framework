@@ -32,6 +32,7 @@ ENDIF ()
 OPTION (HAS_OPENVR "Activate the OpenVR VR system" OFF)
 OPTION (HAS_OCULUS_VR "Activate the OpenVR VR system" OFF)
 OPTION (HAS_OPENXR "Activate the OpenXR VR system" OFF)
+OPTION (USE_CODE_RELOADER "Activate (if possible) a hot-reaload system" OFF)
 
 IF(HAS_OPENVR OR HAS_OCULUS_VR OR HAS_OPENXR)
   SET(HAS_VR TRUE)
@@ -69,9 +70,11 @@ ADD_DEFINITIONS( -DGLM_ENABLE_EXPERIMENTAL)
 
 #activate optimizations and things like that
 IF (MSVC)
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /arch:AVX2 /fp:fast")
-  ADD_DEFINITIONS(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
-  ADD_DEFINITIONS(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+  if(USE_CODE_RELOADER)
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /arch:AVX2 /fp:fast")
+    ADD_DEFINITIONS(/ZI) #Edit and Continue sybols. Usefull to use `blink` too
+    ADD_DEFINITIONS(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS)
+  endif()
 ELSE()
   SET (CMAKE_XCC_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
   IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -81,11 +84,13 @@ ENDIF()
 
 IF (UNIX)
   #use JET LIVE for hot realoading of modified code
-  SET(JET_LIVE_BUILD_EXAMPLE OFF)
-  INCLUDE(third_party/jet-live/cmake/jet_live_setup.cmake)
-  ADD_SUBDIRECTORY(third_party/jet-live/)
-  MESSAGE("we are using jet-live")
-  ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
+  if(USE_CODE_RELOADER)
+    SET(JET_LIVE_BUILD_EXAMPLE OFF)
+    INCLUDE(third_party/jet-live/cmake/jet_live_setup.cmake)
+    ADD_SUBDIRECTORY(third_party/jet-live/)
+    MESSAGE("we are using jet-live")
+    ADD_DEFINITIONS(-DUSING_JETLIVE) #add jet-live integration in my source code
+  endif()
 ENDIF()
 
 #list source code
@@ -189,7 +194,9 @@ TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
   ${SNDFILE_LIBRARY})
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PUBLIC jet-live)
+  if(USE_CODE_RELOADER)
+    TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PUBLIC jet-live)
+  endif()
 
   IF (APPLE)
     FIND_LIBRARY(IOKit IOKit)
