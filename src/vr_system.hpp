@@ -17,6 +17,17 @@
 #include "shader_program_manager.hpp"
 #include "input_command.hpp"
 
+
+enum vr_system_caps_bits
+{
+  caps_hmd_3dof = 0x1,
+  caps_hmd_6dof = 0x2,
+  caps_hand_controllers = 0x4,
+  caps_trackers = 0x8,
+};
+
+using vr_system_caps = uint32_t;
+
 struct vr_render_model
 {
   renderable_handle renderable;
@@ -52,6 +63,8 @@ class vr_system
 {
   protected:
   constexpr static GLuint invalid_name { std::numeric_limits<GLuint>::max() };
+
+  vr_system_caps caps = 0;
 
   ///Any VR system needs a reference point in the scene to sync tracking between real and virtual world
   node* vr_tracking_anchor = nullptr;
@@ -105,6 +118,9 @@ class vr_system
   bool initialized_opengl_resources = false;
 
   public:
+
+  vr_system_caps get_caps() const { return caps; }
+
   //Nothing special to do in ctor/dtor
   vr_system() = default;
   virtual ~vr_system();

@@ -29,7 +29,11 @@ inline std::tuple<glm::vec3, glm::quat> get_translation_rotation(const glm::mat4
   return std::tie(tr, rot);
 }
 
-vr_system_openvr::vr_system_openvr() : vr_system() { std::cout << "Initialized OpenVR based vr_system implementation\n"; }
+vr_system_openvr::vr_system_openvr() : vr_system()
+{
+  std::cout << "Initialized OpenVR based vr_system implementation\n";
+  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers;
+}
 
 vr_system_openvr::~vr_system_openvr()
 {

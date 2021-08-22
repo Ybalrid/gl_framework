@@ -13,7 +13,12 @@ struct log_ctx
   std::mutex mtx;
 } logger_lock;
 
-vr_system_oculus::vr_system_oculus() : vr_system() { std::cout << "Initialized Oculus VR based vr_system implementation\n"; }
+vr_system_oculus::vr_system_oculus() : vr_system()
+{
+  std::cout << "Initialized Oculus VR based vr_system implementation\n";
+
+  caps = caps_hmd_3dof | caps_hmd_6dof;
+}
 
 vr_system_oculus::~vr_system_oculus()
 {

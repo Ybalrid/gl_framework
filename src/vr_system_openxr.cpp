@@ -16,7 +16,12 @@ static PFN_xrTestMeLIV xrTestMeLIV = nullptr;
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 bool vr_system_openxr::need_to_vflip = false;
 
-vr_system_openxr::vr_system_openxr() : vr_system() { std::cout << "Initialized OpenXR based vr_system implementation\n"; }
+vr_system_openxr::vr_system_openxr() : vr_system()
+{
+  std::cout << "Initialized OpenXR based vr_system implementation\n";
+
+  caps = caps_hmd_3dof | caps_hmd_6dof; //TODO support controllers
+}
 
 vr_system_openxr::~vr_system_openxr()
 {
