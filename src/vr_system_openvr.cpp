@@ -164,6 +164,71 @@ void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_c
   matrix = glm::frustum(near_clip * left, near_clip * right, near_clip * -bottom, near_clip * -top, near_clip, far_clip);
 }
 
+renderable_handle vr_system_openvr::load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader)
+{
+  const auto role
+      = (side == vr_controller::hand_side::left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+
+  for(vr::TrackedDeviceIndex_t device_index = 0; device_index < vr::k_unMaxTrackedDeviceCount; ++device_index)
+  {
+    if(hmd->GetTrackedDeviceClass(device_index) == vr::TrackedDeviceClass_Controller)
+    {
+      if(hmd->GetControllerRoleForTrackedDeviceIndex(device_index) == role)
+      {
+        uint32_t str_len = 0;
+        str_len          = hmd->GetStringTrackedDeviceProperty(
+            device_index, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, nullptr, str_len);
+        std::vector<char> str(str_len, 0);
+        str_len = hmd->GetStringTrackedDeviceProperty(
+            device_index, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, str.data(), str_len);
+
+        vr::RenderModel_t* render_model = nullptr;
+
+        vr::EVRRenderModelError error;
+        for(;;)
+        {
+          error = vr::VRRenderModels()->LoadRenderModel_Async(str.data(), &render_model);
+          if(vr::VRRenderModelError_Loading != error) break;
+        }
+
+        if(error == vr::VRRenderModelError_None)
+        {
+          const size_t vertex_buffer_size_float = render_model->unVertexCount * (3 + 3 + 2);
+          const size_t index_buffer_count_unsigned = render_model->unTriangleCount * 3;
+          std::vector<float> vertex_buffer(vertex_buffer_size_float);
+          std::vector<uint16_t> index_buffer_u16(index_buffer_count_unsigned);
+          std::vector<unsigned> index_buffer(index_buffer_count_unsigned);
+
+          memcpy(vertex_buffer.data(), render_model->rVertexData, vertex_buffer.size() * sizeof(float));
+          memcpy(index_buffer_u16.data(), render_model->rIndexData, index_buffer_u16.size() * sizeof(uint16_t));
+          for(size_t i = 0; i < index_buffer.size(); ++i) index_buffer[i] = static_cast<unsigned>(index_buffer_u16[i]);
+          renderable::configuration vertex_configuration{true, true, true, false};
+
+          renderable::vertex_buffer_extrema extrema {glm::vec3(-.1f, -.1f, -.1f), glm::vec3(.1f, .1f, .1f)};
+
+          //for(int i  = 0; i < vertex_buffer.size() /3; ++i)
+          //{
+          //  size_t x_index = 3 * i + 0;
+          //  size_t y_index = 3 * i + 1;
+          //  size_t z_index = 3 * i + 2;
+          //  if(auto x = vertex_buffer[x_index]; x < extrema.min.x) extrema.min.x = x;
+          //  if(auto y = vertex_buffer[y_index]; y < extrema.min.y) extrema.min.y = y;
+          //  if(auto z = vertex_buffer[z_index]; z < extrema.min.z) extrema.min.z = z;
+          //  if(auto x = vertex_buffer[x_index]; x > extrema.max.x) extrema.max.x = x;
+          //  if(auto y = vertex_buffer[y_index]; y > extrema.max.y) extrema.max.y = y;
+          //  if(auto z = vertex_buffer[z_index]; z > extrema.max.z) extrema.max.z = z;
+          //}
+
+          const auto handle =  renderable_manager::create_renderable(
+              shader, vertex_buffer, index_buffer, extrema, vertex_configuration, 3 + 3 + 2, 0, 6, 3);
+          vr::VRRenderModels()->FreeRenderModel(render_model);
+
+          return handle;
+        }
+      }
+    }
+  }
+}
 #ifdef _WIN32
 vr::TrackedDeviceIndex_t find_liv_tracker()
 {

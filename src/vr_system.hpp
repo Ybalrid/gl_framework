@@ -133,6 +133,10 @@ class vr_system
   ///Return true if this VR system will perform an image vflip in the projection matrix. This changes face culling order.
   [[nodiscard]] virtual bool must_vflip() const = 0;
 
+  [[nodiscard]] virtual renderable_handle load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader)
+  {
+    return renderable_manager::invalid_renderable;
+  }
 
   void initialize_opengl_resources();
 

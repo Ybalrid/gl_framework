@@ -748,6 +748,9 @@ void application::setup_scene()
 
   const shader_handle simple_shader
       = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+  const shader_handle unlit_shader
+      = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+
   const renderable_handle textured_plane_primitive
       = renderable_manager::create_renderable(simple_shader,
                                               plane,
@@ -849,11 +852,40 @@ void application::setup_scene()
   {
     //Load some geometry and assign it to the hand nodes
     const auto vr_controller_mesh = gltf.load_mesh("gltf/vague_controller.glb"); //place holder red arrow thing
+    const auto left_controller = vr->load_controller_model_from_runtime(vr_controller::hand_side::left, unlit_shader);
+    const auto right_controller = vr->load_controller_model_from_runtime(vr_controller::hand_side::right, unlit_shader);
+
+    bool has_left_controller = false;
+    bool has_right_controller = false;
+    mesh left_controller_mesh;
+    mesh right_controller_mesh;
+
+    if(left_controller != renderable_manager::invalid_renderable)
+    {
+      auto& renderable = renderable_manager::get_from_handle(left_controller);
+      renderable.set_diffuse_texture(texture_manager::get_dummy_texture());
+      left_controller_mesh.add_submesh(left_controller);
+      has_left_controller = true;
+    }
+
+    if(right_controller != renderable_manager::invalid_renderable)
+    {
+      auto& renderable = renderable_manager::get_from_handle(left_controller);
+      renderable.set_diffuse_texture(texture_manager::get_dummy_texture());
+      right_controller_mesh.add_submesh(right_controller);
+      has_right_controller = true;
+    }
 
     if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand)
-      left_hand->assign(scene_object(vr_controller_mesh));
+    {
+      auto node = left_hand->push_child(create_node());
+      node->assign(scene_object((has_left_controller ? left_controller_mesh : vr_controller_mesh)));
+    }
     if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand)
-      right_hand->assign(scene_object(vr_controller_mesh));
+    {
+      auto node = right_hand->push_child(create_node());
+      node->assign(scene_object((has_right_controller ? right_controller_mesh : vr_controller_mesh)));
+    }
   }
 }
 
