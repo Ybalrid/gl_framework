@@ -32,7 +32,7 @@ inline std::tuple<glm::vec3, glm::quat> get_translation_rotation(const glm::mat4
 vr_system_openvr::vr_system_openvr() : vr_system()
 {
   std::cout << "Initialized OpenVR based vr_system implementation\n";
-  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers;
+  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers | caps_controller_model;
 }
 
 vr_system_openvr::~vr_system_openvr()
@@ -215,7 +215,6 @@ vr_render_model vr_system_openvr::load_controller_model_from_runtime(vr_controll
           //TODO compute bounding box
           renderable::vertex_buffer_extrema extrema {glm::vec3(-.1f, -.1f, -.1f), glm::vec3(.1f, .1f, .1f)};
 
-          vr_render_model output;
           const auto controller_renderable_handle
           = renderable_manager::create_renderable(
               shader, vertex_buffer, index_buffer, extrema, vertex_configuration, 3 + 3 + 2, 0, 6, 3);
@@ -245,7 +244,7 @@ vr_render_model vr_system_openvr::load_controller_model_from_runtime(vr_controll
                 case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC4:
                 case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC7:
                 case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC7_SRGB:
-                  fprintf(stderr, "This render model is using a texture format we don't support here (%s)\n", NAMEOF_ENUM(render_model_texture->format));
+                  fprintf(stderr, "This render model is using a texture format we don't support here (%s)\n", ((std::string)NAMEOF_ENUM(render_model_texture->format)).c_str());
                   break;
               }
 

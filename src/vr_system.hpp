@@ -24,6 +24,7 @@ enum vr_system_caps_bits
   caps_hmd_6dof = 0x2,
   caps_hand_controllers = 0x4,
   caps_trackers = 0x8,
+  caps_controller_model = 0x16,
 };
 
 using vr_system_caps = uint32_t;
