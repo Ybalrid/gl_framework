@@ -39,6 +39,15 @@ class vr_system_openxr : public vr_system
 
   node* eye_camera_node[2] = { nullptr, nullptr };
 
+  XrActionSet action_set = XR_NULL_HANDLE;
+  XrAction pose_action = XR_NULL_HANDLE;
+
+  std::array<XrPath, 2> user_hand_action_paths {XR_NULL_PATH, XR_NULL_PATH};
+  std::array<XrSpace, 2> user_hand_spaces {XR_NULL_HANDLE, XR_NULL_HANDLE};
+
+  XrPath simple_controller_path = XR_NULL_PATH;
+  std::array<XrPath, 2> simple_controller_aim_pose_path {XR_NULL_PATH, XR_NULL_PATH};
+
 #ifdef WIN32
   gl_dx11_interop* dx11_interop;
   bool fallback_to_dx = false;

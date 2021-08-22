@@ -20,7 +20,7 @@ vr_system_openxr::vr_system_openxr() : vr_system()
 {
   std::cout << "Initialized OpenXR based vr_system implementation\n";
 
-  caps = caps_hmd_3dof | caps_hmd_6dof; //TODO support controllers
+  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers;
 }
 
 vr_system_openxr::~vr_system_openxr()
@@ -57,6 +57,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   //Step one, get XrInstance up and running
   XrResult status;
 
+#if _DEBUG
+  bool has_debug_utils = false;
+#endif
+
   //Enumerate layers and extensions
   uint32_t api_layer_count = 0;
   xrEnumerateApiLayerProperties(0, &api_layer_count, nullptr);
@@ -89,10 +93,17 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   for(const auto& extension_properties : available_extension_properties)
   {
     std::cout << "\t- " << extension_properties.extensionName << "\n";
+
+#ifdef _DEBUG
+    if(0 == strcmp(extension_properties.extensionName, XR_EXT_DEBUG_UTILS_EXTENSION_NAME)) has_debug_utils = true;
+#endif
   }
 
   //Last extension in the list will be the Graphics API to use: OpenGL
-  enabled_extension_properties_names.push_back("XR_KHR_opengl_enable");
+  enabled_extension_properties_names.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
+#ifdef _DEBUG
+  if(has_debug_utils) enabled_extension_properties_names.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 
   //Create OpenXR instance
   const char engine_name[] = "The //TODO engine";
@@ -268,17 +279,6 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   assert(environement_blend_mode_count > 0);
   XrEnvironmentBlendMode best_environment_blend_mode = environment_blend_mode[0];
   std::cout << "Environement blend mode :" << NAMEOF_ENUM(best_environment_blend_mode) << "\n";
-
-  //TODO need to learn about the **actions** API
-  //XrActionSetCreateInfo action_set_create_info;
-  //zero_it(action_set_create_info);
-  //action_set_create_info.type = XR_TYPE_ACTION_SET_CREATE_INFO;
-  //strcpy(action_set_create_info.actionSetName, "some_action_set");
-  //strcpy(action_set_create_info.localizedActionSetName, action_set_create_info.actionSetName);
-  //action_set_create_info.priority = -1;
-  //XrActionSet action_set;
-  //xrCreateActionSet(instance, &action_set_create_info, &action_set);
-  //TODO xrSuggestInteractionProfileBindings()
 
   //Step 4 : Request graphcics backed requiredment for OpenGL
 
@@ -503,13 +503,64 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 #endif
   }
 
-  //Step 8 "Begin" the session itself
+  //Step 8, configure the actions
+  XrActionSetCreateInfo action_set_create_info { XR_TYPE_ACTION_SET_CREATE_INFO, nullptr };
+  strcpy(action_set_create_info.actionSetName, "todo_engine_basic_gameplay");
+  strcpy(action_set_create_info.localizedActionSetName, "Basic Gameplay");
+  action_set_create_info.priority = 0;
+  if(XR_FAILED(xrCreateActionSet(instance, &action_set_create_info, &action_set)))
+    fprintf(stderr, "did not create action set\n");
+  if(XR_FAILED(xrStringToPath(instance, "/user/hand/left", &user_hand_action_paths[0])))
+    fprintf(stderr, "did not get left hand path\n");
+  if(XR_FAILED(xrStringToPath(instance, "/user/hand/right", &user_hand_action_paths[1])))
+    fprintf(stderr, "did not get right hand path\n");
+
+  XrActionCreateInfo action_create_info { XR_TYPE_ACTION_CREATE_INFO, nullptr };
+  strcpy(action_create_info.actionName, "hand_pose");
+  strcpy(action_create_info.localizedActionName, "Hand Pose");
+  action_create_info.actionType          = XR_ACTION_TYPE_POSE_INPUT;
+  action_create_info.countSubactionPaths = 2;
+  action_create_info.subactionPaths      = user_hand_action_paths.data();
+  if(XR_FAILED(xrCreateAction(action_set, &action_create_info, &pose_action)))
+    fprintf(stderr, "did not create pose action\n");
+
+  //TODO You need to suggest interaction bindings to the runtime here... But we don't do buttons and haptics for now.
+  xrStringToPath(instance, "/interaction_profiles/khr/simple_controller", &simple_controller_path);
+  xrStringToPath(instance, "/user/hand/left/input/aim/pose", &simple_controller_aim_pose_path[0]);
+  xrStringToPath(instance, "/user/hand/right/input/aim/pose", &simple_controller_aim_pose_path[1]);
+
+  std::vector<XrActionSuggestedBinding> simple_controller_bindings { { { pose_action, simple_controller_aim_pose_path[0] },
+                                                     { pose_action, simple_controller_aim_pose_path[1] } } };
+  XrInteractionProfileSuggestedBinding suggested_binding { XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING, nullptr };
+  suggested_binding.interactionProfile = simple_controller_path;
+  suggested_binding.suggestedBindings  = simple_controller_bindings.data();
+  suggested_binding.countSuggestedBindings = (uint32_t)simple_controller_bindings.size();
+  if(XR_FAILED(xrSuggestInteractionProfileBindings(instance, &suggested_binding)))
+    fprintf(stderr, "Failed to suggest simple controller binding to this OpenXR instance!");
+
+  XrActionSpaceCreateInfo action_space_create_info { XR_TYPE_ACTION_SPACE_CREATE_INFO, nullptr };
+  action_space_create_info.action = pose_action;
+  zero_it(action_space_create_info.poseInActionSpace);
+  action_space_create_info.poseInActionSpace.orientation.w = 1;
+  action_space_create_info.subactionPath                   = user_hand_action_paths[0];
+  xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[0]);
+  action_space_create_info.subactionPath = user_hand_action_paths[1];
+  xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[1]);
+
+  XrSessionActionSetsAttachInfo session_action_set_attach_info { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO, nullptr };
+  session_action_set_attach_info.countActionSets = 1;
+  session_action_set_attach_info.actionSets      = &action_set;
+  xrAttachSessionActionSets(session, &session_action_set_attach_info);
+
+  //Step 9 "Begin" the session itself
   XrSessionBeginInfo xr_session_begin_info;
   zero_it(xr_session_begin_info);
   xr_session_begin_info.type                         = XR_TYPE_SESSION_BEGIN_INFO;
   xr_session_begin_info.primaryViewConfigurationType = best_view_config_type;
   if(status = xrBeginSession(session, &xr_session_begin_info); status != XR_SUCCESS)
-  { std::cerr << "error : failed to begin session\n"; }
+  {
+    std::cerr << "error : failed to begin session\n";
+  }
   else
   {
     std::cout << "xrBeginSession() == XR_SUCCESS\n";
@@ -556,6 +607,13 @@ void vr_system_openxr::build_camera_node_system()
     eye_camera[0]                = eye_camera_node[0]->assign(std::move(l));
     eye_camera[1]                = eye_camera_node[1]->assign(std::move(r));
   }
+
+  for(size_t hand = 0; hand < 2; ++hand)
+  {
+    hand_node[hand]              = vr_tracking_anchor->push_child(create_node());
+    hand_controllers[hand]       = new vr_controller;
+    hand_controllers[hand]->side = vr_controller::hand_side(hand + 1);
+  }
 }
 
 void vr_system_openxr::wait_until_next_frame()
@@ -569,7 +627,9 @@ void vr_system_openxr::wait_until_next_frame()
   current_frame_state.type = XR_TYPE_FRAME_STATE;
 
   if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
-  { std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n"; }
+  {
+    std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n";
+  }
 
   //Now the framestate contains the timing information for getting the view location, we can begin a new frame
   XrFrameBeginInfo frame_begin_info;
@@ -597,17 +657,46 @@ void vr_system_openxr::update_tracking()
   XrResult status = xrLocateViews(session, &view_locate_info, &view_state, view_capacity_input, &view_count, views.data());
   if(status != XR_SUCCESS) { std::cerr << NAMEOF_ENUM(status) << "\n"; }
 
-
   //From now, the two views contains up-to-date tracking info
   for(size_t i = 0; i < 2; ++i)
   {
     //There's a nasty pointer cast here that break a const, but it's for the greater good...
     //It just so happen that they both express vector 3D and quaternion in the same way...
-
-    if((XR_VIEW_STATE_POSITION_VALID_BIT|XR_VIEW_STATE_POSITION_TRACKED_BIT) & view_state.viewStateFlags)
+    if((XR_VIEW_STATE_POSITION_VALID_BIT | XR_VIEW_STATE_POSITION_TRACKED_BIT) & view_state.viewStateFlags)
       eye_camera_node[i]->local_xform.set_position(glm::make_vec3((float*)&views[i].pose.position));
-    if((XR_VIEW_STATE_ORIENTATION_VALID_BIT|XR_VIEW_STATE_ORIENTATION_TRACKED_BIT) & view_state.viewStateFlags)
-    eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
+    if((XR_VIEW_STATE_ORIENTATION_VALID_BIT | XR_VIEW_STATE_ORIENTATION_TRACKED_BIT) & view_state.viewStateFlags)
+      eye_camera_node[i]->local_xform.set_orientation(glm::make_quat((float*)&views[i].pose.orientation));
+  }
+
+  //You got hands too!
+  XrActiveActionSet active_action_set { action_set, XR_NULL_PATH };
+  XrActionsSyncInfo action_sync_info { XR_TYPE_ACTIONS_SYNC_INFO, nullptr };
+  action_sync_info.activeActionSets      = &active_action_set;
+  action_sync_info.countActiveActionSets = 1;
+  if(XR_FAILED(xrSyncActions(session, &action_sync_info))) fprintf(stderr, "failed to sync actions!");
+
+  for(size_t i = 0; i < 2; ++i)
+  {
+    XrActionStateGetInfo action_state_get_info { XR_TYPE_ACTION_STATE_GET_INFO, nullptr };
+    action_state_get_info.action        = pose_action;
+    action_state_get_info.subactionPath = user_hand_action_paths[i];
+    XrActionStatePose action_state_pose { XR_TYPE_ACTION_STATE_POSE, nullptr };
+
+    if(XR_FAILED(xrGetActionStatePose(session, &action_state_get_info, &action_state_pose)))
+      fprintf(stderr, "failed to get pose action\n");
+
+    //if(action_state_pose.isActive)
+    {
+      XrSpaceLocation location { XR_TYPE_SPACE_LOCATION, nullptr };
+      if(XR_FAILED(xrLocateSpace(user_hand_spaces[i], application_space, current_frame_state.predictedDisplayTime, &location)))
+        fprintf(stderr, "failed to locate space for hand %d\n", i);
+
+
+      if((XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT) & location.locationFlags)
+        hand_node[i]->local_xform.set_position(glm::make_vec3((float*)&location.pose.position));
+      if((XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) & location.locationFlags)
+        hand_node[i]->local_xform.set_orientation(glm::make_quat((float*)&location.pose.orientation));
+    }
   }
 
   //This updates the world matrices on everybody
