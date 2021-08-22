@@ -2,13 +2,10 @@
 #if USING_OPENXR
 
 #include "vr_system_openxr.hpp"
-#include "nameof.hpp"
-#include "openxr/openxr_platform.h"
-#include "imgui.h"
+#include <nameof.hpp>
+#include <openxr/openxr_platform.h>
+#include <imgui.h>
 #include <xrew.h>
-
-using PFN_xrTestMeLIV              = XrResult (*)(XrInstance, const char**);
-static PFN_xrTestMeLIV xrTestMeLIV = nullptr;
 
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
@@ -22,13 +19,10 @@ vr_system_openxr::vr_system_openxr() : vr_system()
 }
 
 vr_system_openxr::~vr_system_openxr()
-try
 {
-
   xrewQuit();
 
   std::cout << "Deinitialized OpenXR based vr_system implementation\n";
-
   if(application_space != XR_NULL_HANDLE)
   {
     if(XR_FAILED(xrDestroySpace(application_space))) std::cerr << "Failed to destroy space\n";
@@ -44,10 +38,6 @@ try
   {
     if(XR_FAILED(xrDestroyInstance(instance))) std::cerr << "Failed to destroy the instance\n";
   }
-}
-catch(const std::exception& e)
-{
-  std::cerr << e.what() << "\n";
 }
 
 bool vr_system_openxr::initialize(sdl::Window& window)
@@ -78,8 +68,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
   uint32_t extension_properties_count = 0;
   xrEnumerateInstanceExtensionProperties(nullptr, extension_properties_count, &extension_properties_count, nullptr);
-  std::vector<XrExtensionProperties> available_extension_properties(extension_properties_count,
-                                                                    XrExtensionProperties { XR_TYPE_EXTENSION_PROPERTIES });
+  std::vector<XrExtensionProperties> available_extension_properties(extension_properties_count, { XR_TYPE_EXTENSION_PROPERTIES });
 
   if(XR_FAILED(xrEnumerateInstanceExtensionProperties(nullptr,
                                                       static_cast<uint32_t>(available_extension_properties.size()),
@@ -127,7 +116,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
      * See the `gl_dx_interop` class for more info.
      */
 
-    std::cerr << "attempt directx interop fallback...\n";
+    std::cerr << "attempt DirectX interop fallback...\n";
     enabled_extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
 
     //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
@@ -156,16 +145,6 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   std::cout << "xrCreateInstance() == XR_SUCCESS\n";
 
   if(!xrewInit(instance)) std::cerr << "xrewInit() failed\n";
-
-  //Now that the instance is created, we are going to try to load a function provided by the LIV layer
-  PFN_xrTestMeLIV xrTestMeLIV;
-  if(XR_SUCCESS == xrGetInstanceProcAddr(instance, "xrTestMeLIV", reinterpret_cast<PFN_xrVoidFunction*>(&xrTestMeLIV))
-     && xrTestMeLIV != nullptr)
-  {
-    const char* fundamental_truth = nullptr;
-    if(XR_SUCCESS == xrTestMeLIV(instance, &fundamental_truth))
-      std::cout << "the fact that " << fundamental_truth << " is a fundamental truth\n";
-  }
 
   //Get properties of instance
   XrInstanceProperties instance_properties { XR_TYPE_INSTANCE_CREATE_INFO };
@@ -218,7 +197,6 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(view_configuration_type_count > 0) best_view_config_type = view_configuration_type[0];
   std::cout << "View configuration type : " << NAMEOF_ENUM(best_view_config_type) << "\n";
   //We are rendering a stereoscopic view in an HMD
-  assert(best_view_config_type == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
   used_view_configuration_type = best_view_config_type;
 
   XrViewConfigurationProperties view_configuration_properties { XR_TYPE_VIEW_CONFIGURATION_PROPERTIES };
@@ -234,11 +212,12 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(XR_FAILED(xrEnumerateViewConfigurationViews(
          instance, system_id, best_view_config_type, 4, &view_configuration_view_count, view_configuration_view)))
     std::cerr << "error: cannot enumerate view configuration views\n";
+
   views.resize(view_configuration_view_count, { XR_TYPE_VIEW });
   left_eye_view  = &views[0];
   right_eye_view = &views[1];
 
-  std::cout << "system has " << view_configuration_view_count << " " << NAMEOF_VAR_TYPE(view_configuration_view[0]) << "\n";
+  //std::cout << "system has " << view_configuration_view_count << " " << NAMEOF(view_configuration_view[0]) << "\n";
   for(size_t i = 0; i < view_configuration_view_count; ++i)
   {
     const auto& vcv = view_configuration_view[i];
@@ -258,16 +237,16 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   eye_render_target_sizes[1].y = view_configuration_view[1].recommendedImageRectHeight;
 
   XrEnvironmentBlendMode environment_blend_mode[4];
-  uint32_t environement_blend_mode_count = 0;
+  uint32_t environment_blend_mode_count = 0;
   if(XR_FAILED(xrEnumerateEnvironmentBlendModes(
-         instance, system_id, best_view_config_type, 4, &environement_blend_mode_count, environment_blend_mode)))
-    std::cerr << "error: cannot enumerate environement blend mode\n";
+         instance, system_id, best_view_config_type, 4, &environment_blend_mode_count, environment_blend_mode)))
+    std::cerr << "error: cannot enumerate environment blend mode\n";
 
-  assert(environement_blend_mode_count > 0);
+  assert(environment_blend_mode_count > 0);
   XrEnvironmentBlendMode best_environment_blend_mode = environment_blend_mode[0];
-  std::cout << "Environement blend mode :" << NAMEOF_ENUM(best_environment_blend_mode) << "\n";
+  std::cout << "Environment blend mode :" << NAMEOF_ENUM(best_environment_blend_mode) << "\n";
 
-  //Step 4 : Request graphcics backed requiredment for OpenGL
+  //Step 4 : Request graphics requirements
 
 #ifdef _WIN32
   if(!fallback_to_dx)
@@ -286,7 +265,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   {
     XrGraphicsRequirementsD3D11KHR graphics_requirements_d3d11_khr { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
     xrGetD3D11GraphicsRequirementsKHR(instance, system_id, &graphics_requirements_d3d11_khr);
-    std::cout << "Minimal D3D11 feature level required " << NAMEOF_ENUM(graphics_requirements_d3d11_khr.minFeatureLevel) << "\n";
+    //std::cout << "Minimal D3D11 feature level required " << NAMEOF_ENUM(graphics_requirements_d3d11_khr.minFeatureLevel) << "\n";
   }
 #endif
 
@@ -339,9 +318,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   }
 
   //Step 7 Create swapchains (list of images that are submitted to the compositor)
-  int64_t format[32] { 0 }; //32 is way too many options, there's like 10 max here, but well...
   uint32_t format_count = 0;
-  xrEnumerateSwapchainFormats(session, 32, &format_count, format);
+  xrEnumerateSwapchainFormats(session, format_count, &format_count, nullptr);
+  std::vector<int64_t> formats(format_count, 0);
+  xrEnumerateSwapchainFormats(session, format_count, &format_count, formats.data());
 
   //TODO switch between GL and D3D11
   //This is the format we want...
@@ -349,24 +329,24 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(!fallback_to_dx)
   {
 #endif
-    if(std::find(std::begin(format), std::end(format), GL_RGBA8) != std::end(format))
+    if(std::find(std::begin(formats), std::end(formats), GL_RGBA8) != std::end(formats))
       std::cout << "found GL_RGBA8 in possible format list\n";
     else
       std::cerr << "OpenGL texture format GL_RGBA8 not found within the supported formats by OpenXR runtime\n";
 
     //...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
-    if(std::find(std::begin(format), std::end(format), GL_SRGB8_ALPHA8) != std::end(format))
+    if(std::find(std::begin(formats), std::end(formats), GL_SRGB8_ALPHA8) != std::end(formats))
       std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n";
     else
       std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
 
-    for(int i = 0; i < 32; ++i) std::cout << "format " << i << ": " << format[i] << std::endl;
+    for(int i = 0; i < formats.size(); ++i) std::cout << "format " << i << ": " << formats[i] << std::endl;
 
 #ifdef _WIN32
   }
   else
   {
-    if(std::find(std::begin(format), std::end(format), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) != std::end(format))
+    if(std::find(std::begin(formats), std::end(formats), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) != std::end(formats))
       std::cout << "found DXGI_FORMAT_R8G8B8A8_UNORM_SRGB in possible format list\n";
     else
     {
@@ -454,7 +434,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   strcpy(action_set_create_info.actionSetName, "todo_engine_basic_gameplay");
   strcpy(action_set_create_info.localizedActionSetName, "Basic Gameplay");
   action_set_create_info.priority = 0;
+
   if(XR_FAILED(xrCreateActionSet(instance, &action_set_create_info, &action_set))) std::cerr << "did not create action set\n";
+
   if(XR_FAILED(xrStringToPath(instance, "/user/hand/left", &user_hand_action_paths[0])))
     std::cerr << "did not get left hand path\n";
   if(XR_FAILED(xrStringToPath(instance, "/user/hand/right", &user_hand_action_paths[1])))
@@ -557,9 +539,7 @@ void vr_system_openxr::wait_until_next_frame()
 {
   //We are going to start a new frame, before that, we need to be able to sync up to the VR system to improve latency
   //Thus, we wait until the right time to start rendering
-  XrFrameWaitInfo frame_wait_info;
-  frame_wait_info.type     = XR_TYPE_FRAME_WAIT_INFO;
-  frame_wait_info.next     = nullptr;
+  const XrFrameWaitInfo frame_wait_info { XR_TYPE_FRAME_WAIT_INFO };
   current_frame_state.type = XR_TYPE_FRAME_STATE;
 
   if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
@@ -568,7 +548,7 @@ void vr_system_openxr::wait_until_next_frame()
   }
 
   //Now the framestate contains the timing information for getting the view location, we can begin a new frame
-  XrFrameBeginInfo frame_begin_info { XR_TYPE_FRAME_BEGIN_INFO };
+  const XrFrameBeginInfo frame_begin_info { XR_TYPE_FRAME_BEGIN_INFO };
   xrBeginFrame(session, &frame_begin_info);
 }
 
