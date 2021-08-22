@@ -33,7 +33,7 @@ class vr_system_openvr : public vr_system
 #ifdef WIN32
   void update_mr_camera() final;
 #endif
-  [[nodiscard]]  renderable_handle load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader) final;
+  [[nodiscard]]  vr_render_model load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader) final;
 
 };
 

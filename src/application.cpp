@@ -860,19 +860,19 @@ void application::setup_scene()
     mesh left_controller_mesh;
     mesh right_controller_mesh;
 
-    if(left_controller != renderable_manager::invalid_renderable)
+    if(left_controller.renderable != renderable_manager::invalid_renderable)
     {
-      auto& renderable = renderable_manager::get_from_handle(left_controller);
-      renderable.set_diffuse_texture(texture_manager::get_dummy_texture());
-      left_controller_mesh.add_submesh(left_controller);
+      auto& renderable = renderable_manager::get_from_handle(left_controller.renderable);
+      renderable.set_diffuse_texture( left_controller.diffuse_texture != texture_manager::invalid_texture ? left_controller.diffuse_texture : texture_manager::get_dummy_texture());
+      left_controller_mesh.add_submesh(left_controller.renderable);
       has_left_controller = true;
     }
 
-    if(right_controller != renderable_manager::invalid_renderable)
+    if(right_controller.renderable != renderable_manager::invalid_renderable)
     {
-      auto& renderable = renderable_manager::get_from_handle(left_controller);
-      renderable.set_diffuse_texture(texture_manager::get_dummy_texture());
-      right_controller_mesh.add_submesh(right_controller);
+      auto& renderable = renderable_manager::get_from_handle(right_controller.renderable);
+      renderable.set_diffuse_texture( right_controller.diffuse_texture != texture_manager::invalid_texture ? right_controller.diffuse_texture : texture_manager::get_dummy_texture());
+      right_controller_mesh.add_submesh(right_controller.renderable);
       has_right_controller = true;
     }
 
@@ -922,7 +922,7 @@ void application::splash_frame(const char* image_path)
     auto splash_shader_handle = shader_program_manager::create_shader("shaders/splash.vert.glsl", "shaders/splash.frag.glsl");
     auto& splash_shader       = shader_program_manager::get_from_handle(splash_shader_handle);
 
-    float vtx_obj[] = 
+    float vtx_obj[] =
     { -1, -1, 0, 0,
       3, -1, 2, 0,
       -1, 3, 0, -2 };

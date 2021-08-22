@@ -74,7 +74,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   uint32_t extension_properties_count = 0;
   xrEnumerateInstanceExtensionProperties(nullptr, extension_properties_count, &extension_properties_count, nullptr);
   std::vector<XrExtensionProperties> available_extension_properties(extension_properties_count);
-  for(auto& extension_property : available_extension_properties) 
+  for(auto& extension_property : available_extension_properties)
   {
     zero_it(extension_property);
     extension_property.type = XR_TYPE_EXTENSION_PROPERTIES;

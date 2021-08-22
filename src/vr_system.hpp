@@ -17,12 +17,18 @@
 #include "shader_program_manager.hpp"
 #include "input_command.hpp"
 
+struct vr_render_model
+{
+  renderable_handle renderable;
+  texture_handle diffuse_texture;
+};
+
 struct vr_controller
 {
   //This is the scene graph node that represent this controller, as VR controllers are object tracked within a VR system
   node* pose_node = nullptr;
 
-  //These commands are made to directly mimic the physical inputs of whatever controllers are used. The corresponding names 
+  //These commands are made to directly mimic the physical inputs of whatever controllers are used. The corresponding names
   std::vector<gamepad_button_command> buttons;
   std::vector<std::string> button_names;
   std::vector<gamepad_1d_axis_command> triggers;
@@ -133,9 +139,9 @@ class vr_system
   ///Return true if this VR system will perform an image vflip in the projection matrix. This changes face culling order.
   [[nodiscard]] virtual bool must_vflip() const = 0;
 
-  [[nodiscard]] virtual renderable_handle load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader)
+  [[nodiscard]] virtual vr_render_model load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader)
   {
-    return renderable_manager::invalid_renderable;
+    return { renderable_manager::invalid_renderable, texture_manager::invalid_texture };
   }
 
   void initialize_opengl_resources();

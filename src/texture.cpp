@@ -95,6 +95,12 @@ void texture::load_from(const image& img, bool is_sRGB, GLenum target) const
                img.get_binary());
 }
 
+void texture::load_from_raw_memory(const void* bytes, size_t width, size_t height, GLint format, GLint target) const
+{
+  bind(0, target);
+  glTexImage2D(target, 0, format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+}
+
 void texture::generate_mipmaps(GLenum target) const
 {
   bind(0, target);
