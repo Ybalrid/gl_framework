@@ -163,7 +163,10 @@ if(HAS_OPENXR)
   message(STATUS "Including OpenXR directories")
   add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK")
   target_link_libraries(${GAME_NAME}_exe PRIVATE openxr_loader)
-  target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include")
+  target_include_directories(${GAME_NAME}_exe PRIVATE
+    "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include"
+    "${CMAKE_SOURCE_DIR}/third_party/xrew/generated"
+    )
   if(UNIX)
   target_link_libraries(${GAME_NAME}_exe PRIVATE X11)
   endif()

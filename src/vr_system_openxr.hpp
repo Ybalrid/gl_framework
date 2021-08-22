@@ -32,7 +32,7 @@ class vr_system_openxr : public vr_system
 #ifdef _WIN32
   std::vector<XrSwapchainImageD3D11KHR> swapchain_images_d3d11[2];
 #endif
-  XrFrameState current_frame_state;
+  XrFrameState current_frame_state{};
   XrCompositionLayerBaseHeader* layers[1];
   XrCompositionLayerProjectionView projection_layer_views[2];
   XrSpace application_space = XR_NULL_HANDLE;
