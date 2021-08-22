@@ -9,7 +9,7 @@
 
 #include "imgui.h"
 
-using PFN_xrTestMeLIV = XrResult(*)(XrInstance, const char**);
+using PFN_xrTestMeLIV              = XrResult (*)(XrInstance, const char**);
 static PFN_xrTestMeLIV xrTestMeLIV = nullptr;
 
 //That's a bit ugly I know
@@ -51,7 +51,8 @@ inline void zero_it(T obj[], size_t count)
 bool vr_system_openxr::initialize(sdl::Window& window)
 {
   std::cout << "Initializing OpenXR based VR system\n";
-  if(const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON"); xr_runtime_json_str != nullptr) std::cout << xr_runtime_json_str << "\n";
+  if(const char* xr_runtime_json_str = getenv("XR_RUNTIME_JSON"); xr_runtime_json_str != nullptr)
+    std::cout << xr_runtime_json_str << "\n";
   if(const char* xr_api_layer_path = getenv("XR_API_LAYER_PATH"); xr_api_layer_path) std::cout << xr_api_layer_path << "\n";
 
   //Step one, get XrInstance up and running
@@ -72,10 +73,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   }
   status = xrEnumerateApiLayerProperties(api_layer_count, &api_layer_count, available_api_layer_properties.data());
   std::cout << "List of available API Layers:\n";
-  for(const auto& api_layer : available_api_layer_properties)
-  {
-    std::cout << "\t- " << api_layer.layerName << "\n";
-  }
+  for(const auto& api_layer : available_api_layer_properties) { std::cout << "\t- " << api_layer.layerName << "\n"; }
 
   std::vector<const char*> available_api_layer_names((size_t)api_layer_count);
   for(size_t i = 0; i < api_layer_count; ++i) available_api_layer_names[i] = available_api_layer_properties[i].layerName;
@@ -88,7 +86,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
     zero_it(extension_property);
     extension_property.type = XR_TYPE_EXTENSION_PROPERTIES;
   }
-  XrResult result = xrEnumerateInstanceExtensionProperties(nullptr, (uint32_t)available_extension_properties.size(), &extension_properties_count, available_extension_properties.data());
+  XrResult result = xrEnumerateInstanceExtensionProperties(nullptr,
+                                                           (uint32_t)available_extension_properties.size(),
+                                                           &extension_properties_count,
+                                                           available_extension_properties.data());
   std::cout << "List of available instance extensions:\n";
   for(const auto& extension_properties : available_extension_properties)
   {
@@ -176,7 +177,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   zero_it(instance_properties);
   instance_properties.type = XR_TYPE_INSTANCE_PROPERTIES;
   if(status = xrGetInstanceProperties(instance, &instance_properties); status != XR_SUCCESS)
-  { std::cerr << "error while getting the instance properties\n"; }
+  {
+    std::cerr << "error while getting the instance properties\n";
+  }
   else
   {
     std::cout << "OpenXR Runtime name    : " << instance_properties.runtimeName << "\n";
@@ -193,14 +196,18 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   system_get_info.type       = XR_TYPE_SYSTEM_GET_INFO;
   system_get_info.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
   if(status = xrGetSystem(instance, &system_get_info, &system_id); status != XR_SUCCESS)
-  { std::cerr << "error while getting system info for HMD form factor\n"; }
+  {
+    std::cerr << "error while getting system info for HMD form factor\n";
+  }
 
   //Retrieve system properties
   XrSystemProperties system_properties;
   zero_it(system_properties);
   system_properties.type = XR_TYPE_SYSTEM_PROPERTIES;
   if(status = xrGetSystemProperties(instance, system_id, &system_properties); status != XR_SUCCESS)
-  { std::cerr << "error while getting system properties\n"; }
+  {
+    std::cerr << "error while getting system properties\n";
+  }
 
   std::cout << "HMD FormFactor system  : " << system_properties.systemName << "\n";
   std::cout << "Positional Tracking    : " << (system_properties.trackingProperties.positionTracking == XR_TRUE ? "YES" : "NO")
@@ -231,7 +238,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   view_configuration_properties.type = XR_TYPE_VIEW_CONFIGURATION_PROPERTIES;
   if(status = xrGetViewConfigurationProperties(instance, system_id, best_view_config_type, &view_configuration_properties);
      status != XR_SUCCESS)
-  { std::cerr << "error: cannot get view configuration properties\n"; }
+  {
+    std::cerr << "error: cannot get view configuration properties\n";
+  }
   else
   {
     //This is a weird feature, but like, well, we have a callback to recompute the projection matrix on the fly too so, it's not a problem
@@ -245,7 +254,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(status = xrEnumerateViewConfigurationViews(
          instance, system_id, best_view_config_type, 4, &view_configuration_view_count, view_configuration_view);
      status != XR_SUCCESS)
-  { std::cerr << "error: cannot enumerate view configuration views\n"; }
+  {
+    std::cerr << "error: cannot enumerate view configuration views\n";
+  }
   views.resize(view_configuration_view_count, { XR_TYPE_VIEW });
   left_eye_view  = &views[0];
   right_eye_view = &views[1];
@@ -274,7 +285,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(status = xrEnumerateEnvironmentBlendModes(
          instance, system_id, best_view_config_type, 4, &environement_blend_mode_count, environment_blend_mode);
      status != XR_SUCCESS)
-  { std::cerr << "error: cannot enumerate environement blend mode\n"; }
+  {
+    std::cerr << "error: cannot enumerate environement blend mode\n";
+  }
 
   assert(environement_blend_mode_count > 0);
   XrEnvironmentBlendMode best_environment_blend_mode = environment_blend_mode[0];
@@ -339,8 +352,8 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
   //we need to get ghe graphics bindings that correspond to the choosen graphics API and windowing system
 #ifdef WIN32
-  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding_opengl{};
-  XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11{};
+  XrGraphicsBindingOpenGLWin32KHR xr_graphics_binding_opengl {};
+  XrGraphicsBindingD3D11KHR xr_graphics_binding_d3d11 {};
   zero_it(xr_graphics_binding_opengl);
   xr_graphics_binding_opengl.type  = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
   xr_graphics_binding_opengl.hGLRC = wglGetCurrentContext();
@@ -369,7 +382,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 #endif
 
   if(status = xrCreateSession(instance, &session_create_info, &session); status != XR_SUCCESS)
-  { std::cerr << "error: cannot create session " << NAMEOF_ENUM(status) << "\n"; }
+  {
+    std::cerr << "error: cannot create session " << NAMEOF_ENUM(status) << "\n";
+  }
   else
   {
     std::cout << "XrCreateSession() == XR_SUCCESS\n";
@@ -387,7 +402,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   reference_space_create_info.poseInReferenceSpace = identity_pose;
   zero_it(application_space);
   if(status = xrCreateReferenceSpace(session, &reference_space_create_info, &application_space); status != XR_SUCCESS)
-  { std::cerr << NAMEOF_ENUM(status) << "\n"; }
+  {
+    std::cerr << NAMEOF_ENUM(status) << "\n";
+  }
 
   //Step 7 Create swapchains (list of images that are submitted to the compositor)
   int64_t format[32]; //32 is way too many options, there's like 10 max here, but well...
@@ -402,7 +419,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   {
 #endif
     if(std::find(std::begin(format), std::end(format), GL_RGBA8) != std::end(format))
-    { std::cout << "found GL_RGBA8 in possible format list\n"; }
+    {
+      std::cout << "found GL_RGBA8 in possible format list\n";
+    }
     else
     {
       std::cerr << "OpenGL texture format GL_RGBA8 not found within the supported formats by OpenXR runtime\n";
@@ -411,7 +430,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
     //...But actually we gamma corrected our rendering in shaders, so to avoid it being done twice over, we'll lie that our pixel format is this one:
     if(std::find(std::begin(format), std::end(format), GL_SRGB8_ALPHA8) != std::end(format))
-    { std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n"; }
+    {
+      std::cout << "found GL_SRGB8_ALPHA8 in possible format list\n";
+    }
     else
     {
       std::cerr << "OpenGL texture format GL_SRGB8_ALPHA8 not found within the supported formats by OpenXR runtime\n";
@@ -425,7 +446,9 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   else
   {
     if(std::find(std::begin(format), std::end(format), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) != std::end(format))
-    { std::cout << "found DXGI_FORMAT_R8G8B8A8_UNORM_SRGB in possible format list\n"; }
+    {
+      std::cout << "found DXGI_FORMAT_R8G8B8A8_UNORM_SRGB in possible format list\n";
+    }
     else
     {
       std::cerr
@@ -477,12 +500,16 @@ bool vr_system_openxr::initialize(sdl::Window& window)
       if(status = xrEnumerateSwapchainImages(
              swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_opengl_khr);
          status != XR_SUCCESS)
-      { std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n"; }
+      {
+        std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n";
+      }
       else
       {
         std::cout << "this swapchain has " << swapchain_image_count << " images.\n";
         for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
-        { swapchain_images_opengl[i].push_back(swapchain_image_opengl_khr[img_index]); }
+        {
+          swapchain_images_opengl[i].push_back(swapchain_image_opengl_khr[img_index]);
+        }
       }
 #ifdef _WIN32
     }
@@ -493,11 +520,15 @@ bool vr_system_openxr::initialize(sdl::Window& window)
       if(status = xrEnumerateSwapchainImages(
              swapchain[i], 4, &swapchain_image_count, (XrSwapchainImageBaseHeader*)swapchain_image_d3d11_khr);
          status != XR_SUCCESS)
-      { std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n"; }
+      {
+        std::cerr << "error: could not get swapchain images for swapchain " << i << " " << NAMEOF_ENUM(status) << "\n";
+      }
       else
       {
         for(size_t img_index = 0; img_index < swapchain_image_count; img_index++)
-        { swapchain_images_d3d11[i].push_back(swapchain_image_d3d11_khr[img_index]); }
+        {
+          swapchain_images_d3d11[i].push_back(swapchain_image_d3d11_khr[img_index]);
+        }
       }
     }
 #endif
@@ -508,8 +539,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   strcpy(action_set_create_info.actionSetName, "todo_engine_basic_gameplay");
   strcpy(action_set_create_info.localizedActionSetName, "Basic Gameplay");
   action_set_create_info.priority = 0;
-  if(XR_FAILED(xrCreateActionSet(instance, &action_set_create_info, &action_set)))
-    fprintf(stderr, "did not create action set\n");
+  if(XR_FAILED(xrCreateActionSet(instance, &action_set_create_info, &action_set))) fprintf(stderr, "did not create action set\n");
   if(XR_FAILED(xrStringToPath(instance, "/user/hand/left", &user_hand_action_paths[0])))
     fprintf(stderr, "did not get left hand path\n");
   if(XR_FAILED(xrStringToPath(instance, "/user/hand/right", &user_hand_action_paths[1])))
@@ -521,8 +551,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   action_create_info.actionType          = XR_ACTION_TYPE_POSE_INPUT;
   action_create_info.countSubactionPaths = 2;
   action_create_info.subactionPaths      = user_hand_action_paths.data();
-  if(XR_FAILED(xrCreateAction(action_set, &action_create_info, &pose_action)))
-    fprintf(stderr, "did not create pose action\n");
+  if(XR_FAILED(xrCreateAction(action_set, &action_create_info, &pose_action))) fprintf(stderr, "did not create pose action\n");
 
   //TODO You need to suggest interaction bindings to the runtime here... But we don't do buttons and haptics for now.
   xrStringToPath(instance, "/interaction_profiles/khr/simple_controller", &simple_controller_path);
@@ -530,10 +559,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   xrStringToPath(instance, "/user/hand/right/input/aim/pose", &simple_controller_aim_pose_path[1]);
 
   std::vector<XrActionSuggestedBinding> simple_controller_bindings { { { pose_action, simple_controller_aim_pose_path[0] },
-                                                     { pose_action, simple_controller_aim_pose_path[1] } } };
+                                                                       { pose_action, simple_controller_aim_pose_path[1] } } };
   XrInteractionProfileSuggestedBinding suggested_binding { XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING, nullptr };
-  suggested_binding.interactionProfile = simple_controller_path;
-  suggested_binding.suggestedBindings  = simple_controller_bindings.data();
+  suggested_binding.interactionProfile     = simple_controller_path;
+  suggested_binding.suggestedBindings      = simple_controller_bindings.data();
   suggested_binding.countSuggestedBindings = (uint32_t)simple_controller_bindings.size();
   if(XR_FAILED(xrSuggestInteractionProfileBindings(instance, &suggested_binding)))
     fprintf(stderr, "Failed to suggest simple controller binding to this OpenXR instance!");
@@ -685,18 +714,14 @@ void vr_system_openxr::update_tracking()
     if(XR_FAILED(xrGetActionStatePose(session, &action_state_get_info, &action_state_pose)))
       fprintf(stderr, "failed to get pose action\n");
 
-    //if(action_state_pose.isActive)
-    {
-      XrSpaceLocation location { XR_TYPE_SPACE_LOCATION, nullptr };
-      if(XR_FAILED(xrLocateSpace(user_hand_spaces[i], application_space, current_frame_state.predictedDisplayTime, &location)))
-        fprintf(stderr, "failed to locate space for hand %d\n", i);
+    XrSpaceLocation location { XR_TYPE_SPACE_LOCATION, nullptr };
+    if(XR_FAILED(xrLocateSpace(user_hand_spaces[i], application_space, current_frame_state.predictedDisplayTime, &location)))
+      fprintf(stderr, "failed to locate space for hand %d\n", i);
 
-
-      if((XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT) & location.locationFlags)
-        hand_node[i]->local_xform.set_position(glm::make_vec3((float*)&location.pose.position));
-      if((XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) & location.locationFlags)
-        hand_node[i]->local_xform.set_orientation(glm::make_quat((float*)&location.pose.orientation));
-    }
+    if((XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT) & location.locationFlags)
+      hand_node[i]->local_xform.set_position(glm::make_vec3((float*)&location.pose.position));
+    if((XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) & location.locationFlags)
+      hand_node[i]->local_xform.set_orientation(glm::make_quat((float*)&location.pose.orientation));
   }
 
   //This updates the world matrices on everybody
