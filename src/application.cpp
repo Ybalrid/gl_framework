@@ -792,6 +792,8 @@ void application::setup_scene()
   inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
   inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
   inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
+  inputs.register_gamepad_button_down_command(SDL_CONTROLLER_BUTTON_START, 0, &gamepad_button_test_command);
+
 
   //TODO build a real level system!
   auto plane0 = s.scene_root->push_child(create_node());
@@ -897,6 +899,9 @@ void application::set_clear_color(glm::vec4 color)
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
   }
 }
+
+void application::gamepad_button_test_command_::execute() { std::cout << "You pressed the button\n"; }
+
 void application::splash_frame(const char* image_path)
 {
   sdl::Event e;

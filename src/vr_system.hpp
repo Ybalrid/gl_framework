@@ -43,9 +43,9 @@ struct vr_controller
   //These commands are made to directly mimic the physical inputs of whatever controllers are used. The corresponding names
   std::vector<gamepad_button_command> buttons;
   std::vector<std::string> button_names;
-  std::vector<gamepad_1d_axis_command> triggers;
+  std::vector<gamepad_axis_motion_command> triggers;
   std::vector<std::string> trigger_names;
-  std::vector<gamepad_2d_stick_command> sticks;
+  //std::vector<gamepad_2d_stick_command> sticks;
   std::vector<std::string> stick_names;
 
   //These commands are things hing level bindings to actions like "teleport", "pet the cat", "reverse the polarity of the neutron flow"

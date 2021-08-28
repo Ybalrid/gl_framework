@@ -153,6 +153,12 @@ class application
     keyboard_debug_utilities_(application* parent) : parent_ { parent } { }
   } keyboard_debug_utilities { this };
 
+
+  struct gamepad_button_test_command_ : gamepad_button_command
+  {
+    void execute() override;
+  } gamepad_button_test_command{};
+
   vr_system_ptr vr  = nullptr;
   bool mr_activated = false;
 
