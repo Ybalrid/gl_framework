@@ -157,7 +157,7 @@ void script_system::install_additional_api()
   chai.add(user_type<scene>(), "scene");
 
   // clang-format off
-	chai.add(fun([](scene* s) -> node* 
+	chai.add(fun([](scene* s) -> node*
 			{
 				 return (s->scene_root.get());
 			 }),
@@ -173,10 +173,10 @@ void script_system::install_additional_api()
   chai.add(fun(&application::get_main_scene), "get_main_scene");
   chai.add(fun(&scene::find_node), "find_node");
   // clang-format off
-	chai.add(fun([](node* n) -> std::string 
+	chai.add(fun([](node* n) -> std::string
 			{
 				 std::string type;
-				 n->visit([&](auto&& content) 
+				 n->visit([&](auto&& content)
 				 {
 					 if constexpr(std::is_same_v<std::decay_t<decltype(content)>, std::monostate>)
 						 type = "empty";
@@ -196,17 +196,18 @@ void script_system::install_additional_api()
 						 type = std::string("???????? :O TODO add missing node type in ") + __FILE__ + " " + std::to_string(__LINE__);
 				 });
 				 return "node : " + std::to_string(n->get_id())
-					 + (n->get_parent() ? "\nchild of :" + std::to_string(n->get_parent()->get_id()) : "") + "\n"
+					 + (!n->get_name().empty() ? "\nname : " + n->get_name() : "")
+					 + (n->get_parent() ? "\nchild of : " + std::to_string(n->get_parent()->get_id()) : "") + "\n"
 					 + "type : " + type;
 			 }),
 			 "to_string");
 
-	chai.add(fun([&](scene* s) -> std::string 
+	chai.add(fun([&](scene* s) -> std::string
 			{
 				 std::string str;
 				 auto to_string_node = chai.eval<std::function<std::string(node*)>>("to_string");
                  auto to_string_xform = chai.eval<std::function<std::string(::transform*)>>("to_string");
-				 s->run_on_whole_graph([&](node* n) 
+				 s->run_on_whole_graph([&](node* n)
 				 {
 					 str += to_string_node(n);
                      str += "\n";

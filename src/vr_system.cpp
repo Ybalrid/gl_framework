@@ -214,7 +214,7 @@ bool vr_system::try_start_mr()
   if(SharedTextureProtocol::IsActive() && vr_tracking_anchor && gl_dx11_interop::get()->init())
   {
     //Create camera and node:
-    mr_camera_node = vr_tracking_anchor->push_child(create_node());
+    mr_camera_node = vr_tracking_anchor->push_child(create_node("mixed_reality_camera"));
     mr_camera      = mr_camera_node->assign(std::move(camera()));
 
     //LIV's SharedTextureProtocol expect a shareable DirectX11. Create it.

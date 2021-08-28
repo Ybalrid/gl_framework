@@ -125,10 +125,10 @@ void vr_system_openvr::build_camera_node_system()
   glm::vec3 tr, sc, sk;
   glm::quat rot;
 
-  head_node = vr_tracking_anchor->push_child(create_node());
+  head_node = vr_tracking_anchor->push_child(create_node("head_node"));
   for(size_t eye = 0; eye < 2; ++eye)
   {
-    eye_camera_node[eye] = head_node->push_child(create_node());
+    eye_camera_node[eye] = head_node->push_child(create_node("eye_camera_" + std::to_string(eye)));
     camera cam;
     eye_camera[eye] = eye_camera_node[eye]->assign(std::move(cam));
 
@@ -145,7 +145,7 @@ void vr_system_openvr::build_camera_node_system()
 
   for(size_t hand = 0; hand < 2; ++hand)
   {
-    hand_node[hand]              = vr_tracking_anchor->push_child(create_node());
+    hand_node[hand]              = vr_tracking_anchor->push_child(create_node("hand_node_" + std::to_string(hand)));
     hand_controllers[hand]       = new vr_controller;
     hand_controllers[hand]->side = vr_controller::hand_side(hand + 1);
   }

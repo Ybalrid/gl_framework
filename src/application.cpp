@@ -83,7 +83,7 @@ void scene_node_outline(node* current_node, node*& active_node)
     else
       type = std::string("ERROR: missing node type in") + __FILE__ + " " + std::to_string(__LINE__);
   });
-  const std::string name = type + " node " + std::to_string(current_node->get_id());
+  const std::string name = type + " node " + std::to_string(current_node->get_id()) + (!current_node->get_name().empty() ? " [" + current_node->get_name() + "]" : "") ;
 
   //Draw selection ball
   if(ImGui::RadioButton(("###select " + name).c_str(), current_node == active_node)) active_node = current_node;
@@ -716,7 +716,7 @@ void application::setup_scene()
 
   if(vr)
   {
-    vr->set_anchor(s.scene_root->push_child(create_node()));
+    vr->set_anchor(s.scene_root->push_child(create_node("vr_system_anchor")));
     vr->build_camera_node_system();
   }
 
@@ -768,7 +768,7 @@ void application::setup_scene()
 
   gltf = gltf_loader(simple_shader);
 
-  cam_node = s.scene_root->push_child(create_node());
+  cam_node = s.scene_root->push_child(create_node("application_camera"));
   {
     camera cam_obj;
     cam_obj.fov = 45;
@@ -778,7 +778,7 @@ void application::setup_scene()
     main_camera = cam_node->get_if_is<camera>();
     assert(main_camera);
 
-    cam_node->push_child(create_node())->assign(listener_marker());
+    cam_node->push_child(create_node("audio_listener_position"))->assign(listener_marker());
   }
   fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
@@ -796,22 +796,22 @@ void application::setup_scene()
 
 
   //TODO build a real level system!
-  auto plane0 = s.scene_root->push_child(create_node());
+  auto plane0 = s.scene_root->push_child(create_node("plane0"));
   plane0->assign(scene_object(textured_plane));
 
-  auto corset_node = s.scene_root->push_child(create_node());
+  auto corset_node = s.scene_root->push_child(create_node("corset"));
   auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb");
   corset_node->assign(scene_object(corset_mesh));
   corset_node->local_xform.translate(glm::vec3(-4, 0, 0));
   corset_node->local_xform.scale(50.f * transform::UNIT_SCALE);
 
-  auto antique_camera_node = s.scene_root->push_child(create_node());
+  auto antique_camera_node = s.scene_root->push_child(create_node("antique_camera"));
   auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb");
   antique_camera_node->assign(scene_object(antique_camera_mesh));
   antique_camera_node->local_xform.translate(glm::vec3(4, 0, 0));
   antique_camera_node->local_xform.scale(0.25f * transform::UNIT_SCALE);
 
-  auto damaged_helmet_node = s.scene_root->push_child(create_node());
+  auto damaged_helmet_node = s.scene_root->push_child(create_node("damaged_helmet"));
   auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb");
   damaged_helmet_node->assign(scene_object(damaged_helmet_mesh));
   damaged_helmet_node->local_xform.translate(glm::vec3(8.f, 1.f, 0));
@@ -824,10 +824,10 @@ void application::setup_scene()
 
   std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
 
-  lights[0] = s.scene_root->push_child(create_node());
-  lights[1] = s.scene_root->push_child(create_node());
-  lights[2] = s.scene_root->push_child(create_node());
-  lights[3] = s.scene_root->push_child(create_node());
+  lights[0] = s.scene_root->push_child(create_node("light_0"));
+  lights[1] = s.scene_root->push_child(create_node("light_1"));
+  lights[2] = s.scene_root->push_child(create_node("light_2"));
+  lights[3] = s.scene_root->push_child(create_node("light_3"));
 
   for(size_t i = 0; i < 4; ++i)
   {
@@ -843,7 +843,7 @@ void application::setup_scene()
   lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
   lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
 
-  auto sponza_root       = s.scene_root->push_child(create_node());
+  auto sponza_root       = s.scene_root->push_child(create_node("sponza_scene"));
   const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf");
   sponza_root->assign(scene_object(sponza_mesh));
 
@@ -880,12 +880,12 @@ void application::setup_scene()
 
     if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand)
     {
-      auto node = left_hand->push_child(create_node());
+      auto node = left_hand->push_child(create_node("left_hand_tracker"));
       node->assign(scene_object((has_left_controller ? left_controller_mesh : vr_controller_mesh)));
     }
     if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand)
     {
-      auto node = right_hand->push_child(create_node());
+      auto node = right_hand->push_child(create_node("right_hand_tracker"));
       node->assign(scene_object((has_right_controller ? right_controller_mesh : vr_controller_mesh)));
     }
   }

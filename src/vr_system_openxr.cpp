@@ -513,10 +513,10 @@ void right_eye_projection(glm::mat4& output, float near_plane, float far_plane)
 void vr_system_openxr::build_camera_node_system()
 {
   //We are not using a head rig here, the views directly correspond to the cameras. We could do without the head node here
-  head_node = vr_tracking_anchor->push_child(create_node());
+  head_node = vr_tracking_anchor->push_child(create_node("head_node"));
 
-  eye_camera_node[0] = head_node->push_child(create_node());
-  eye_camera_node[1] = head_node->push_child(create_node());
+  eye_camera_node[0] = head_node->push_child(create_node("eye_0"));
+  eye_camera_node[1] = head_node->push_child(create_node("eye_1"));
   {
     camera l, r;
     l.vr_eye_projection_callback = left_eye_projection;
@@ -529,7 +529,7 @@ void vr_system_openxr::build_camera_node_system()
 
   for(size_t hand = 0; hand < 2; ++hand)
   {
-    hand_node[hand]              = vr_tracking_anchor->push_child(create_node());
+    hand_node[hand]              = vr_tracking_anchor->push_child(create_node("hand_node_" + std::to_string(hand)));
     hand_controllers[hand]       = new vr_controller;
     hand_controllers[hand]->side = vr_controller::hand_side(hand + 1);
   }

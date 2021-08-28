@@ -3,6 +3,7 @@
 #include <variant>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 #include "transform.hpp"
 #include "scene_object.hpp"
@@ -37,8 +38,11 @@ class node
                                     listener_marker>;
 
   using child_list = std::vector<node_ptr>;
-  node() : ID { counter++ } {}
+  node() : ID { counter++ } { }
+  node(const std::string& new_node_name) : node() { name = new_node_name; }
   ~node() = default;
+
+  std::string name;
 
   private:
   child_list children;
@@ -60,6 +64,8 @@ class node
   node* push_child(node_ptr&& child);
   node_ptr&& remove_child(size_t index);
   void clean_child_list();
+
+  std::string get_name() const;
 
   template <typename T>
   const T* get_if_is() const
@@ -95,3 +101,4 @@ class node
 
 //node factory function
 node_ptr create_node();
+node_ptr create_node(const std::string& new_node_name);
