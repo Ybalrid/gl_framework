@@ -7,3 +7,4 @@ is_vr = false
 vr_system = "openxr"
 use_LIV = true
 hidpi = false
+levels = ["sponza"]

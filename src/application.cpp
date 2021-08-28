@@ -351,6 +351,16 @@ void application::configure_and_create_window(const std::string& application_nam
   window_size.x                = int(window_size_array->at(0));
   window_size.y                = int(window_size_array->at(1));
 
+  const auto level_list = configuration_table->get_array_of<std::string>("levels");
+  if(level_list->empty())
+  {
+    start_level_name = "sponza";
+  }
+  else
+  {
+    start_level_name = level_list->at(0);
+  }
+
   const auto is_vr = configuration_table->get_as<bool>("is_vr").value_or(false);
   if(is_vr)
   {
@@ -709,6 +719,34 @@ void application::run()
   }
 }
 
+void application::setup_lights() {
+  std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
+
+  lights[0] = s.scene_root->push_child(create_node("light_0"));
+  lights[1] = s.scene_root->push_child(create_node("light_1"));
+  lights[2] = s.scene_root->push_child(create_node("light_2"));
+  lights[3] = s.scene_root->push_child(create_node("light_3"));
+
+  for(size_t i = 0; i < 4; ++i)
+  {
+    auto* l     = lights[i];
+    auto* pl    = l->assign(point_light());
+    pl->ambient = glm::vec3(0.1f);
+    pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
+    p_lights[i] = (pl);
+  }
+
+  lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
+  lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
+  lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
+  lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
+
+  sun.diffuse = sun.specular = glm::vec3(1);
+  sun.specular *= 42;
+  sun.ambient   = glm::vec3(0);
+  sun.direction = glm::normalize(sun_direction_unormalized);
+}
+
 void application::setup_scene()
 {
   //TODO everything about this should be done depending on some input somewhere, or provided by the game code - also, a level system would be useful
@@ -794,60 +832,17 @@ void application::setup_scene()
   inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
   inputs.register_gamepad_button_down_command(SDL_CONTROLLER_BUTTON_START, 0, &gamepad_button_test_command);
 
+  setup_lights();
 
-  //TODO build a real level system!
-  auto plane0 = s.scene_root->push_child(create_node("plane0"));
-  plane0->assign(scene_object(textured_plane));
+  std::cout << "Loading " << start_level_name << "as a level...";
+  if(levels.load_level(gltf, s, start_level_name))
+    std::cout << "Loading successful\n";
+  else
+    std::cout << "Something failed!";
 
-  auto corset_node = s.scene_root->push_child(create_node("corset"));
-  auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb");
-  corset_node->assign(scene_object(corset_mesh));
-  corset_node->local_xform.translate(glm::vec3(-4, 0, 0));
-  corset_node->local_xform.scale(50.f * transform::UNIT_SCALE);
+  //auto plane0 = s.scene_root->push_child(create_node("plane0"));
+  //plane0->assign(scene_object(textured_plane));
 
-  auto antique_camera_node = s.scene_root->push_child(create_node("antique_camera"));
-  auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb");
-  antique_camera_node->assign(scene_object(antique_camera_mesh));
-  antique_camera_node->local_xform.translate(glm::vec3(4, 0, 0));
-  antique_camera_node->local_xform.scale(0.25f * transform::UNIT_SCALE);
-
-  auto damaged_helmet_node = s.scene_root->push_child(create_node("damaged_helmet"));
-  auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb");
-  damaged_helmet_node->assign(scene_object(damaged_helmet_mesh));
-  damaged_helmet_node->local_xform.translate(glm::vec3(8.f, 1.f, 0));
-  damaged_helmet_node->local_xform.rotate(glm::angleAxis(glm::radians(90.f), transform::X_AXIS));
-
-  sun.diffuse = sun.specular = glm::vec3(1);
-  sun.specular *= 42;
-  sun.ambient   = glm::vec3(0);
-  sun.direction = glm::normalize(sun_direction_unormalized);
-
-  std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
-
-  lights[0] = s.scene_root->push_child(create_node("light_0"));
-  lights[1] = s.scene_root->push_child(create_node("light_1"));
-  lights[2] = s.scene_root->push_child(create_node("light_2"));
-  lights[3] = s.scene_root->push_child(create_node("light_3"));
-
-  for(size_t i = 0; i < 4; ++i)
-  {
-    auto* l     = lights[i];
-    auto* pl    = l->assign(point_light());
-    pl->ambient = glm::vec3(0.1f);
-    pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
-    p_lights[i]                = (pl);
-  }
-
-  lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
-  lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
-  lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
-  lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
-
-  auto sponza_root       = s.scene_root->push_child(create_node("sponza_scene"));
-  const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf");
-  sponza_root->assign(scene_object(sponza_mesh));
-
-  sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
   glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 
   if(vr)

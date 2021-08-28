@@ -30,6 +30,7 @@
 #include "input_handler.hpp"
 #include "camera_controller.hpp"
 #include "vr_system.hpp"
+#include "level_system.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -164,9 +165,13 @@ class application
 
   void splash_frame(const char* image_path = "/textures/splash.png");
 
+  level_system levels;
+  std::string start_level_name;
+
   public:
   static scene* get_main_scene();
   void run();
+  void setup_lights();
   application(int argc, char** argv, const std::string& application_name);
   static std::vector<std::string> resource_paks;
   static void set_clear_color(glm::vec4 color);
