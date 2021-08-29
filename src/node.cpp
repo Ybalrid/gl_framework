@@ -20,9 +20,9 @@ void node::update_world_matrix()
     using T = std::decay_t<decltype(o)>;
 
     //lights are specific uniforms that needs to be set
-    if constexpr(std::is_same_v<T, light>)
+    if constexpr(std::is_same_v<T, point_light>)
     {
-      auto& li = static_cast<light&>(o);
+      auto& li = static_cast<point_light&>(o);
       li.set_position_from_world_mat(world_space_model);
       li.set_direction_from_world_mat(world_space_model);
     }
