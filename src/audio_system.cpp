@@ -119,6 +119,15 @@ audio_buffer audio_system::get_buffer(const std::string& virtual_path)
   return audio_buffer(sample_buffer, config);
 }
 
+void audio_system::play_bgm(const std::string& virtual_path)
+{
+  bgm_source = std::make_shared<audio_source>();
+  bgm_buffer = std::make_shared<audio_buffer>(get_buffer(virtual_path));
+  bgm_source->set_buffer(*bgm_buffer);
+  bgm_source->set_looping();
+  bgm_source->play();
+}
+
 audio_listener* audio_listener::unique_listener = nullptr;
 
 audio_listener::audio_listener()
@@ -222,6 +231,46 @@ void audio_source::set_looping(bool loop_state) const { alSourcei(source, AL_LOO
 void audio_source::set_volume(float level) const { alSourcef(source, AL_GAIN, level); }
 
 void audio_source::set_pitch(float level) const { alSourcef(source, AL_PITCH, level); }
+
+bool audio_source::get_looping() const
+{
+  int loop_state;
+  alGetSourcei(source, AL_LOOPING, &loop_state);
+  return loop_state == AL_TRUE;
+}
+
+float audio_source::get_volume() const
+{
+  float level;
+  alGetSourcef(source, AL_GAIN, &level);
+  return level;
+}
+float audio_source::get_pitch() const
+{
+  float level;
+  alGetSourcef(source, AL_PITCH, &level);
+  return level;
+}
+
+float audio_source::get_playback_position() const
+{
+  ALint buffer;
+  alGetSourcei(source, AL_BUFFER, &buffer);
+  int size;
+  alGetBufferi(buffer, AL_SIZE, &size);
+
+  int position;
+  alGetSourcei(source, AL_BYTE_OFFSET, &position);
+
+  return float(position) / float(size);
+}
+
+audio_source::state audio_source::get_state()
+{
+  ALint state;
+  alGetSourcei(source, AL_SOURCE_STATE, &state);
+  return (audio_source::state)state;
+}
 
 void audio_source::pause() const { alSourcePause(source); }
 

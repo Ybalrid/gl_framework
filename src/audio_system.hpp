@@ -7,6 +7,7 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #endif
+#include <memory>
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>
@@ -14,6 +15,7 @@
 #include <physfs.h>
 
 class audio_buffer;
+class audio_source;
 
 ///Initialize OpenAL
 class audio_system
@@ -49,6 +51,12 @@ class audio_system
 
   ///Get an audio buffer with the data from an audio file
   static audio_buffer get_buffer(const std::string& virtual_path);
+
+  void play_bgm(const std::string& virtual_path);
+  audio_source* get_bgm_source() const { return bgm_source.get(); }
+
+  std::shared_ptr<audio_source> bgm_source;
+  std::shared_ptr<audio_buffer> bgm_buffer;
 };
 
 ///Audio listener, represent the point in spcace where audio is "captured from"
@@ -124,9 +132,36 @@ class audio_source
 
   void set_buffer(const audio_buffer& buffer) const;
   void play() const;
+
   void set_looping(bool loop_state = true) const;
   void set_volume(float level) const;
   void set_pitch(float level) const;
+
+  bool get_looping() const;
+  float get_volume() const;
+  float get_pitch() const;
+
+  float get_playback_position() const;
+
+  enum class state : ALint
+  { playing = AL_PLAYING,
+    paused = AL_PAUSED,
+    stopped = AL_STOPPED,
+  };
+
+  static std::string state_to_string(state s)
+  {
+    switch(s)
+    {
+      case state::playing: return "playing";
+      case state::paused: return "paused";
+      case state::stopped: return "stopped";
+    }
+    return "error";
+  }
+
+  state get_state();
+
   void pause() const;
   void stop() const;
   void rewind() const;

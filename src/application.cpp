@@ -220,6 +220,41 @@ void application::draw_debug_ui()
       ImGui::End();
     }
 
+    if(ImGui::Begin("BGM", &debug_ui))
+    { auto* source = audio.get_bgm_source();
+      if(source)
+      {
+        const auto source_state = audio_source::state_to_string(source->get_state());
+        ImGui::Text("Current state %s", source_state.c_str());
+        ImGui::Text("Playback position:");
+        ImGui::SameLine();
+        ImGui::ProgressBar(source->get_playback_position());
+
+        bool looping_state = source->get_looping();
+        ImGui::Checkbox("Looping", &looping_state);
+        source->set_looping(looping_state);
+
+        float volume = source->get_volume();
+        ImGui::SliderFloat("Volume", &volume, 0, 1);
+        source->set_volume(volume);
+
+        float pitch = source->get_pitch();
+        ImGui::SliderFloat("Pitch", &pitch, 0, 2);
+        source->set_pitch(pitch);
+
+        if(ImGui::Button("Play")) source->play();
+        ImGui::SameLine();
+        if(ImGui::Button("Pause")) source->pause();
+        ImGui::SameLine();
+        if(ImGui::Button("Stop")) source->stop();
+      }
+      else
+      {
+        ImGui::Text("No BGM set.");
+      }
+    }
+    ImGui::End();
+
     if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
   }
 
@@ -857,6 +892,8 @@ void application::setup_scene()
   //plane0->assign(scene_object(textured_plane));
 
   glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
+  audio.play_bgm("/bgm/bensound-slowmotion.wav");
 
   if(vr)
   {
