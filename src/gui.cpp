@@ -184,7 +184,8 @@ void gui::console()
       history_counter = 0;
 
       //do something with text here :
-      if(cis_ptr) (*cis_ptr)(std::string(console_input));
+      if(console_input_consumer_ptr)
+          (*console_input_consumer_ptr)(std::string(console_input));
 
       //erase text
       console_input[0] = 0;
@@ -313,4 +314,4 @@ gui& gui::operator=(gui&& o) noexcept
   return *this;
 }
 
-void gui::set_console_input_consumer(console_input_consumer* cis) { cis_ptr = cis; }
+void gui::set_console_input_consumer(console_input_consumer* cis) { console_input_consumer_ptr = cis; }

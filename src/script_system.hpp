@@ -37,7 +37,7 @@ class script_system : public console_input_consumer
   ///Evaluate a string inside the scripting engine
   void eval_string(const std::string& input) const;
 
-  bool evaluate_file(const std::string& path);
+  bool evaluate_file(const std::string& path) const;
 
   bool attach_behavior_script(const std::string& name, node* attachment);
 
@@ -50,7 +50,7 @@ class script_system : public console_input_consumer
     }
     catch(const std::exception& e)
     {
-      std::cerr << e.what();
+      std::cerr << e.what() << "\n";
       gui_ptr->push_to_console(e.what());
       return false;
     }

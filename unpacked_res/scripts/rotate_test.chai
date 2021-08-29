@@ -1,8 +1,8 @@
-class print_hello
+class rotate_test
 {
 	attr node;
 
-	def print_hello(owner)
+	def rotate_test(owner)
 	{
 		print("created print_hello");
 		this.node := owner;

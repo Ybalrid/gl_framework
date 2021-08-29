@@ -6,12 +6,13 @@
 	{
 		"asset" : "/gltf/Corset.glb",
 		"position" : [-4, 0, 0],
-		"scale" : [50, 50, 50]
+		"scale" : [50, 50, 50],
+		"script": "rotate_test"
 	},
 	{
 		"asset" : "/gltf/DamagedHelmet.glb",
 		"position" : [8, 1, 0],
 		"orientation" : [0.707, 0, 0, 0.707],
-		"script": "print_hello"
+		"script": "rotate_test"
 	}
 ]
