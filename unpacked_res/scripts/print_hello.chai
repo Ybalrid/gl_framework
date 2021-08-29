@@ -1,0 +1,15 @@
+class print_hello
+{
+	attr node;
+
+	def print_hello(owner)
+	{
+		print("created print_hello");
+		this.node := owner;
+	}
+
+	def update()
+	{
+		this.node.local_xform().rotate(0.1, vec3(0,1,0));
+	}
+}

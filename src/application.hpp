@@ -70,6 +70,7 @@ class application
   void build_draw_list_from_camera(camera* render_camera);
   void render_frame();
   void run_events();
+  void run_script_update();
   void setup_scene();
 
   freeimage free_img;

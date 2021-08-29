@@ -1,7 +1,45 @@
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #include "script_system.hpp"
 #include <chaiscript/chaiscript.hpp>
 #include "gui.hpp"
 #include <type_traits>
+#include <regex>
+#include <algorithm>
+
+size_t script_system::script_id = 0;
+
+using update_hook_t = std::function<void(chaiscript::Boxed_Value&)>;
+
+class script_node_behavior_chaiscript : public script_node_behavior
+{
+  public:
+  script_node_behavior_chaiscript(chaiscript::Boxed_Value&& bval, update_hook_t&& update_hook) :
+   instance(std::move(bval)), update_on_instance(std::move(update_hook))
+  { }
+
+  void update() final
+  {
+    if(update_on_instance) try
+      {
+        update_on_instance(instance);
+      }
+      catch(const std::exception& e)
+      {
+#ifdef _DEBUG
+        std::cerr << "failed to call update on script instance : [" << e.what() << "]\n";
+#else
+        (void)(e);
+#endif
+      }
+  }
+
+  private:
+  chaiscript::Boxed_Value instance;
+  update_hook_t update_on_instance;
+};
 
 //We are using a pimpl idiom here. This limit chaiscript to be compiled only in this compilation unit
 struct script_system::impl
@@ -29,6 +67,7 @@ struct script_system::impl
 
 #include "ImGui__ChaiScript.h"
 #include "chaiscript_glm.hpp"
+
 
 script_system::script_system() : pimpl(new script_system::impl(), [](script_system::impl* ptr) { delete ptr; })
 {
@@ -169,6 +208,19 @@ void script_system::install_additional_api()
   chai.add(fun(&node::get_child_count), "get_child_count");
   chai.add(fun(&node::get_child), "get_child");
   chai.add(fun(&node::get_parent), "get_parent");
+
+  chai.add(fun([](node* n) {
+             auto* script = n->get_script_interface();
+             if(script) script->update();
+           }),
+           "run_update");
+
+  //chai.add(user_type<script_node_behavior>(), "script_node_behavior");
+  //chai.add(fun(&node::get_script_interface), "get_script_interface");
+  //chai.add([](node* n) -> bool { return n->get_script_interface() != nullptr; }, "has_script");
+  //chai.add([this](node* n, const std::string& name) { return this->attach_behavior_script(name, n); },
+  //         "load_and_attach_behavior");
+
   chai.add(fun([](node* n) { return (&n->local_xform); }), "local_xform");
   chai.add(fun(&application::get_main_scene), "get_main_scene");
   chai.add(fun(&scene::find_node), "find_node");
@@ -241,4 +293,68 @@ void script_system::install_additional_api()
              return output;
            }),
            "to_string");
+}
+
+bool script_system::evaluate_file(const std::string& path)
+{
+  //If we already have this file evaluated, skip;
+  static std::vector<std::string> list {};
+  if(std::find(list.begin(), list.end(), path) != list.end()) return true;
+
+  try
+  {
+    const auto file_content = resource_system::get_file(path);
+    const std::string file_text(reinterpret_cast<const char*>(file_content.data()), file_content.size());
+    pimpl->chai.eval(file_text);
+    list.push_back(path); //So we never evaluate a file twice.
+    return true;
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << "Exception while loading script file [" << path << "] : [" << e.what() << "]\n";
+    return false;
+  }
+}
+
+bool script_system::attach_behavior_script(const std::string& name, node* attachment)
+{
+  std::string chai_path = "/scripts/" + name + ".chai";
+
+  if(evaluate_file(chai_path))
+  {
+    const size_t id = script_id++;
+
+    static constexpr char bootstrap[] = R"chai(
+def __internal__create_$id(owner)
+{
+  var instance_$id = $name(owner);
+  return  instance_$id;
+}
+)chai";
+
+    std::string bootstrap_code(bootstrap);
+    bootstrap_code = std::regex_replace(bootstrap_code, std::regex("\\$id"), std::to_string(id));
+    bootstrap_code = std::regex_replace(bootstrap_code, std::regex("\\$name"), name);
+
+    pimpl->chai.eval(bootstrap_code);
+    auto bootstrap_function = pimpl->chai.eval<std::function<chaiscript::Boxed_Value(node*)>>("__internal__create_" + std::to_string(id));
+
+    auto script_instance = bootstrap_function(attachment);
+    std::function<void(chaiscript::Boxed_Value&)> script_update_on_instance;
+
+    try
+    {
+      script_update_on_instance = pimpl->chai.eval<decltype(script_update_on_instance)>("update");
+    }
+    catch(const chaiscript::exception::eval_error& e)
+    {
+      (void)(e);
+      script_update_on_instance = nullptr;
+    }
+
+    attachment->attach_behavior_script(new script_node_behavior_chaiscript(std::move(script_instance), std::move(script_update_on_instance)));
+    return true;
+  }
+
+  return false;
 }

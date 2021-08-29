@@ -4,6 +4,19 @@
 #include <string>
 #include <iostream>
 #include "gui.hpp"
+#include "node.hpp"
+
+class script_node_behavior
+{
+  public:
+  script_node_behavior()                            = default;
+  script_node_behavior(const script_node_behavior&) = delete;
+  script_node_behavior(script_node_behavior&&)      = delete;
+  script_node_behavior& operator=(const script_node_behavior&) = delete;
+  script_node_behavior& operator=(script_node_behavior&&) = delete;
+  virtual ~script_node_behavior()                         = default;
+  virtual void update()                                   = 0;
+};
 
 ///Scripting engine
 class script_system : public console_input_consumer
@@ -24,6 +37,10 @@ class script_system : public console_input_consumer
   ///Evaluate a string inside the scripting engine
   void eval_string(const std::string& input) const;
 
+  bool evaluate_file(const std::string& path);
+
+  bool attach_behavior_script(const std::string& name, node* attachment);
+
   ///functor that take a string and evalutate it
   bool operator()(const std::string& str) override
   {
@@ -41,7 +58,7 @@ class script_system : public console_input_consumer
   }
 
   ///Get the name of every symbol available in the scripting engine on the global scope
-  std::vector<std::string> global_scope_object_names() const;
+  [[nodiscard]] std::vector<std::string> global_scope_object_names() const;
 
   private:
   //ChaiScript headers are HUGE.
@@ -57,4 +74,6 @@ class script_system : public console_input_consumer
 
   ///Run this once when setting up script engine bindings
   void install_additional_api();
+
+  static size_t script_id;
 };

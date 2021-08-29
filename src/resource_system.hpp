@@ -21,8 +21,8 @@ class resource_system
   static void add_location(const std::string& real_path, bool last = true);
 
   ///Get an array of bytes in memory that correspond to that virtual file
-  static std::vector<uint8_t> get_file(const std::string& virtual_path);
+  [[nodiscard]] static std::vector<uint8_t> get_file(const std::string& virtual_path);
 
   ///List the files in the virtual file system
-  static std::vector<std::string> list_files(const std::string& root = "/", bool recursive = false);
+  [[nodiscard]] static std::vector<std::string> list_files(const std::string& root = "/", bool recursive = false);
 };

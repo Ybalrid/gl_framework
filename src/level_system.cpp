@@ -2,10 +2,11 @@
 #include "resource_system.hpp"
 #include "node.hpp"
 #include "scene.hpp"
+#include "script_system.hpp"
 
 using namespace nlohmann;
 
-bool level_system::load_level(gltf_loader& gltf, scene& s, const std::string& level_name) const
+bool level_system::load_level(script_system& script_engine, gltf_loader & gltf, scene& s, const std::string& level_name) const
 {
   try
   {
@@ -19,12 +20,13 @@ bool level_system::load_level(gltf_loader& gltf, scene& s, const std::string& le
     if(level_json_array.is_array())
     {
       bool has_at_least_one_asset = false;
-      for(const auto level_asset : level_json_array)
+      for(const auto& level_asset : level_json_array)
       {
         const auto asset_it       = level_asset.find("asset");
         const auto position_it    = level_asset.find("position");
         const auto orientation_it = level_asset.find("orientation");
         const auto scale_it       = level_asset.find("scale");
+        const auto script_it      = level_asset.find("script");
 
         if(asset_it == std::end(level_asset)) continue;
         has_at_least_one_asset = true; //Signal potential success in loading *something* :-)
@@ -68,6 +70,12 @@ bool level_system::load_level(gltf_loader& gltf, scene& s, const std::string& le
 
           level_asset_root->local_xform.set_orientation(orientation);
         }
+
+        if(script_it != std::end(level_asset) && script_it->is_string())
+        {
+          script_engine.attach_behavior_script(*script_it, level_asset_root);
+        }
+
       }
       return has_at_least_one_asset;
     }

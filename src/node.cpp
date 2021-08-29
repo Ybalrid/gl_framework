@@ -70,6 +70,8 @@ void node::clean_child_list()
   children.erase(std::remove(std::begin(children), std::end(children), nullptr), std::end(children));
 }
 
+void node::attach_behavior_script(script_node_behavior* script_ptr) { behavior_script.reset(script_ptr); }
+
 std::string node::get_name() const { return name; }
 
 node_ptr create_node()

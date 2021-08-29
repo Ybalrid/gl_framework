@@ -1,3 +1,7 @@
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #include "gui.hpp"
 #include "resource_system.hpp"
 #include "script_system.hpp"
@@ -109,19 +113,27 @@ void gui::console()
                        //if there's only one to use:
                        if(matches.size() == 1)
                        {
-                         //Delete everything up to the one character after the found delimiter
-                         data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
-                                           int(current_input.size()) - last_word_start_char - (last_word_start_char > 0 ? 1 : 0));
-                         //Write the match at the end of the string
-                         data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, matches[0].c_str());
-                         ui->scroll_console_to_bottom = true;
+                         const auto& match = matches[0];
+                         //if(match.find("__internal__") != match.npos)
+                         {
+                           //Delete everything up to the one character after the found delimiter
+                           data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
+                                             int(current_input.size()) - last_word_start_char
+                                                 - (last_word_start_char > 0 ? 1 : 0));
+                           //Write the match at the end of the string
+                           data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, match.c_str());
+                           ui->scroll_console_to_bottom = true;
+                         }
                        }
                        else
                        {
                          for(const auto& match : matches)
                          {
-                           ui->push_to_console(match);
-                           ui->scroll_console_to_bottom = true;
+                           //if(match.find("__internal__") != match.npos)
+                           {
+                             ui->push_to_console(match);
+                             ui->scroll_console_to_bottom = true;
+                           }
                          }
                        }
                      }

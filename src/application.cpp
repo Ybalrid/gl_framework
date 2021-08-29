@@ -704,6 +704,15 @@ void application::run_events()
   fps_camera_controller->apply_movement(last_frame_delta_sec);
 }
 
+void application::run_script_update()
+{
+  s.run_on_whole_graph([](node* current_node)
+  {
+    if(auto* script = current_node->get_script_interface(); script)
+        script->update();
+  });
+}
+
 void application::run()
 {
   while(running)
@@ -715,6 +724,7 @@ void application::run()
 #endif
     update_timing();
     run_events();
+    run_script_update();
     render_frame();
   }
 }
@@ -835,8 +845,11 @@ void application::setup_scene()
   setup_lights();
 
   std::cout << "Loading " << start_level_name << "as a level...";
-  if(levels.load_level(gltf, s, start_level_name))
+  //TODO do not pass these objects here, initialize the level system with them:
+  if(levels.load_level(scripts, gltf, s, start_level_name))
+  {
     std::cout << "Loading successful\n";
+  }
   else
     std::cout << "Something failed!";
 
@@ -1046,6 +1059,8 @@ application::application(int argc, char** argv, const std::string& application_n
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
   glFrontFace(GL_CW);
+
+  scripts.evaluate_file("/scripts/test.chai");
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

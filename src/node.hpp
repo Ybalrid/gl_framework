@@ -15,9 +15,13 @@
 #include <memory>
 #include "audio_system.hpp"
 
+
+class script_node_behavior;
+
 //fw declare deleter
 class node;
 static void destroy_node(node* n);
+
 
 //declare node unique ptr with custom deleter
 using node_ptr = std::unique_ptr<node, decltype(&destroy_node)>;
@@ -42,13 +46,14 @@ class node
   node(const std::string& new_node_name) : node() { name = new_node_name; }
   ~node() = default;
 
-  std::string name;
 
   private:
+  std::string name;
   child_list children;
   node* parent = nullptr;
   glm::mat4 world_space_model { 1.f };
   node_payload content;
+  std::shared_ptr<script_node_behavior> behavior_script = nullptr;
 
   const size_t ID;
   static size_t counter;
@@ -64,6 +69,9 @@ class node
   node* push_child(node_ptr&& child);
   node_ptr&& remove_child(size_t index);
   void clean_child_list();
+
+  void attach_behavior_script(script_node_behavior* script_ptr);
+  script_node_behavior* get_script_interface() const { return behavior_script.get(); }
 
   std::string get_name() const;
 
