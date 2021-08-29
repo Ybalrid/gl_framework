@@ -37,9 +37,11 @@ class script_system : public console_input_consumer
   ///Evaluate a string inside the scripting engine
   void eval_string(const std::string& input) const;
 
-  bool evaluate_file(const std::string& path) const;
+  ///Evaluate a script file loaded from the resource system
+  [[nodiscard]] bool evaluate_file(const std::string& path) const;
 
-  bool attach_behavior_script(const std::string& name, node* attachment);
+  ///Load a script from /scripts, and attach it to the node in question
+  [[nodiscard]] bool attach_behavior_script(const std::string& name, node* attachment) const;
 
   ///functor that take a string and evalutate it
   bool operator()(const std::string& str) override

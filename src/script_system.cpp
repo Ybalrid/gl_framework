@@ -9,6 +9,12 @@
 #include <regex>
 #include <algorithm>
 
+#include "transform.hpp"
+#include "application.hpp"
+#include "scene.hpp"
+#include "node.hpp"
+#include "audio_system.hpp"
+
 size_t script_system::script_id = 0;
 
 using update_hook_t = std::function<void(chaiscript::Boxed_Value&)>;
@@ -174,12 +180,7 @@ std::vector<std::string> script_system::global_scope_object_names() const
   return output;
 }
 
-//include and bind the rest of this engine API to ChaiScript
-#include "transform.hpp"
-#include "application.hpp"
-#include "scene.hpp"
-#include "node.hpp"
-#include "audio_system.hpp"
+
 
 void script_system::install_additional_api()
 {
@@ -313,7 +314,7 @@ bool script_system::evaluate_file(const std::string& path) const
   }
 }
 
-bool script_system::attach_behavior_script(const std::string& name, node* attachment)
+bool script_system::attach_behavior_script(const std::string& name, node* attachment) const
 {
   const std::string chai_path = "/scripts/" + name + ".chai";
 
