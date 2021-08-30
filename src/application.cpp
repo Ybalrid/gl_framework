@@ -554,7 +554,7 @@ void application::render_shadowmap()
   //glEnable(GL_CULL_FACE);
   glFinish();
 
-  ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+  //ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
