@@ -55,6 +55,9 @@ struct point_light
 #define NB_POINT_LIGHTS 4
 uniform point_light point_light_list[NB_POINT_LIGHTS];
 
+#define PCF_OFFSET 2
+#define PCF_AVERAGE 25
+
 uniform sampler2D shadow_map;
 
 vec4 apply_gamma(vec4 color, float gamma)
@@ -77,15 +80,15 @@ float compute_shadow_map(vec4 fragment_pos_light_space, float bias)
 	float shadow = 0.0;
 	vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
 	//We sample 2 pixels on the side to deal with the lower resolution
-	for(int x = -2; x <= 2; ++x)
+	for(int x = -PCF_OFFSET; x <= PCF_OFFSET; ++x)
 	{
-		for(int y = -2; y <= 2; ++y)
+		for(int y = -PCF_OFFSET; y <= PCF_OFFSET; ++y)
 		{
 			float pcf_depth = texture(shadow_map, projected_coordinates.xy + vec2(x, y) * texel_size).r;
 			shadow += current_depth - bias > pcf_depth ? 1.0 : 0.0;
 		}
 	}
-	shadow /= 25;
+	shadow /= float(PCF_AVERAGE);
 
 	return shadow;
 }
@@ -117,7 +120,7 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 	vec3 light_direction = normalize(-light.direction);
 
 	//Use the shadow map to compute the fragment shadow mask
-	float shadow_bias = max(0.05 * (1.0 - dot(frag_normal, light_direction)), 0.005); //angle based bias
+	float shadow_bias = max(0.005 * (1.0 - dot(frag_normal, light_direction)), 0.0005); //angle based bias
 	float shadow = compute_shadow_map(light_space_position, shadow_bias);
 
 	//calculate diffuse factor

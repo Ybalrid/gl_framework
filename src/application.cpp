@@ -15,7 +15,7 @@
 
 //just a test
 
-float shadow_map_ortho_scale          = 45;
+float shadow_map_ortho_scale          = 80;
 float shadow_map_direction_multiplier = 95;
 float shadow_map_near_plane           = .337;
 float shadow_map_far_plane            = 300;
@@ -475,10 +475,10 @@ void application::initialize_gui()
 
 void application::frame_prepare()
 {
-  sun.direction               = glm::normalize(sun_direction_unormalized);
   const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
   (void)opengl_debug_tag;
 
+  sun.direction               = glm::normalize(sun_direction_unormalized);
   s.scene_root->update_world_matrix();
   //The camera world matrix is stored inside the camera to permit to compute the camera view matrix
   main_camera->set_world_matrix(cam_node->get_world_matrix());
@@ -528,11 +528,12 @@ void application::render_shadowmap()
                                           shadow_map_far_plane);
   glm::mat4 light_view       = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
   light_space_matrix = light_projection * light_view;
-  shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
 
-  glCullFace(GL_BACK);
+  //glDisable(GL_CULL_FACE);
+  //glCullFace(GL_BACK);
 
   //draw everything...
+  s.scene_root->update_world_matrix(); //This compute the whole model matrices
   s.run_on_whole_graph([&](node* current_node) {
     current_node->visit([&](auto&& node_attached_object) {
       using T = std::decay_t<decltype(node_attached_object)>;
@@ -542,13 +543,19 @@ void application::render_shadowmap()
         for(const auto submesh : object.get_mesh().get_submeshes())
         {
           auto& to_render = renderable_manager::get_from_handle(submesh);
-          shader.set_uniform(shader::uniform::model, to_render.get_model_matrix());
+          shader.set_uniform(shader::uniform::model, current_node->get_world_matrix());
+          shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
           to_render.submit_draw_call();
         }
       }
     });
   });
-  glCullFace(GL_FRONT);
+ // glCullFace(GL_FRONT);
+  //glEnable(GL_CULL_FACE);
+  glFinish();
+
+  ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   const auto size = window.size();
@@ -641,6 +648,8 @@ void application::build_draw_list_from_camera(camera* render_camera)
 
 void application::render_frame()
 {
+  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
+
   //When using VR, the VR system is the master of the framerate!
   if(vr)
   {
@@ -650,12 +659,10 @@ void application::render_frame()
 
   //gameplay side thingies
   ui.frame();
-  scripts.update(last_frame_delta_sec);
+  //scripts.update(last_frame_delta_sec);
 
   frame_prepare();
   render_shadowmap();
-
-  //this apply frustum culling algorithm and build a "objects to draw list" CPU side
 
   if(vr)
   {
@@ -740,6 +747,7 @@ void application::render_frame()
 
   //swap buffers
   window.gl_swap();
+
 
   frames++;
 }
