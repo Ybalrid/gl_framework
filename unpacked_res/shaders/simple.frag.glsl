@@ -7,6 +7,7 @@ in vec2 texture_coordinates;
 in vec3 normal_direction;
 in vec3 world_position;
 in mat3 TBN;
+in vec4 light_space_position;
 
 //cpu inputs
 uniform vec3 camera_position;
@@ -50,9 +51,11 @@ struct point_light
 	vec3 diffuse;
 	vec3 specular;
 };
+
 #define NB_POINT_LIGHTS 4
 uniform point_light point_light_list[NB_POINT_LIGHTS];
 
+uniform sampler2D shadow_map;
 
 vec4 apply_gamma(vec4 color, float gamma)
 {
@@ -62,9 +65,34 @@ vec4 apply_gamma(vec4 color, float gamma)
 vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color);
 vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color);
 
+float compute_shadow_map(vec4 fragment_pos_light_space, float bias)
+{
+	//Project coordinates
+	vec3 projected_coordinates = fragment_pos_light_space.xyz / fragment_pos_light_space.w;
+	projected_coordinates = projected_coordinates * 0.5 +  0.5;
+
+	float current_depth = projected_coordinates.z;
+
+	//Compute shadow factor using PCF
+	float shadow = 0.0;
+	vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
+	//We sample 2 pixels on the side to deal with the lower resolution
+	for(int x = -2; x <= 2; ++x)
+	{
+		for(int y = -2; y <= 2; ++y)
+		{
+			float pcf_depth = texture(shadow_map, projected_coordinates.xy + vec2(x, y) * texel_size).r;
+			shadow += current_depth - bias > pcf_depth ? 1.0 : 0.0;
+		}
+	}
+	shadow /= 25;
+
+	return shadow;
+}
+
 void main()
 {
-	//compute additional vectors : 
+	//compute additional vectors :
 	vec3 normalized_normals = texture(material.normal, texture_coordinates).rgb;
 	normalized_normals = normalize(normalized_normals * 2.0 - 1.0);
 	normalized_normals = normalize(TBN * normalized_normals);
@@ -88,23 +116,26 @@ vec3 calculate_directional_light(directional_light light, vec3 frag_normal, vec3
 {
 	vec3 light_direction = normalize(-light.direction);
 
+	//Use the shadow map to compute the fragment shadow mask
+	float shadow_bias = max(0.05 * (1.0 - dot(frag_normal, light_direction)), 0.005); //angle based bias
+	float shadow = compute_shadow_map(light_space_position, shadow_bias);
+
 	//calculate diffuse factor
 	float diffuse_factor = max(dot(frag_normal, light_direction), 0.0);
-	
+
 	//calculate specular factor
 	vec3 refection_direction = reflect(-light_direction, frag_normal);
 	float specular_factor = pow(max(dot(frag_view_direction, refection_direction), 0.0), material.shininess);
 
 	diffuse_sample_color = diffuse_sample_color * material.diffuse_color;
 	specular_sample_color = specular_sample_color * material.specular_color;
-	
-	
+
 	vec3 ambient_color = light.ambient * diffuse_sample_color;
 	vec3 diffuse_color = light.diffuse * diffuse_factor * diffuse_sample_color;
 	vec3 specular_color = light.specular * specular_factor * specular_sample_color;
 
-	//Return this fragment shaded by this one light
-	return ambient_color + diffuse_color + specular_color;
+	//Return the logit color contribution for the directional lamp
+	return ambient_color + ((diffuse_color + specular_color) * vec3(1.0 - shadow)) ;
 }
 
 vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_position, vec3 frag_view_direction, vec3 diffuse_sample_color, vec3 specular_sample_color)
@@ -113,7 +144,7 @@ vec3 calculate_point_light(point_light light, vec3 frag_normal, vec3 frag_world_
 
 	//calculate diffuse factor
 	float diffuse_factor = max(dot(frag_normal, light_direction), 0.0);
-	
+
 	//calculate specular factor
 	vec3 reflection_direction = reflect(-light_direction, frag_normal);
 	float specular_factor = pow(max(dot(frag_view_direction, reflection_direction), 0.0), material.shininess);

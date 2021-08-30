@@ -11,21 +11,24 @@ uniform mat4 mvp;		//Projection * View * Model
 uniform mat4 model;		//Model
 uniform mat4 view;		//View
 uniform mat3 normal;	//transpose(inverse(Model))
+uniform mat4 light_space_matrix;
 
 //fragment pass-through
 out vec2 texture_coordinates;
 out vec3 normal_direction;
 out vec3 world_position;
 out mat3 TBN;
+out vec4 light_space_position;
 
 void main()
 {
 	//pass through theses parameters to be interpolated
 	texture_coordinates = input_texture_coordinates;
 	world_position = vec3(model * vec4(input_position, 1.0)); //This will permit to get the position of a fragment in world space
+	light_space_position = light_space_matrix * vec4(world_position, 1.0);
 	normal_direction = normal * input_normal;				  //Using the normal matrix to correct the normal direction for rotation/scale in world space
-	
-	//TODO compute bitangent CPU side... 
+
+	//TODO compute bitangent CPU side...
 	vec3 input_bitangent = cross(input_normal, input_tangent);
 	//vec3 bitangent = normal * input_normal;
 
@@ -36,6 +39,6 @@ void main()
 	TBN = mat3(T,B,N);
 
 
-	//perform the main projection from world space to normalized_device_coordinates	
+	//perform the main projection from world space to normalized_device_coordinates
 	gl_Position = mvp * vec4(input_position, 1.0);
 }

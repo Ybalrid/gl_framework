@@ -89,6 +89,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   uniform_indices[int(uniform::light_space_matrix)] = glGetUniformLocation(program, "light_space_matrix");
   uniform_indices[int(uniform::debug_float_0)] = glGetUniformLocation(program, "debug_float_0");
 
+  uniform_indices[int(uniform::shadow_map)] = glGetUniformLocation(program, "shadow_map");
+
   //one directional lights
   main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
   main_directional_light_uniform_locations.ambient   = glGetUniformLocation(program, "main_directional_light.ambient");

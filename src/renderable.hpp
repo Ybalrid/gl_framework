@@ -132,7 +132,7 @@ class renderable
 
   vertex_buffer_extrema get_bounds() const;
 
-  /*                              
+  /*
 							    2---Y-----6
 							   /.   |    /|
 							  / .   |   / |
@@ -150,7 +150,7 @@ class renderable
 	These vectors contains the minimal and maximal XYZ values of the whole object vertices.
 
 	We need to describe a cuboid that effectively is an AABB of the object in model space.
-	To describe the cuboid itself, we need 8 points, arbitrary chosen as this : 
+	To describe the cuboid itself, we need 8 points, arbitrary chosen as this :
 
 	0 = {min.x, min.y, max.z};
 	1 = {min.x, max.y, max.z};

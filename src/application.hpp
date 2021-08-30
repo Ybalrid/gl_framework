@@ -124,7 +124,7 @@ class application
   shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
-  static constexpr unsigned int shadow_width = 1024, shadow_height = 1024;
+  static constexpr unsigned int shadow_width = 1024 * 4, shadow_height = shadow_width;
 
   static glm::vec4 clear_color;
 
@@ -168,6 +168,7 @@ class application
 
   level_system levels;
   std::string start_level_name;
+  glm::mat4 light_space_matrix;
 
   public:
   static scene* get_main_scene();

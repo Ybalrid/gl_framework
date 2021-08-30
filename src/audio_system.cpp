@@ -30,12 +30,12 @@ audio_system::audio_system(const char* device_name)
             << "' based Audio system\n";
 
   soundfile_io.get_filelen = [](void* user_data) {
-    auto* handle = reinterpret_cast<soundfile_buffer*>(user_data);
+    auto* handle = static_cast<soundfile_buffer*>(user_data);
     return sf_count_t(handle->data.size());
   };
 
   soundfile_io.seek = [](sf_count_t offset, int whence, void* user_data) -> sf_count_t {
-    auto* handle = reinterpret_cast<soundfile_buffer*>(user_data);
+    auto* handle = static_cast<soundfile_buffer*>(user_data);
     switch(whence)
     {
       case SEEK_CUR: handle->seek_position += offset; break;
@@ -48,14 +48,14 @@ audio_system::audio_system(const char* device_name)
   };
 
   soundfile_io.read = [](void* ptr, sf_count_t count, void* user_data) -> sf_count_t {
-    auto* handle        = reinterpret_cast<soundfile_buffer*>(user_data);
+    auto* handle        = static_cast<soundfile_buffer*>(user_data);
     ALubyte* data_start = handle->data.data() + handle->seek_position;
     memcpy(ptr, data_start, size_t(count));
     handle->seek_position += count;
     return count;
   };
 
-  soundfile_io.tell = [](void* user_data) -> sf_count_t { return reinterpret_cast<soundfile_buffer*>(user_data)->seek_position; };
+  soundfile_io.tell = [](void* user_data) -> sf_count_t { return static_cast<soundfile_buffer*>(user_data)->seek_position; };
 
   soundfile_io.write = nullptr;
 }
@@ -123,9 +123,12 @@ void audio_system::play_bgm(const std::string& virtual_path)
 {
   bgm_source = std::make_shared<audio_source>();
   bgm_buffer = std::make_shared<audio_buffer>(get_buffer(virtual_path));
-  bgm_source->set_buffer(*bgm_buffer);
-  bgm_source->set_looping();
-  bgm_source->play();
+  if(bgm_buffer != nullptr)
+  {
+    bgm_source->set_buffer(*bgm_buffer);
+    bgm_source->set_looping();
+    bgm_source->play();
+  }
 }
 
 audio_listener* audio_listener::unique_listener = nullptr;

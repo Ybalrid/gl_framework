@@ -38,6 +38,7 @@ class node
                                     camera,
                                     light,
                                     point_light,
+                                    directional_light,
                                     audio_source,
                                     listener_marker>;
 

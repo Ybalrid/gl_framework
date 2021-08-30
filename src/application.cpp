@@ -15,11 +15,11 @@
 
 //just a test
 
-float shadow_map_ortho_scale          = 50;
-float shadow_map_direction_multiplier = 100;
-float shadow_map_near_plane           = .1;
-float shadow_map_far_plane            = 250;
-glm::vec3 sun_direction_unormalized { -0.5f, -0.75f, -0.25f };
+float shadow_map_ortho_scale          = 45;
+float shadow_map_direction_multiplier = 95;
+float shadow_map_near_plane           = .337;
+float shadow_map_far_plane            = 300;
+glm::vec3 sun_direction_unormalized { -0.25f, -1.f, -0.10f };
 
 //The statics
 std::vector<std::string> application::resource_paks;
@@ -90,6 +90,20 @@ void scene_node_outline(node* current_node, node*& active_node)
   ImGui::SameLine();
   if(ImGui::TreeNode(name.c_str()))
   {
+    current_node->visit([&](auto&& content) {
+      using T = std::decay_t<decltype(content)>;
+      if constexpr(std::is_same<T, point_light>::value)
+      {
+        auto& light = static_cast<point_light&>(content);
+        ImGui::ColorEdit3("Diffuse", glm::value_ptr(light.diffuse));
+        ImGui::ColorEdit3("Ambient", glm::value_ptr(light.ambient));
+        ImGui::SliderFloat("Constant", &light.constant, 0, 5);
+        ImGui::SliderFloat("Linear", &light.linear, 0, 2);
+        ImGui::SliderFloat("Quadratic", &light.quadratic, 0, 2);
+        ImGui::Separator();
+      }
+    });
+
     const auto children_count = current_node->get_child_count();
     for(size_t i = 0; i < children_count; ++i) { scene_node_outline(current_node->get_child(i), active_node); }
     ImGui::TreePop();
@@ -168,18 +182,21 @@ void application::draw_debug_ui()
     {
       ImGui::Text("FPS: %d", fps);
       ImGui::Text("%3lu objects passed frustum culling", draw_list.size());
+      ImGui::Separator();
       ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
       ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
       ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
       //ImGui::BeginChild(
       //	"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
-      ImGui::Text("Main ShadowMap:");
+      ImGui::Separator();
       ImGui::SliderFloat3("sun direction", static_cast<float*>(glm::value_ptr(sun_direction_unormalized)), -1.f, 1.f);
+      ImGui::ColorEdit3("Sun color", glm::value_ptr(sun.diffuse));
+      ImGui::Separator();
+      ImGui::Text("Main ShadowMap:");
       ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
       ImGui::SliderFloat("far", &shadow_map_far_plane, 50.f, 500.f);
       ImGui::SliderFloat("ortho window", &shadow_map_ortho_scale, 10.f, 200.f);
       ImGui::SliderFloat("distance scale", &shadow_map_direction_multiplier, 1.f, 1000.f);
-
       ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
@@ -221,7 +238,8 @@ void application::draw_debug_ui()
     }
 
     if(ImGui::Begin("BGM", &debug_ui))
-    { auto* source = audio.get_bgm_source();
+    {
+      auto* source = audio.get_bgm_source();
       if(source)
       {
         const auto source_state = audio_source::state_to_string(source->get_state());
@@ -387,10 +405,7 @@ void application::configure_and_create_window(const std::string& application_nam
   window_size.y                = int(window_size_array->at(1));
 
   const auto level_list = configuration_table->get_array_of<std::string>("levels");
-  if(level_list->empty())
-  {
-    start_level_name = "sponza";
-  }
+  if(level_list->empty()) { start_level_name = "sponza"; }
   else
   {
     start_level_name = level_list->at(0);
@@ -476,6 +491,11 @@ void application::frame_prepare()
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
+  shader_program_manager::set_frame_uniform(shader::uniform::light_space_matrix, light_space_matrix);
+
+  glActiveTexture(GL_TEXTURE0 + shader::material_shadow_map_texture_slot);
+  glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
+  shader_program_manager::set_frame_uniform(shader::uniform::shadow_map, shader::material_shadow_map_texture_slot);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -487,6 +507,8 @@ void application::render_shadowmap()
 {
   const auto opengl_debug_tag = opengl_debug_group("application::render_shadowmap()");
   (void)opengl_debug_tag;
+
+  sun.direction               = glm::normalize(sun_direction_unormalized);
 
   //Set the opengl to be the full shadowmap
   glViewport(0, 0, shadow_width, shadow_height);
@@ -505,10 +527,11 @@ void application::render_shadowmap()
                                           shadow_map_near_plane,
                                           shadow_map_far_plane);
   glm::mat4 light_view       = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
-  glm::mat4 light_space_matrix = light_projection * light_view;
+  light_space_matrix = light_projection * light_view;
   shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
 
-  glFrontFace(GL_CCW);
+  glCullFace(GL_BACK);
+
   //draw everything...
   s.run_on_whole_graph([&](node* current_node) {
     current_node->visit([&](auto&& node_attached_object) {
@@ -525,7 +548,7 @@ void application::render_shadowmap()
       }
     });
   });
-  glFrontFace(GL_CW);
+  glCullFace(GL_FRONT);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   const auto size = window.size();
@@ -741,10 +764,8 @@ void application::run_events()
 
 void application::run_script_update()
 {
-  s.run_on_whole_graph([](node* current_node)
-  {
-    if(auto* script = current_node->get_script_interface(); script)
-        script->update();
+  s.run_on_whole_graph([](node* current_node) {
+    if(auto* script = current_node->get_script_interface(); script) script->update();
   });
 }
 
@@ -764,7 +785,8 @@ void application::run()
   }
 }
 
-void application::setup_lights() {
+void application::setup_lights()
+{
   std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
 
   lights[0] = s.scene_root->push_child(create_node("light_0"));
@@ -778,7 +800,7 @@ void application::setup_lights() {
     auto* pl    = l->assign(point_light());
     pl->ambient = glm::vec3(0.1f);
     pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
-    p_lights[i] = (pl);
+    p_lights[i]                = (pl);
   }
 
   lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
@@ -881,10 +903,7 @@ void application::setup_scene()
 
   std::cout << "Loading " << start_level_name << "as a level...";
   //TODO do not pass these objects here, initialize the level system with them:
-  if(levels.load_level(scripts, gltf, s, start_level_name))
-  {
-    std::cout << "Loading successful\n";
-  }
+  if(levels.load_level(scripts, gltf, s, start_level_name)) { std::cout << "Loading successful\n"; }
   else
     std::cout << "Something failed!";
 
@@ -899,10 +918,10 @@ void application::setup_scene()
   {
     //Load some geometry and assign it to the hand nodes
     const auto vr_controller_mesh = gltf.load_mesh("gltf/vague_controller.glb"); //place holder red arrow thing
-    const auto left_controller = vr->load_controller_model_from_runtime(vr_controller::hand_side::left, unlit_shader);
-    const auto right_controller = vr->load_controller_model_from_runtime(vr_controller::hand_side::right, unlit_shader);
+    const auto left_controller    = vr->load_controller_model_from_runtime(vr_controller::hand_side::left, unlit_shader);
+    const auto right_controller   = vr->load_controller_model_from_runtime(vr_controller::hand_side::right, unlit_shader);
 
-    bool has_left_controller = false;
+    bool has_left_controller  = false;
     bool has_right_controller = false;
     mesh left_controller_mesh;
     mesh right_controller_mesh;
@@ -910,7 +929,9 @@ void application::setup_scene()
     if(left_controller.renderable != renderable_manager::invalid_renderable)
     {
       auto& renderable = renderable_manager::get_from_handle(left_controller.renderable);
-      renderable.set_diffuse_texture( left_controller.diffuse_texture != texture_manager::invalid_texture ? left_controller.diffuse_texture : texture_manager::get_dummy_texture());
+      renderable.set_diffuse_texture(left_controller.diffuse_texture != texture_manager::invalid_texture
+                                         ? left_controller.diffuse_texture
+                                         : texture_manager::get_dummy_texture());
       left_controller_mesh.add_submesh(left_controller.renderable);
       has_left_controller = true;
     }
@@ -918,7 +939,9 @@ void application::setup_scene()
     if(right_controller.renderable != renderable_manager::invalid_renderable)
     {
       auto& renderable = renderable_manager::get_from_handle(right_controller.renderable);
-      renderable.set_diffuse_texture( right_controller.diffuse_texture != texture_manager::invalid_texture ? right_controller.diffuse_texture : texture_manager::get_dummy_texture());
+      renderable.set_diffuse_texture(right_controller.diffuse_texture != texture_manager::invalid_texture
+                                         ? right_controller.diffuse_texture
+                                         : texture_manager::get_dummy_texture());
       right_controller_mesh.add_submesh(right_controller.renderable);
       has_right_controller = true;
     }
@@ -968,14 +991,10 @@ void application::splash_frame(const char* image_path)
     splash_txt.load_from(default_splash, true, GL_TEXTURE_2D);
     splash_txt.generate_mipmaps(GL_TEXTURE_2D);
 
-
     auto splash_shader_handle = shader_program_manager::create_shader("shaders/splash.vert.glsl", "shaders/splash.frag.glsl");
     auto& splash_shader       = shader_program_manager::get_from_handle(splash_shader_handle);
 
-    float vtx_obj[] =
-    { -1, -1, 0, 0,
-      3, -1, 2, 0,
-      -1, 3, 0, -2 };
+    float vtx_obj[] = { -1, -1, 0, 0, 3, -1, 2, 0, -1, 3, 0, -2 };
 
     GLuint splash_buffer, splash_buffer_vao;
     glGenVertexArrays(1, &splash_buffer_vao);
@@ -1044,10 +1063,12 @@ application::application(int argc, char** argv, const std::string& application_n
     glGenTextures(1, &shadow_depth_map);
     glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    const GLfloat border_color[] { 1.0, 1.0, 1.0, 1.0 };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_depth_map, 0);
     glDrawBuffer(GL_NONE);

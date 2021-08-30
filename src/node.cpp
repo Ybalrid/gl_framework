@@ -24,6 +24,10 @@ void node::update_world_matrix()
     {
       auto& li = static_cast<point_light&>(o);
       li.set_position_from_world_mat(world_space_model);
+    }
+    if constexpr(std::is_same_v<T, directional_light>)
+    {
+      auto& li = static_cast<directional_light&>(o);
       li.set_direction_from_world_mat(world_space_model);
     }
 
