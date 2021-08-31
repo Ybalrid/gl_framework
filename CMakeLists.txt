@@ -6,7 +6,7 @@
 # - HAS_OPENXR (bool) : Activate the code that uses OpenXR. The OpenXR SDK is shipped as a git submodule
 # - HAS_OCULUS_VR (bool) : Activate the code that uses Oculus. The Oculus OVR Native SDK is not shipped and need to be dowloaded by hand from the website.
 
-CMAKE_MINIMUM_REQUIRED (VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.21)
 SET (GAME_NAME "test_project")
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
@@ -41,23 +41,23 @@ IF(HAS_VR)
   MESSAGE(STATUS "Detected a VR platform")
 ENDIF()
 
-if(HAS_OPENVR)
-  set(CPP_HAS_OPENVR "true")
-else()
-  set(CPP_HAS_OPENVR "false")
-endif()
+IF(HAS_OPENVR)
+  SET(CPP_HAS_OPENVR "true")
+ELSE()
+  SET(CPP_HAS_OPENVR "false")
+ENDIf()
 
-if(HAS_OCULUS_VR)
-  set(CPP_HAS_OCULUS_VR "true")
-else()
-  set(CPP_HAS_OCULUS_VR "false")
-endif()
+IF(HAS_OCULUS_VR)
+  SET(CPP_HAS_OCULUS_VR "true")
+ELSE()
+  SET(CPP_HAS_OCULUS_VR "false")
+ENDIf()
 
-if(HAS_OPENXR)
-  set(CPP_HAS_OPENXR "true")
-else()
-  set(CPP_HAS_OPENXR "false")
-endif()
+IF(HAS_OPENXR)
+  SET(CPP_HAS_OPENXR "true")
+ELSE()
+  SET(CPP_HAS_OPENXR "false")
+ENDIf()
 
 # Generate the configured header file
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/build_config.template.hpp ${CMAKE_SOURCE_DIR}/src/build_config.hpp )
@@ -101,6 +101,8 @@ FILE (GLOB sources
   ./README.md)
 
 # just add this lib as a subdir,
+SET (PHYSFS_BUILD_TEST OFF CACHE BOOL "no physfs tests" FORCE)
+SET (PHYSFS_BUILD_SHARED OFF CACHE BOOL "no physfs tests" FORCE)
 ADD_SUBDIRECTORY (third_party/physfs/)
 
 #Get libraries
@@ -119,7 +121,6 @@ FIND_PACKAGE (GLEW REQUIRED)
 FIND_PACKAGE (FreeImage REQUIRED)
 FIND_PACKAGE (OpenGL REQUIRED)
 FIND_PACKAGE (Threads REQUIRED)
-
 
 # Create our build target
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources}  "${CMAKE_SOURCE_DIR}/third_party/LIV_v1/SharedTextureProtocol.cpp")
@@ -159,24 +160,24 @@ IF(HAS_OPENVR)
 
 ENDIF()
 
-if(HAS_OPENXR)
-  message(STATUS "Including OpenXR directories")
-  add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK")
-  target_link_libraries(${GAME_NAME}_exe PRIVATE openxr_loader)
-  target_include_directories(${GAME_NAME}_exe PRIVATE
+IF(HAS_OPENXR)
+  MESSAGE(STATUS "Including OpenXR directories")
+  ADD_SUBDIRECTORY("${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK")
+  TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE openxr_loader)
+  TARGET_INCLUDE_DIRECTORIES(${GAME_NAME}_exe PRIVATE
     "${CMAKE_SOURCE_DIR}/third_party/OpenXR-SDK/include"
     "${CMAKE_SOURCE_DIR}/third_party/xrew/generated"
     )
-  if(UNIX)
-  target_link_libraries(${GAME_NAME}_exe PRIVATE X11)
-  endif()
-endif()
+  IF(UNIX)
+  TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE X11)
+  ENDIF()
+ENDIF()
 
-if(HAS_OCULUS_VR)
-  message(STATUS "Including Oculus SDK")
-  target_link_libraries(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Lib/Windows/x64/Release/VS2017/LibOVR.lib")
-  target_include_directories(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Include/")
-endif()
+IF(HAS_OCULUS_VR)
+  MESSAGE(STATUS "Including Oculus SDK")
+  TARGET_LINK_LIBRARIES(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Lib/Windows/x64/Release/VS2017/LibOVR.lib")
+  TARGET_INCLUDE_DIRECTORIES(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/oculus_sdk/LibOVR/Include/")
+ENDIF()
 
 #link libraries
 TARGET_LINK_LIBRARIES (${GAME_NAME}_exe
@@ -200,10 +201,23 @@ IF(UNIX)
   ENDIF(APPLE)
 ENDIF()
 
-
-
 ADD_CUSTOM_TARGET (copy_resources_to_build_dir ALL
   COMMAND # add_custom_command(TARGET ${GAME_NAME}_exe POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${CMAKE_BINARY_DIR}/res.zip
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res
   ${CMAKE_BINARY_DIR}/unpacked_res)
+
+ADD_DEPENDENCIES(${GAME_NAME}_exe copy_resources_to_build_dir)
+
+FILE(GLOB all_the_dlls CONFIGURE_DEPENDS ${CMAKE_BINARY_DIR}/*.dll)
+
+SET(distrib_folder ${CMAKE_BINARY_DIR}/DISTRIBUTE)
+ADD_CUSTOM_TARGET(DISTRIBUTE ALL
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${distrib_folder}
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res.zip ${distrib_folder}/res.zip
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unpacked_res ${distrib_folder}/unpacked_res
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${GAME_NAME}_exe> ${distrib_folder}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${GAME_NAME}_exe> ${distrib_folder}
+	COMMAND ${CMAKE_COMMAND} -E copy ${all_the_dlls} ${distrib_folder}
+	)
+ADD_DEPENDENCIES(DISTRIBUTE ${GAME_NAME}_exe)
