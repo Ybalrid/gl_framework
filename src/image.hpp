@@ -18,7 +18,7 @@ class image
 
   public:
   ///constructor
-  explicit image(const std::string& virtual_path);
+  image(const std::string& virtual_path);
 
   ///Destructor
   ~image() = default;

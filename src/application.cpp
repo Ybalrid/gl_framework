@@ -12,23 +12,23 @@
 #include <chrono>
 
 #include "opengl_debug_group.hpp"
+#include "gizmo.hpp"
 
-//just a test
 
+//TODO move these globals to the application class!
 float shadow_map_ortho_scale          = 80;
 float shadow_map_direction_multiplier = 95;
 float shadow_map_near_plane           = .337;
 float shadow_map_far_plane            = 300;
 glm::vec3 sun_direction_unormalized { -0.25f, -1.f, -0.10f };
+GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
+shader_handle color_debug_shader = shader_program_manager::invalid_shader;
 
 //The statics
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
-
 glm::vec4 application::clear_color { 0.4f, 0.5f, 0.6f, 1.f };
 
-GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
-shader_handle color_debug_shader = shader_program_manager::invalid_shader;
 
 void application::activate_vsync() const
 {
@@ -60,7 +60,6 @@ void application::activate_vsync() const
   }
 }
 
-#include "gizmo.hpp"
 
 void scene_node_outline(node* current_node, node*& active_node)
 {
@@ -646,9 +645,30 @@ void application::build_draw_list_from_camera(camera* render_camera)
   });
 }
 
+void application::render_skybox(camera* skybox_camera) {
+  opengl_debug_group group("application::render_skybox");
+  (void)(group);
+
+  const auto projection = skybox_camera->get_projection_matrix();
+  const auto view       = glm::mat4(glm::mat3(skybox_camera->get_view_matrix()));
+
+  glDepthMask(GL_FALSE);
+  glBindVertexArray(skybox_vao);
+  glActiveTexture(GL_TEXTURE0 + shader::skybox_texture_slot);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, skybox->get_texture());
+  auto& shader = shader_manager.get_from_handle(skybox_shader);
+  shader.use();
+  shader.set_uniform(shader::uniform::projection, projection);
+  shader.set_uniform(shader::uniform::view, view);
+  shader.set_uniform(shader::uniform::cubemap, shader::skybox_texture_slot);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glDepthMask(GL_TRUE);
+}
+
 void application::render_frame()
 {
-  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
+//  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
+
 
   //When using VR, the VR system is the master of the framerate!
   if(vr)
@@ -663,6 +683,7 @@ void application::render_frame()
 
   frame_prepare();
   render_shadowmap();
+  render_skybox(main_camera);
 
   if(vr)
   {
@@ -678,6 +699,7 @@ void application::render_frame()
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
+      render_skybox(left_eye);
       left_eye->update_projection(left_size.x, left_size.y);
       build_draw_list_from_camera(left_eye);
       render_draw_list(left_eye);
@@ -685,6 +707,7 @@ void application::render_frame()
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
+      render_skybox(right_eye);
       right_eye->update_projection(right_size.x, right_size.y);
       build_draw_list_from_camera(right_eye);
       render_draw_list(right_eye);
@@ -727,6 +750,7 @@ void application::render_frame()
         //Render everything to the background pass
         mr_camera->update_projection(mr_viewport_size.x, mr_viewport_size.y / 2);
         vr->mr_depth_buffer_clear();
+        render_skybox(mr_camera);
         render_draw_list(mr_camera);
 
         vr->submit_to_LIV(); //This causes resource copy from GL to DX
@@ -1036,23 +1060,27 @@ void application::splash_frame(const char* image_path)
 
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
+  //Bind the debug utilities
   inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
   inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
   inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reload_command);
 
+  //Install resources
   for(const auto& pak : resource_paks)
   {
     std::cerr << "Adding to resources " << pak << '\n';
     resource_system::add_location(pak);
   }
 
+  //Basic initialization of the rendering context
   configure_and_create_window(application_name);
   create_opengl_context();
   initialize_modern_opengl();
   texture_manager::initialize_dummy_texture();
 
+  //We now have enough of a renderer available to display something on screen and pump some events
+  //Some OSes (like macOS) really likes that we can do this now so they actually show a window and not apear to hang
   splash_frame();
-
   initialize_gui();
 
   //attempt init VR
@@ -1064,6 +1092,7 @@ application::application(int argc, char** argv, const std::string& application_n
       vr = nullptr;
   }
 
+  //Initialize main shadow map
   try
   {
     shadowmap_shader = shader_program_manager::create_shader("/shaders/shadow.vert.glsl", "/shaders/shadow.frag.glsl");
@@ -1086,6 +1115,44 @@ application::application(int argc, char** argv, const std::string& application_n
   catch(const std::exception& e)
   {
     sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create shadowmap shader!", e.what());
+    throw;
+  }
+
+  //Initialize skybox
+  try
+  {
+    skybox_shader = shader_program_manager::create_shader("/shaders/skybox.vert.glsl", "/shaders/skybox.frag.glsl");
+
+    std::array<image, 6> skybox_images { { { "/skybox/right.jpg" },
+                                           { "/skybox/left.jpg" },
+                                           { "/skybox/top.jpg" },
+                                           { "/skybox/bottom.jpg" },
+                                           { "/skybox/front.jpg" },
+                                           { "/skybox/back.jpg" } } };
+    skybox        = std::make_unique<cubemap>(skybox_images);
+    const float skybox_vertices[] //This is just the 36 vertices of a cube drawn with tris
+        = {
+            -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+            1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+            1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+            1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f
+          };
+
+    glGenVertexArrays(1, &skybox_vao);
+    glBindVertexArray(skybox_vao);
+    glGenBuffers(1, &skybox_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), skybox_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+  }
+  catch(const std::exception& e)
+  {
+    sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create skybox shader!", e.what());
     throw;
   }
 

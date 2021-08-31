@@ -65,6 +65,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
 
+  for(int i = 0; i < (int)uniform::MAX_UNIFORM_LOCATION_COUNT; ++i) uniform_indices[i] = -1;
+
   //Object invariant:
   uniform_indices[int(uniform::mvp)]    = glGetUniformLocation(program, "mvp");
   uniform_indices[int(uniform::model)]  = glGetUniformLocation(program, "model");
@@ -90,6 +92,7 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   uniform_indices[int(uniform::debug_float_0)] = glGetUniformLocation(program, "debug_float_0");
 
   uniform_indices[int(uniform::shadow_map)] = glGetUniformLocation(program, "shadow_map");
+  uniform_indices[int(uniform::cubemap)]    = glGetUniformLocation(program, "cubemap");
 
   //one directional lights
   main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");

@@ -39,6 +39,7 @@ class shader
     debug_color,
     debug_float_0,
     shadow_map,
+    cubemap,
 
     // Add uniforms on top of this one, and do not forget to glGetUniformLocation
     // at the end of the constructor of the shader class
@@ -74,6 +75,7 @@ class shader
   static constexpr int material_specular_texture_slot = 1;
   static constexpr int material_normal_texture_slot   = 2;
   static constexpr int material_shadow_map_texture_slot = 3;
+  static constexpr int skybox_texture_slot              = 4;
 
   ///Construct a shader object. Take the location in the resource package of the source code
   shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path);

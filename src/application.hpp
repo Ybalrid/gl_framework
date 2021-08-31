@@ -31,6 +31,7 @@
 #include "camera_controller.hpp"
 #include "vr_system.hpp"
 #include "level_system.hpp"
+#include "cubemap.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -68,6 +69,7 @@ class application
   void render_shadowmap();
   void render_draw_list(camera* render_camera);
   void build_draw_list_from_camera(camera* render_camera);
+  void render_skybox(camera* skybox_camera);
   void render_frame();
   void run_events();
   void run_script_update();
@@ -124,6 +126,7 @@ class application
   shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
+
   static constexpr unsigned int shadow_width = 1024 * 4, shadow_height = shadow_width;
 
   static glm::vec4 clear_color;
@@ -169,6 +172,10 @@ class application
   level_system levels;
   std::string start_level_name;
   glm::mat4 light_space_matrix;
+
+  std::unique_ptr<cubemap> skybox;
+  shader_handle skybox_shader = shader_program_manager::invalid_shader;
+  GLuint skybox_vao, skybox_vbo;
 
   public:
   static scene* get_main_scene();
