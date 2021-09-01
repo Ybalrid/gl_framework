@@ -701,16 +701,16 @@ void application::render_frame()
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
-      render_skybox(left_eye);
       left_eye->update_projection(left_size.x, left_size.y);
+      render_skybox(left_eye);
       build_draw_list_from_camera(left_eye);
       render_draw_list(left_eye);
 
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
-      render_skybox(right_eye);
       right_eye->update_projection(right_size.x, right_size.y);
+      render_skybox(right_eye);
       build_draw_list_from_camera(right_eye);
       render_draw_list(right_eye);
 
