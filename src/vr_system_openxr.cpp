@@ -7,6 +7,14 @@
 #include <imgui.h>
 #include <xrew.h>
 
+PFN_xrDebugUtilsMessengerCallbackEXT debug_messenger_callback = [](XrDebugUtilsMessageSeverityFlagsEXT,
+                                                          XrDebugUtilsMessageTypeFlagsEXT,
+                                                          const XrDebugUtilsMessengerCallbackDataEXT* data,
+                                                          void*) -> XrBool32 { //TODO filter these!
+  std::cerr << "OpenXR debug message : " << data->message << "\n";
+  return XR_FALSE;
+};
+
 //That's a bit ugly I know
 XrView *left_eye_view = nullptr, *right_eye_view = nullptr;
 bool vr_system_openxr::need_to_vflip = false;
@@ -66,6 +74,17 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   std::vector<const char*> available_api_layer_names(static_cast<size_t>(api_layer_count));
   for(size_t i = 0; i < api_layer_count; ++i) available_api_layer_names[i] = available_api_layer_properties[i].layerName;
 
+  std::vector<const char*> enabled_api_layers {};
+
+  if(const auto found_api_layer
+     = std::find_if(available_api_layer_names.begin(),
+                    available_api_layer_names.end(),
+                    [](const char* layer_name) { return 0 == strcmp("XR_APILAYER_LUNARG_core_validation", layer_name); });
+      found_api_layer != available_api_layer_names.end())
+  {
+    enabled_api_layers.push_back(*found_api_layer);
+  }
+
   uint32_t extension_properties_count = 0;
   xrEnumerateInstanceExtensionProperties(nullptr, extension_properties_count, &extension_properties_count, nullptr);
   std::vector<XrExtensionProperties> available_extension_properties(extension_properties_count, { XR_TYPE_EXTENSION_PROPERTIES });
@@ -98,10 +117,11 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   instance_create_info.applicationInfo.apiVersion = XR_MAKE_VERSION(1, 0, 0);
   strcpy(instance_create_info.applicationInfo.engineName, engine_name);
   strcpy(instance_create_info.applicationInfo.applicationName, GAME_NAME);
-  instance_create_info.enabledApiLayerCount  = static_cast<uint32_t>(available_api_layer_names.size());
-  instance_create_info.enabledApiLayerNames  = available_api_layer_names.data();
+  instance_create_info.enabledApiLayerCount  = static_cast<uint32_t>(enabled_api_layers.size());
+  instance_create_info.enabledApiLayerNames  = enabled_api_layers.data();
   instance_create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_properties_names.size());
   instance_create_info.enabledExtensionNames = enabled_extension_properties_names.data();
+
 
   if(XR_FAILED(xrCreateInstance(&instance_create_info, &instance)))
   {
@@ -146,8 +166,31 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
   if(!xrewInit(instance)) std::cerr << "xrewInit() failed\n";
 
+#ifdef _DEBUG
+  if(has_debug_utils_ext)
+  {
+    XrDebugUtilsMessengerCreateInfoEXT callback { XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+                                                  nullptr,
+                                                  XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | // messageSeverities
+                                                      XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,
+                                                  XR_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | // messageTypes
+                                                      XR_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,
+                                                  debug_messenger_callback,
+                                                  nullptr };
+
+    if(XR_SUCCEEDED(xrCreateDebugUtilsMessengerEXT(instance, &callback, &debug_messenger)))
+    {
+      std::cout << "Installed OpenXR debug messenger...\n";
+    }
+    else
+    {
+      std::cerr << "Failed to install the debug messenger.\n";
+    }
+  }
+#endif
+
   //Get properties of instance
-  XrInstanceProperties instance_properties { XR_TYPE_INSTANCE_CREATE_INFO };
+  XrInstanceProperties instance_properties { XR_TYPE_INSTANCE_PROPERTIES };
   if(XR_FAILED(xrGetInstanceProperties(instance, &instance_properties)))
   {
     std::cerr << "error while getting the instance properties\n";
@@ -451,9 +494,12 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   action_create_info.subactionPaths      = user_hand_action_paths.data();
   if(XR_FAILED(xrCreateAction(action_set, &action_create_info, &pose_action))) std::cerr << "did not create pose action\n";
 
-  xrStringToPath(instance, "/interaction_profiles/khr/simple_controller", &simple_controller_path);
-  xrStringToPath(instance, "/user/hand/left/input/aim/pose", &simple_controller_aim_pose_path[0]);
-  xrStringToPath(instance, "/user/hand/right/input/aim/pose", &simple_controller_aim_pose_path[1]);
+  if(XR_FAILED(xrStringToPath(instance, "/interaction_profiles/khr/simple_controller", &simple_controller_path)))
+    std::cout << "no interaction profiles for the simple controller?\n";
+  if(XR_FAILED(xrStringToPath(instance, "/user/hand/left/input/aim/pose", &simple_controller_aim_pose_path[0])))
+    std::cout << "no path for left hand aim pose\n";
+  if(XR_FAILED(xrStringToPath(instance, "/user/hand/right/input/aim/pose", &simple_controller_aim_pose_path[1])))
+    std::cout << "no path for right hand aim pose\n";
 
   std::vector<XrActionSuggestedBinding> simple_controller_bindings { { { pose_action, simple_controller_aim_pose_path[0] },
                                                                        { pose_action, simple_controller_aim_pose_path[1] } } };
@@ -469,14 +515,17 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   action_space_create_info.poseInActionSpace               = {};
   action_space_create_info.poseInActionSpace.orientation.w = 1;
   action_space_create_info.subactionPath                   = user_hand_action_paths[0];
-  xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[0]);
+  if(XR_FAILED(xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[0])))
+    std::cerr << "Did not create an action space for left hand\n";
   action_space_create_info.subactionPath = user_hand_action_paths[1];
-  xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[1]);
+  if(XR_FAILED(xrCreateActionSpace(session, &action_space_create_info, &user_hand_spaces[1])))
+    std::cerr << "Did not create an action space for left hand\n";
 
   XrSessionActionSetsAttachInfo session_action_set_attach_info { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
   session_action_set_attach_info.countActionSets = 1;
   session_action_set_attach_info.actionSets      = &action_set;
-  xrAttachSessionActionSets(session, &session_action_set_attach_info);
+  if(XR_FAILED(xrAttachSessionActionSets(session, &session_action_set_attach_info)))
+    std::cerr << "Did not attach the action sets to the session\n";
 
   //Step 9 "Begin" the session itself
   XrSessionBeginInfo xr_session_begin_info { XR_TYPE_SESSION_BEGIN_INFO };
@@ -582,8 +631,8 @@ void vr_system_openxr::update_tracking()
   //You got hands too!
   const XrActiveActionSet active_action_set { action_set, XR_NULL_PATH };
   XrActionsSyncInfo action_sync_info { XR_TYPE_ACTIONS_SYNC_INFO };
-  action_sync_info.activeActionSets      = &active_action_set;
   action_sync_info.countActiveActionSets = 1;
+  action_sync_info.activeActionSets      = &active_action_set;
   if(XR_FAILED(xrSyncActions(session, &action_sync_info))) std::cerr << "failed to sync actions!\n";
 
   for(size_t i = 0; i < 2; ++i)
