@@ -355,6 +355,7 @@ void application::initialize_glew() const
 
 void application::install_opengl_debug_callback() const
 {
+#ifdef _DEBUG
   if(glDebugMessageCallback)
   {
     glEnable(GL_DEBUG_OUTPUT);
@@ -375,6 +376,7 @@ void application::install_opengl_debug_callback() const
         },
         nullptr);
   }
+#endif
 }
 
 void application::configure_and_create_window(const std::string& application_name)
