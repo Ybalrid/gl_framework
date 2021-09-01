@@ -252,9 +252,10 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   if(!fallback_to_dx)
   {
 #endif
-    XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr { XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR };
+    XrGraphicsRequirementsOpenGLKHR graphics_requirements_opengl_khr { XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR };
 
-    xrGetOpenGLGraphicsRequirementsKHR(instance, system_id, &graphics_requirements_opengl_khr);
+    const auto gotOpenGLVersion = xrGetOpenGLGraphicsRequirementsKHR(instance, system_id, &graphics_requirements_opengl_khr);
+
     //It seems not doing the above call cause a validation error
     std::cout << "OpenGL version min required : " << XR_VERSION_MAJOR(graphics_requirements_opengl_khr.minApiVersionSupported)
               << "." << XR_VERSION_MINOR(graphics_requirements_opengl_khr.minApiVersionSupported) << "\n";
