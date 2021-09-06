@@ -32,14 +32,11 @@ namespace bullet_utils
   }
 }
 
-
 class physics_system
 {
 
 public:
-
   static constexpr glm::vec3 earth_average_gravitational_acceleration_field = glm::vec3(0.f, -9.80665f, 0.f);
-
 
   struct
   {
@@ -48,7 +45,6 @@ public:
   } simulation_configuration;
 
   physics_system();
-
   ~physics_system();
 
   void set_gravity(glm::vec3 G) const;
@@ -70,10 +66,9 @@ public:
     }
 
     void create_default_motion_state();
-
     void create_rigid_body();
 
-    transform get_world_transform() const;
+    [[nodiscard]] transform get_world_transform() const;
 
     std::unique_ptr<btCollisionShape> collision_shape{nullptr};
     std::unique_ptr<btMotionState> motion_state { nullptr };
@@ -83,7 +78,6 @@ public:
   struct box_proxy : physics_proxy
   {
     box_proxy(glm::vec3 start_position, glm::vec3 half_extent, float mass_);
-
     box_proxy(float size, float mass_);
   };
 
@@ -108,34 +102,22 @@ private:
     {
       glm::vec3 from, to, color;
     };
-
     std::vector<world_line> to_draw;
-
-  public:
-
     int debug_mode = DBG_DrawWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
-
+  public:
     void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
-
     void new_frame();
-
     void draw_debug_data(const glm::mat4& view, const glm::mat4& projection, GLuint vao, shader_handle shader_h);
-
     void drawContactPoint(const btVector3& PointOnB,
                           const btVector3& normalOnB,
                           btScalar distance,
                           int lifeTime,
                           const btVector3& color) override;
-
     void reportErrorWarning(const char* warningString) override;
-
     void draw3dText(const btVector3& location, const char* textString) override;
-
     void setDebugMode(int debugMode) override;
-
     int getDebugMode() const override;
   };
-
-  debug_drawer my_drawer;
+  debug_drawer simple_debug_drawer;
 
 };

@@ -13,7 +13,10 @@ physics_system::physics_system()
   dynamics_world->setDebugDrawer(&simple_debug_drawer);
 }
 
-physics_system::~physics_system() { std::cout << "Deinitializing physics system\n"; }
+physics_system::~physics_system()
+{
+  fprintf(stderr,"Uninitialized physics system\n");
+}
 
 void physics_system::set_gravity(glm::vec3 G) const { dynamics_world->setGravity(bullet_utils::convert(G)); }
 
@@ -64,8 +67,7 @@ physics_system::box_proxy::box_proxy(glm::vec3 start_position, glm::vec3 half_ex
 
 physics_system::box_proxy::box_proxy(float size, float mass_)
 {
-
-  const auto half_size = size / 2.f;
+  const auto half_size = size * .5f;
   glm::vec3 half_extent { half_size, half_size, half_size };
   *this = box_proxy({}, half_extent, mass);
 }
@@ -111,7 +113,6 @@ void physics_system::debug_drawer::draw_debug_data(const glm::mat4& view,
   shader.use();
   shader.set_uniform(shader::uniform::view, view);
   shader.set_uniform(shader::uniform::projection, projection);
-
 
   for(auto& line : to_draw)
   {
