@@ -32,6 +32,7 @@
 #include "vr_system.hpp"
 #include "level_system.hpp"
 #include "cubemap.hpp"
+#include "physics_system.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -74,6 +75,7 @@ class application
   void run_events();
   void run_script_update();
   void setup_scene();
+  void run_physics();
 
   freeimage free_img;
   resource_system resources;
@@ -123,6 +125,7 @@ class application
   std::vector<draw_operation> draw_list;
 
   bool debug_draw_bbox           = false;
+  bool debug_draw_physics        = true;
   shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
@@ -176,6 +179,11 @@ class application
   std::unique_ptr<cubemap> skybox;
   shader_handle skybox_shader = shader_program_manager::invalid_shader;
   GLuint skybox_vao, skybox_vbo;
+
+  physics_system physics;
+  node* physics_test;
+
+  physics_system::box_proxy* test_box;
 
   public:
   static scene* get_main_scene();

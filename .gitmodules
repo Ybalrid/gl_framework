@@ -40,3 +40,6 @@
 [submodule "third_party/physfs"]
 	path = third_party/physfs
 	url = https://github.com/ybalrid/physfs-1.git
+[submodule "third_party/bullet3"]
+	path = third_party/bullet3
+	url = https://github.com/bulletphysics/bullet3.git
