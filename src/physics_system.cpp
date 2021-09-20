@@ -1,5 +1,23 @@
 #include "physics_system.hpp"
 
+#include "node.hpp"
+
+bullet_utils::transform_sync::transform_sync(node* attachee)
+{
+  scene_node = attachee;
+  local_scale = scene_node->local_xform.get_scale();
+}
+
+void bullet_utils::transform_sync::getWorldTransform(btTransform& worldTrans) const
+{
+  worldTrans = convert(scene_node->local_xform);
+}
+void bullet_utils::transform_sync::setWorldTransform(const btTransform& worldTrans)
+{
+  scene_node->local_xform = convert(worldTrans);
+  scene_node->local_xform.set_scale(local_scale);
+}
+
 physics_system::physics_system()
 {
   std::cout << "Initializing physics system with Bullet Physics version " << btGetVersion() << " : " << btIsDoublePrecision()
@@ -67,12 +85,17 @@ physics_system::box_proxy::box_proxy(glm::vec3 start_position, glm::vec3 half_ex
 
 physics_system::box_proxy::box_proxy(float size, float mass_)
 {
+  mass = mass_;
   const auto half_size = size * .5f;
   glm::vec3 half_extent { half_size, half_size, half_size };
   *this = box_proxy({}, half_extent, mass);
 }
 
-void physics_system::add_to_world(physics_proxy& proxy) const { dynamics_world->addRigidBody(proxy.rigid_body.get()); }
+void physics_system::add_to_world(physics_proxy& proxy) const
+{
+  proxy.rigid_body->setWorldTransform(proxy.xform);
+  dynamics_world->addRigidBody(proxy.rigid_body.get());
+}
 
 void physics_system::add_ground_plane()
 {
@@ -85,6 +108,64 @@ void physics_system::draw_phy_debug(const glm::mat4& view, const glm::mat4& proj
   simple_debug_drawer.new_frame();
   dynamics_world->debugDrawWorld();
   simple_debug_drawer.draw_debug_data(view, projection, vao, shader);
+}
+
+physics_system::physics_proxy physics_system::create_proxy(shape s,
+                                                           const std::vector<float>& vertex_buffer,
+                                                           const std::vector<unsigned>& index_buffer,
+                                                           size_t stride,
+                                                           float mass,
+                                                           glm::vec3 local_scale,btMotionState* motion_state)
+{
+  physics_proxy proxy;
+
+  proxy.mass = mass;
+
+
+  switch(s)
+  {
+    case shape::box:
+      //TODO compute bounding box, and create a box shape
+      break;
+    case shape::static_triangle_mesh: {
+      const auto triangle_count = index_buffer.size() / 3;
+      auto triangle_mesh        = new btTriangleMesh();
+
+      btVector3 triangle_vertices[3];
+
+      for(size_t i = 0; i < triangle_count; ++i)
+      {
+        for(size_t j : { 0, 1, 2 }) triangle_vertices[j] = bullet_utils::convert(glm::make_vec3(&vertex_buffer[3 * i + j]));
+        triangle_mesh->addTriangle(triangle_vertices[0], triangle_vertices[1], triangle_vertices[2]);
+      }
+
+      const auto collision_shape = new btBvhTriangleMeshShape(triangle_mesh, true);
+      proxy.collision_shape      = std::unique_ptr<btCollisionShape>(collision_shape);
+
+      //TODO check if the btBvhTriangleMeshShape takes ownership of the btTriangleMesh pointer...
+    }
+    break;
+
+    case shape::convex_hull: {
+      const auto collision_shape = new btConvexHullShape(static_cast<const btScalar*>(vertex_buffer.data()),
+                                                         int(vertex_buffer.size()) / int(stride),
+                                                         static_cast<int>(stride) * sizeof(float));
+      proxy.collision_shape      = std::unique_ptr<btCollisionShape>(collision_shape);
+    }
+  }
+
+  proxy.collision_shape->setLocalScaling(bullet_utils::convert(local_scale));
+
+  if(mass != 0) proxy.compute_inertia();
+
+  if(motion_state == nullptr)
+    proxy.create_motion_state<btDefaultMotionState>();
+  else
+    proxy.motion_state = std::unique_ptr<btMotionState>(motion_state);
+
+  proxy.create_rigid_body();
+
+  return proxy;
 }
 
 void physics_system::debug_drawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
@@ -113,18 +194,38 @@ void physics_system::debug_drawer::draw_debug_data(const glm::mat4& view,
   shader.use();
   shader.set_uniform(shader::uniform::view, view);
   shader.set_uniform(shader::uniform::projection, projection);
+  shader.set_uniform(shader::uniform::debug_color, glm::vec4(1,1,1, 1));
+
+  float line_width_to_be_restored;
+  glGetFloatv(GL_LINE_WIDTH, &line_width_to_be_restored);
+  glLineWidth(1);
+
+  std::vector<float> line_vertex_buffer;
+  line_vertex_buffer.reserve(to_draw.size() * 2 * (3 + 4));
 
   for(auto& line : to_draw)
   {
-    glm::vec4 color = { line.color, 1 };
-    shader.set_uniform(shader::uniform::debug_color, color);
-    line_vertex_data[0] = line.from;
-    line_vertex_data[1] = line.to;
-    glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(float), line_vertex_data, GL_STREAM_DRAW);
-    glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, (void*)0);
+    line_vertex_buffer.push_back(line.from.x);
+    line_vertex_buffer.push_back(line.from.y);
+    line_vertex_buffer.push_back(line.from.z);
+    line_vertex_buffer.push_back(line.color.r);
+    line_vertex_buffer.push_back(line.color.g);
+    line_vertex_buffer.push_back(line.color.b);
+    line_vertex_buffer.push_back(0.9);
+    line_vertex_buffer.push_back(line.to.x);
+    line_vertex_buffer.push_back(line.to.y);
+    line_vertex_buffer.push_back(line.to.z);
+    line_vertex_buffer.push_back(line.color.r);
+    line_vertex_buffer.push_back(line.color.g);
+    line_vertex_buffer.push_back(line.color.b);
+    line_vertex_buffer.push_back(0.9);
   }
 
+  glBufferData(GL_ARRAY_BUFFER, line_vertex_buffer.size() * sizeof(float), line_vertex_buffer.data(), GL_STREAM_DRAW);
+  glDrawArrays(GL_LINES, 0, line_vertex_buffer.size());
+
   glBindVertexArray(vao_to_be_restored);
+  glLineWidth(line_width_to_be_restored);
 }
 
 void physics_system::debug_drawer::drawContactPoint(

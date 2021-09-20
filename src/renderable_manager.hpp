@@ -3,6 +3,7 @@
 #include "renderable.hpp"
 #include <vector>
 
+
 ///Define the type of an handle
 using renderable_handle = std::vector<renderable>::size_type;
 

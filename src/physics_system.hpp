@@ -12,10 +12,12 @@
 
 #include "transform.hpp"
 
+class node;
+
 namespace bullet_utils
 {
-  inline glm::vec3 convert(btVector3 v) { return glm::vec3(v.x(), v.y(), v.z());}
-  inline glm::quat convert(btQuaternion q) { return glm::quat(q.x(), q.y(), q.z(), q.w()); };
+  inline glm::vec3 convert(btVector3 v) { return glm::vec3(v.x(), v.y(), v.z()); }
+  inline glm::quat convert(btQuaternion q) { return glm::quat(q.w(), q.x(), q.y(), q.z()); };
   inline btVector3 convert(glm::vec3 v) { return btVector3(v.x, v.y, v.z); }
   inline btQuaternion convert(glm::quat q) { return btQuaternion(q.x, q.y, q.z, q.w); }
 
@@ -30,17 +32,39 @@ namespace bullet_utils
     xform.set_scale(glm::vec3(1.f));
     return xform;
   }
+
+  inline btTransform convert(transform t)
+  {
+    btTransform xform;
+
+    xform.setOrigin(convert(t.get_position()));
+    xform.setRotation(convert(t.get_orientation()));
+
+    return xform;
+  }
+
+  class transform_sync : public btMotionState
+  {
+public:
+    transform_sync(node* attachee);
+    void getWorldTransform(btTransform& worldTrans) const override;
+    void setWorldTransform(const btTransform& worldTrans) override;
+
+  private:
+    node* scene_node;
+      glm::vec3 local_scale;
+  };
 }
 
 class physics_system
 {
 
-public:
+  public:
   static constexpr glm::vec3 earth_average_gravitational_acceleration_field = glm::vec3(0.f, -9.80665f, 0.f);
 
   struct
   {
-    int substep_per_frame = 10;
+    int substep_per_frame        = 10;
     float substep_simulation_fps = 250;
   } simulation_configuration;
 
@@ -59,7 +83,7 @@ public:
 
     void compute_inertia();
 
-    template<class MotionState>
+    template <class MotionState>
     void create_motion_state()
     {
       motion_state = std::make_unique<MotionState>(xform);
@@ -70,9 +94,9 @@ public:
 
     [[nodiscard]] transform get_world_transform() const;
 
-    std::unique_ptr<btCollisionShape> collision_shape{nullptr};
+    std::unique_ptr<btCollisionShape> collision_shape { nullptr };
     std::unique_ptr<btMotionState> motion_state { nullptr };
-    std::unique_ptr<btRigidBody> rigid_body{nullptr};
+    std::unique_ptr<btRigidBody> rigid_body { nullptr };
   };
 
   struct box_proxy : physics_proxy
@@ -87,14 +111,23 @@ public:
 
   void draw_phy_debug(const glm::mat4& view, const glm::mat4& projection, GLuint vao, shader_handle shader);
 
-private:
+  enum class shape { box, static_triangle_mesh, convex_hull };
 
-    std::unique_ptr<physics_proxy> fake_ground_plane;
-    std::unique_ptr<btCollisionConfiguration> collision_configuration;
-    std::unique_ptr<btCollisionDispatcher> collision_dispatcher;
-    std::unique_ptr<btBroadphaseInterface> overlapping_pair_cache;
-    std::unique_ptr<btSequentialImpulseConstraintSolver> solver; //TODO see the multithreaded bullet3 examples;
-    std::unique_ptr<btDynamicsWorld> dynamics_world;
+  physics_proxy create_proxy(shape s,
+                             const std::vector<float>& vertex_buffer,
+                             const std::vector<unsigned int>& index_buffer,
+                             size_t vertex_buffer_stride,
+                             float mass,
+                             glm::vec3 local_scale       = glm::vec3(1.f),
+                             btMotionState* motion_state = nullptr);
+
+  private:
+  std::unique_ptr<physics_proxy> fake_ground_plane;
+  std::unique_ptr<btCollisionConfiguration> collision_configuration;
+  std::unique_ptr<btCollisionDispatcher> collision_dispatcher;
+  std::unique_ptr<btBroadphaseInterface> overlapping_pair_cache;
+  std::unique_ptr<btSequentialImpulseConstraintSolver> solver; //TODO see the multithreaded bullet3 examples;
+  std::unique_ptr<btDynamicsWorld> dynamics_world;
 
   class debug_drawer : public btIDebugDraw
   {
@@ -104,20 +137,17 @@ private:
     };
     std::vector<world_line> to_draw;
     int debug_mode = DBG_DrawWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
-  public:
+
+public:
     void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
     void new_frame();
     void draw_debug_data(const glm::mat4& view, const glm::mat4& projection, GLuint vao, shader_handle shader_h);
-    void drawContactPoint(const btVector3& PointOnB,
-                          const btVector3& normalOnB,
-                          btScalar distance,
-                          int lifeTime,
-                          const btVector3& color) override;
+    void drawContactPoint(
+        const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override;
     void reportErrorWarning(const char* warningString) override;
     void draw3dText(const btVector3& location, const char* textString) override;
     void setDebugMode(int debugMode) override;
     int getDebugMode() const override;
   };
   debug_drawer simple_debug_drawer;
-
 };

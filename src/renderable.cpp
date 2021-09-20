@@ -167,6 +167,10 @@ renderable::renderable(shader_handle program,
                   normal_coord_offset,
                   tangent_coord_offset,
                   buffer_usage);
+
+    cached_vertex_buffer = new_vertex_buffer;
+    cached_index_buffer  = index_buffer;
+    cached_vertex_buffer_stride = new_vertex_buffer_stride;
   }
   else
   {
@@ -180,6 +184,10 @@ renderable::renderable(shader_handle program,
                   normal_coord_offset,
                   tangent_coord_offset,
                   buffer_usage);
+
+    cached_vertex_buffer = vertex_buffer;
+    cached_index_buffer  = index_buffer;
+    cached_vertex_buffer_stride = vertex_buffer_stride;
   }
 }
 
@@ -293,4 +301,11 @@ std::array<glm::vec3, 8> renderable::get_world_obb(const glm::mat4& world_transf
       obb.begin(), obb.end(), obb.begin(), [&](const glm::vec3& v) -> glm::vec3 { return world_transform * glm::vec4(v, 1.f); });
 
   return obb;
+}
+
+class node;
+physics_system::physics_proxy renderable::create_proxy(physics_system* system, float mass, glm::vec3 scale,
+    physics_system::shape shape, node* attachee)
+{
+  return system->create_proxy(shape, cached_vertex_buffer, cached_index_buffer, cached_vertex_buffer_stride, mass, scale, (attachee ? new bullet_utils::transform_sync(attachee) : nullptr));
 }

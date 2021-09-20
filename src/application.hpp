@@ -185,6 +185,8 @@ class application
 
   physics_system::box_proxy* test_box;
 
+  static application* instance;
+
   public:
   static scene* get_main_scene();
   void run();
@@ -192,4 +194,14 @@ class application
   application(int argc, char** argv, const std::string& application_name);
   static std::vector<std::string> resource_paks;
   static void set_clear_color(glm::vec4 color);
+
+  static application& get_singleton()
+  {
+    return *instance;
+  }
+
+  physics_system* get_physics_system()
+  {
+    return &physics;
+  }
 };

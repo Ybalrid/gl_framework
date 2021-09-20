@@ -2,9 +2,9 @@
 
 out vec4 color_output;
 
-uniform vec4 debug_color;
+in vec4 color;
 
 void main()
 {
-	color_output = debug_color;
+	color_output = color;
 }

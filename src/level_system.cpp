@@ -1,12 +1,15 @@
+#include <Windows.h>
 #include "level_system.hpp"
 #include "resource_system.hpp"
 #include "node.hpp"
 #include "scene.hpp"
 #include "script_system.hpp"
 
+#include "application.hpp"
+
 using namespace nlohmann;
 
-bool level_system::load_level(script_system& script_engine, gltf_loader & gltf, scene& s, const std::string& level_name) const
+bool level_system::load_level(script_system& script_engine, gltf_loader& gltf, scene& s, const std::string& level_name)
 {
   try
   {
@@ -27,6 +30,9 @@ bool level_system::load_level(script_system& script_engine, gltf_loader & gltf, 
         const auto orientation_it = level_asset.find("orientation");
         const auto scale_it       = level_asset.find("scale");
         const auto script_it      = level_asset.find("script");
+        const auto mass_it        = level_asset.find("mass");
+        const auto proxy_it       = level_asset.find("proxy");
+        const auto physics_it     = level_asset.find("enable_physics");
 
         if(asset_it == std::end(level_asset)) continue;
         has_at_least_one_asset = true; //Signal potential success in loading *something* :-)
@@ -73,9 +79,33 @@ bool level_system::load_level(script_system& script_engine, gltf_loader & gltf, 
 
         if(script_it != std::end(level_asset) && script_it->is_string())
         {
-          script_engine.attach_behavior_script(*script_it, level_asset_root);
+          if(!script_engine.attach_behavior_script(*script_it, level_asset_root))
+            std::cout << "failed to attach script " << *script_it << "\n";
         }
 
+        if(physics_it != std::end(level_asset) && physics_it->is_boolean())
+          if(*physics_it == true)
+          {
+            std::string proxy = "box";
+            float mass        = 0;
+
+            if(proxy_it != std::end(level_asset) && proxy_it->is_string()) { proxy = *proxy_it; }
+            if(mass_it != std::end(level_asset) && mass_it->is_number()) { mass = *mass_it; }
+
+            for(auto submesh : asset.get_submeshes())
+            {
+              auto& renderable = renderable_manager::get_from_handle(submesh);
+
+              proxies.emplace_back(renderable.create_proxy(application::get_singleton().get_physics_system(), mass, level_asset_root->local_xform.get_scale(), [proxy] {
+                if(proxy == "box") return physics_system::shape::box;
+                if(proxy == "convex_hull") return physics_system::shape::convex_hull;
+                if(proxy == "static_triangle_mesh") return physics_system::shape::static_triangle_mesh;
+              }(), level_asset_root));
+
+              proxies.back().xform = bullet_utils::convert(level_asset_root->local_xform);
+              application::get_singleton().get_physics_system()->add_to_world(proxies.back());
+            }
+          }
       }
       return has_at_least_one_asset;
     }

@@ -22,8 +22,9 @@ float shadow_map_near_plane           = .337;
 float shadow_map_far_plane            = 300;
 glm::vec3 sun_direction_unormalized { -0.25f, -1.f, -0.10f };
 GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
-GLuint line_drawer_vbo, line_drawer_ebo, line_drawer_vao;
+GLuint line_drawer_vbo, line_drawer_vao;
 shader_handle color_debug_shader = shader_program_manager::invalid_shader;
+shader_handle vertex_debug_shader = shader_program_manager::invalid_shader;
 
 //The statics
 std::vector<std::string> application::resource_paks;
@@ -775,7 +776,7 @@ void application::render_frame()
 
   if(debug_draw_physics)
     physics.draw_phy_debug(
-        main_camera->get_view_matrix(), main_camera->get_projection_matrix(), line_drawer_vao, color_debug_shader);
+        main_camera->get_view_matrix(), main_camera->get_projection_matrix(), line_drawer_vao, vertex_debug_shader);
 
   //swap buffers
   window.gl_swap();
@@ -948,8 +949,6 @@ void application::setup_scene()
   else
     std::cout << "Something failed!";
 
-  //auto plane0 = s.scene_root->push_child(create_node("plane0"));
-  //plane0->assign(scene_object(textured_plane));
 
   glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 
@@ -1000,16 +999,16 @@ void application::setup_scene()
   }
 
   //Create a scene node attached to the root (so local xform == world xform)
-  physics_test = s.scene_root->push_child(create_node("physics_test_node"));
-  physics_test->local_xform.set_position(glm::vec3(0, 2, 0));
+  //physics_test = s.scene_root->push_child(create_node("physics_test_node"));
+  //physics_test->local_xform.set_position(glm::vec3(0, 2, 0));
 
-  //Load the 3D model of that fish from the Krhonos repo
-  const auto physics_test_geometry = gltf.load_mesh("/gltf/BarramundiFish.glb");
-  physics_test->assign(scene_object(physics_test_geometry));
+  ////Load the 3D model of that fish from the Krhonos repo
+  //const auto physics_test_geometry = gltf.load_mesh("/gltf/BarramundiFish.glb");
+  //physics_test->assign(scene_object(physics_test_geometry));
 
-  //This 20cm box body will represent the fish
-  test_box = new physics_system::box_proxy(physics_test->local_xform.get_position(), glm::vec3(0.1f), 1);
-  physics.add_to_world(*test_box);
+  ////This 20cm box body will represent the fish
+  //test_box = new physics_system::box_proxy(physics_test->local_xform.get_position(), glm::vec3(0.1f), 1);
+  //physics.add_to_world(*test_box);
 }
 
 void application::run_physics()
@@ -1017,7 +1016,7 @@ void application::run_physics()
   physics.step_simulation(last_frame_delta_sec);
 
   //Move the damn fish's node by hand so we can see that gravity works
-  physics_test->local_xform = test_box->get_world_transform();
+  //physics_test->local_xform = test_box->get_world_transform();
 }
 
 void application::set_clear_color(glm::vec4 color)
@@ -1087,8 +1086,13 @@ void application::splash_frame(const char* image_path)
   }
 }
 
+application* application::instance = nullptr;
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
+
+  if(instance != nullptr) throw std::runtime_error("Only one application can exist");
+  instance = this;
+
   //Bind the debug utilities
   inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
   inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
@@ -1212,23 +1216,32 @@ application::application(int argc, char** argv, const std::string& application_n
     glBindVertexArray(0);
 
     glGenBuffers(1, &line_drawer_vbo);
-    glGenBuffers(1, &line_drawer_ebo);
     glGenVertexArrays(1, &line_drawer_vao);
     glBindVertexArray(line_drawer_vao);
     glBindBuffer(GL_ARRAY_BUFFER, line_drawer_vbo);
     float empty_line[2 * 3] {0};
     glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(float), empty_line, GL_STREAM_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
-    const unsigned short int single_line[] { 0, 1 };
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, line_drawer_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(single_line), single_line, GL_STATIC_DRAW);
-    glBindVertexArray(0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)( 3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
   }
   catch(const std::exception& e)
   {
     sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "Could not initialize the debug shader", e.what());
     color_debug_shader = shader_program_manager::invalid_shader;
+  }
+
+  try
+  {
+    vertex_debug_shader = shader_program_manager::create_shader("/shaders/debug_vertex_color.vert.glsl", "/shaders/debug_vertex_color.frag.glsl");
+
+  }
+  catch(const std::exception& e)
+  {
+    sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "Could not initialize the debug shader", e.what());
+    vertex_debug_shader = shader_program_manager::invalid_shader;
+
   }
 
   glEnable(GL_DEPTH_TEST);
