@@ -568,7 +568,7 @@ void application::render_shadowmap()
 
 void application::render_draw_list(camera* render_camera)
 {
-  const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list");
+  const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list()");
   (void)opengl_debug_tag;
   for(auto [node, handle] : draw_list)
   {
@@ -627,7 +627,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
           if(debug_draw_bbox)
           {
             auto scene_obj                   = static_cast<scene_object>(node_attached_object);
-            const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+            const auto opengl_debug_tag_obbs = opengl_debug_group("debug obb pass");
             (void)opengl_debug_tag_obbs;
 
             GLint bind_back;
@@ -672,7 +672,8 @@ void application::render_skybox(camera* skybox_camera) {
 
 void application::render_frame()
 {
-//  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
+  opengl_debug_group group("application::render_frame()");
+      //  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
 
 
   //When using VR, the VR system is the master of the framerate!
@@ -693,7 +694,7 @@ void application::render_frame()
   if(vr)
   {
     {
-      opengl_debug_group group("VR rendering");
+      opengl_debug_group group("vr pass");
       //We invert the culling position if the vr system returns true to must_vflip.
       //This is because this system will do a vertical flip in the projection matrix.
       if(vr->must_vflip()) glFrontFace(GL_CCW);
@@ -724,6 +725,7 @@ void application::render_frame()
 #ifdef _WIN32 //LIV.app only exist on Windows
     if(mr_activated)
     {
+      opengl_debug_group group("mr pass");
       //In case we haven't initialized Mixed Reality : This poke the SharedTextureProtocol to know if LIV is capturing
       if(!vr->is_mr_active()) vr->try_start_mr();
 

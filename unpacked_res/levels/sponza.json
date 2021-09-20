@@ -1,7 +1,9 @@
 [
 	{
 		"asset" : "/gltf/Sponza/Sponza.gltf",
-		"scale" : [0.03125, 0.03125, 0.03125]
+		"scale" : [0.03125, 0.03125, 0.03125],
+		"proxy" : "static_triangle_mesh",
+		"enable_physics": true
 	},
 	{
 		"asset" : "/gltf/Corset.glb",

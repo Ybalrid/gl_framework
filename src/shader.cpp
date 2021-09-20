@@ -5,11 +5,14 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "opengl_debug_group.hpp"
+
 float shader::gamma              = 2.2f;
 GLuint shader::last_used_program = 0;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
 {
+  opengl_debug_group group("shader::shader()");
   std::cout << "Loading shader from " << vertex_shader_virtual_path << ", " << fragment_shader_virtual_path << '\n';
 
   //Load source files as C strings

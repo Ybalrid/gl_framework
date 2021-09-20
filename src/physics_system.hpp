@@ -60,12 +60,13 @@ class physics_system
 {
 
   public:
+  bool draw_debug_wireframe                                                 = false;
   static constexpr glm::vec3 earth_average_gravitational_acceleration_field = glm::vec3(0.f, -9.80665f, 0.f);
 
   struct
   {
-    int substep_per_frame        = 10;
-    float substep_simulation_fps = 250;
+    int substep_per_frame        = 4;
+    float substep_simulation_fps = 60;
   } simulation_configuration;
 
   physics_system();
@@ -133,12 +134,17 @@ class physics_system
   {
     struct world_line
     {
-      glm::vec3 from, to, color;
+      glm::vec3 from;
+      glm::vec4 from_color;
+      glm::vec3 to;
+      glm::vec4 to_color;
+
     };
     std::vector<world_line> to_draw;
-    int debug_mode = DBG_DrawWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
+    int debug_mode =  DBG_FastWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
 
 public:
+    debug_drawer();
     void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
     void new_frame();
     void draw_debug_data(const glm::mat4& view, const glm::mat4& projection, GLuint vao, shader_handle shader_h);

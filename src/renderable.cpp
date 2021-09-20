@@ -3,6 +3,7 @@
 
 GLint renderable::last_bound_vao = 0;
 
+//TODO this smells... it should be a move, not a copy...?
 void renderable::steal_guts(renderable& other)
 {
   shader_program   = other.shader_program;
@@ -21,6 +22,9 @@ void renderable::steal_guts(renderable& other)
   normal           = other.normal;
   mat              = other.mat;
   bounds           = other.bounds;
+  cached_index_buffer = other.cached_index_buffer;
+  cached_vertex_buffer = other.cached_vertex_buffer;
+  cached_vertex_buffer_stride = other.cached_vertex_buffer_stride;
 
   other.VAO = other.VBO = other.EBO = 0;
 }
@@ -74,6 +78,11 @@ void renderable::upload_to_gpu(const std::vector<float>& vertex_buffer,
                                size_t tangent_coord_offset,
                                GLenum buffer_usage)
 {
+  cached_index_buffer = index_buffer;
+  cached_vertex_buffer = vertex_buffer;
+  cached_vertex_buffer_stride = vertex_buffer_stride;
+
+  opengl_debug_group group("renderable::upload_to_gpu()");
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
   glGenVertexArrays(1, &VAO);
@@ -168,9 +177,6 @@ renderable::renderable(shader_handle program,
                   tangent_coord_offset,
                   buffer_usage);
 
-    cached_vertex_buffer = new_vertex_buffer;
-    cached_index_buffer  = index_buffer;
-    cached_vertex_buffer_stride = new_vertex_buffer_stride;
   }
   else
   {
@@ -185,9 +191,6 @@ renderable::renderable(shader_handle program,
                   tangent_coord_offset,
                   buffer_usage);
 
-    cached_vertex_buffer = vertex_buffer;
-    cached_index_buffer  = index_buffer;
-    cached_vertex_buffer_stride = vertex_buffer_stride;
   }
 }
 
@@ -220,6 +223,7 @@ renderable& renderable::operator=(renderable&& other) noexcept
 
 void renderable::draw() const
 {
+  opengl_debug_group group("renderable::draw()");
   //We need to have a shader and a texture!
   assert(shader_program != shader_program_manager::invalid_shader);
 
