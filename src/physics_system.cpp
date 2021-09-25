@@ -138,7 +138,6 @@ physics_system::physics_proxy physics_system::create_proxy(shape s,
       //TODO compute bounding box, and create a box shape
       break;
     case shape::static_triangle_mesh: {
-      const auto triangle_count = index_buffer.size() / 3;
       auto triangle_mesh        = new btTriangleIndexVertexArray();
 
       btIndexedMesh indexed_mesh;
