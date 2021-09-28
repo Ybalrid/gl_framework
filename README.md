@@ -135,6 +135,7 @@ how it is used as part of this project:
  - ChaiScript : BSD 3-Clause
  - ImGui : MIT
  - ImGuizmo : MIT
+ - Bullet Physics : zlib
 
 You can use these packages in a closed source application with the following consideration:
 The **MIT**, **zlib**, **BSD** (3-clause), **FIPL** (and Happy Bunny) permit you to staically 
