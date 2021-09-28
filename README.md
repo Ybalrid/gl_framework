@@ -51,14 +51,14 @@ an easy distribution-version agnostic way of distributing applications using it.
  - [x] OpenVR
  - [x] OpenXR
  - [x] Oculus VR
- - [ ] Proper level/environement loader/unloader system
- - [ ] Script attachement system to "objects" in scene
- - [ ] Physics
+ - [x] Proper level/environement loader/unloader system
+ - [x] Script attachement system to "objects" in scene
+ - [x] Physics
  - [ ] Separate simulation and rendering threads
 
  The 3D renderer is still "too basic" and needs to be improved:
  - [ ] PBR
- - [ ] Shadow map
+ - [x] Shadow map (only for one directional map so far)
  - [ ] Defered rendering setup (g-buffers, multiple passes)
 
 ## Features
