@@ -7,6 +7,8 @@
 #include <imgui.h>
 #include <xrew.h>
 
+#include "opengl_debug_group.hpp"
+
 PFN_xrDebugUtilsMessengerCallbackEXT debug_messenger_callback = [](XrDebugUtilsMessageSeverityFlagsEXT,
                                                           XrDebugUtilsMessageTypeFlagsEXT,
                                                           const XrDebugUtilsMessengerCallbackDataEXT* data,
@@ -101,15 +103,26 @@ bool vr_system_openxr::initialize(sdl::Window& window)
     std::cout << "\t- " << extension_properties.extensionName << "\n";
 
 #ifdef _DEBUG
-    if(0 == strcmp(extension_properties.extensionName, XR_EXT_DEBUG_UTILS_EXTENSION_NAME)) has_debug_utils_ext = true;
+    if(0 == strcmp(extension_properties.extensionName, XR_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+      enabled_extension_names.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+      has_debug_utils_ext = true;
+    }
 #endif
+
+    //for(const char* optional_extension : optional_extensions) //TODO create a system to store the state of optional extensions activation
+    {
+      const char* optional_extension = XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME;
+      if(0 == strcmp(optional_extension, extension_properties.extensionName))
+      {
+        enabled_extension_names.push_back(optional_extension);
+        has_composition_layer_depth = true;
+      }
+    }
   }
 
   //Last extension in the list will be the Graphics API to use: OpenGL
-  enabled_extension_properties_names.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
-#ifdef _DEBUG
-  if(has_debug_utils_ext) enabled_extension_properties_names.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
+  enabled_extension_names.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
 
   //Create OpenXR instance
   const char engine_name[] = "The //TODO engine";
@@ -119,9 +132,8 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   strcpy(instance_create_info.applicationInfo.applicationName, GAME_NAME);
   instance_create_info.enabledApiLayerCount  = static_cast<uint32_t>(enabled_api_layers.size());
   instance_create_info.enabledApiLayerNames  = enabled_api_layers.data();
-  instance_create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_properties_names.size());
-  instance_create_info.enabledExtensionNames = enabled_extension_properties_names.data();
-
+  instance_create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_names.size());
+  instance_create_info.enabledExtensionNames = enabled_extension_names.data();
 
   if(XR_FAILED(xrCreateInstance(&instance_create_info, &instance)))
   {
@@ -137,7 +149,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
      */
 
     std::cerr << "attempt DirectX interop fallback...\n";
-    enabled_extension_properties_names.back() = "XR_KHR_D3D11_enable"; //We change the name of the last extension and we try again
+    enabled_extension_names.back() = XR_KHR_D3D11_ENABLE_EXTENSION_NAME; //We change the name of the last extension and we try again
 
     //This will both, create a DirectX 11 device, device_contex and swapchain (owned by a dummy, hidden Window) *and* will check for the necessary WGL extensions
     dx11_interop = gl_dx11_interop::get();
@@ -367,6 +379,32 @@ bool vr_system_openxr::initialize(sdl::Window& window)
   std::vector<int64_t> formats(format_count, 0);
   xrEnumerateSwapchainFormats(session, format_count, &format_count, formats.data());
 
+  //print some selected format suports
+  for(const auto format : formats)
+  {
+    switch(format)
+    {
+#define print_swapchain_format_supported(name)                                                                                   \
+  case name: std::cout << "Supports " #name " swapchain format\n"; break
+      print_swapchain_format_supported(GL_RGBA8);
+      print_swapchain_format_supported(GL_SRGB8);
+      print_swapchain_format_supported(GL_SRGB8_ALPHA8);
+      print_swapchain_format_supported(GL_SRGB_ALPHA);
+      print_swapchain_format_supported(GL_COMPRESSED_SRGB);
+      print_swapchain_format_supported(GL_COMPRESSED_SRGB_ALPHA);
+      print_swapchain_format_supported(GL_RGBA16);
+      print_swapchain_format_supported(GL_RGBA16F);
+      print_swapchain_format_supported(GL_RGB16F);
+      print_swapchain_format_supported(GL_RGBA32F);
+      print_swapchain_format_supported(GL_RGB32F);
+      print_swapchain_format_supported(GL_DEPTH_COMPONENT16);
+      print_swapchain_format_supported(GL_DEPTH_COMPONENT24);
+      print_swapchain_format_supported(GL_DEPTH_COMPONENT32);
+      default: break;
+#undef print_swapchain_format_supported
+    }
+  }
+
   //TODO switch between GL and D3D11
   //This is the format we want...
 #ifdef _WIN32
@@ -429,8 +467,33 @@ bool vr_system_openxr::initialize(sdl::Window& window)
 
     xrCreateSwapchain(session, &swapchain_create_info, &swapchain[i]);
 
+
+    if(has_composition_layer_depth
+       && std::find(std::begin(formats), std::end(formats), GL_DEPTH_COMPONENT24) != std::end(formats))
+    {
+      swapchain_create_info.usageFlags |= XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      swapchain_create_info.format = GL_DEPTH_COMPONENT24;
+      if(XR_SUCCEEDED(xrCreateSwapchain(session, &swapchain_create_info, &swapchainDepth[i])))
+      {
+        std::cout << "Created depth buffer swapchain for eye " << i << "\n";
+
+        uint32_t swapchain_depth_image_count = 0;
+        xrEnumerateSwapchainImages(swapchainDepth[i], swapchain_depth_image_count, &swapchain_depth_image_count, nullptr);
+        swapchain_images_opengl_depth[i].resize(swapchain_depth_image_count, {XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR});
+        if(XR_SUCCEEDED(xrEnumerateSwapchainImages(
+               swapchainDepth[i],
+               swapchain_depth_image_count,
+               &swapchain_depth_image_count,
+               reinterpret_cast<XrSwapchainImageBaseHeader*>(swapchain_images_opengl_depth[i].data()))))
+        {
+          can_submit_detph_buffers = true;
+        }
+      }
+    }
+
     uint32_t swapchain_image_count = 0;
     std::vector<XrSwapchainImageOpenGLKHR> swapchain_image_opengl_khr(8, { XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR });
+
 
 #ifdef _WIN32
     XrSwapchainImageD3D11KHR swapchain_image_d3d11_khr[8] {};
@@ -668,61 +731,119 @@ void vr_system_openxr::update_tracking()
 
 void vr_system_openxr::submit_frame_to_vr_system()
 {
+  opengl_debug_group stack_frame("vr_system_openxr::submit_frame_to_vr_system()");
+  XrSwapchainImageReleaseInfo swapchain_image_release_info { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
   XrResult status;
+
+  uint32_t depth_indexes[2]{-1,-1};
 
   //We have two swapchain to use:
   for(size_t i = 0; i < 2; i++)
   {
     uint32_t swapchain_index = -1;
-    XrSwapchainImageAcquireInfo swapchain_image_acquire_info { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+    uint32_t swapchain_depth_index = -1;
 
-    status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &swapchain_index);
-    if(status != XR_SUCCESS) { }
-
-    XrSwapchainImageWaitInfo swapchain_image_wait_info { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
-    swapchain_image_wait_info.timeout = 1000;
-
-    status = xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
-    if(status != XR_SUCCESS) { }
-
-    XrCompositionLayerProjectionView layer { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
-    layer.pose                      = views[i].pose;
-    layer.fov                       = views[i].fov;
-    layer.subImage.swapchain        = swapchain[i];
-    layer.subImage.imageRect.offset = { 0, 0 };
-    layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
-
-    //When this function has been called, the rendering of the frame to be pushed already occured,
-    //we just need to copy the data in them.
-#ifdef _WIN32
-    if(!fallback_to_dx)
     {
+      std::string group_name = "color_pass eye "+ std::to_string(i);
+      opengl_debug_group stack_frame(group_name.c_str());
+
+      XrSwapchainImageAcquireInfo swapchain_image_acquire_info { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+
+      status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &swapchain_index);
+      if(status != XR_SUCCESS) { }
+
+      XrSwapchainImageWaitInfo swapchain_image_wait_info { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
+      swapchain_image_wait_info.timeout = 1000;
+
+      status = xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
+      if(status != XR_SUCCESS) { }
+
+      XrCompositionLayerProjectionView layer { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
+      layer.pose                      = views[i].pose;
+      layer.fov                       = views[i].fov;
+      layer.subImage.swapchain        = swapchain[i];
+      layer.subImage.imageRect.offset = { 0, 0 };
+      layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
+
+      //When this function has been called, the rendering of the frame to be pushed already occured,
+      //we just need to copy the data in them.
+#ifdef _WIN32
+      if(!fallback_to_dx)
+      {
 #endif
-      // clang-format off
+        // clang-format off
       glCopyImageSubData(eye_render_texture[i],
                          GL_TEXTURE_2D, 0,0,0,0,
                          swapchain_images_opengl[i][swapchain_index].image,
                          GL_TEXTURE_2D, 0,0,0,0,
                          eye_render_target_sizes[i].x,
                          eye_render_target_sizes[i].y, 1);
-      // clang-format on
+        // clang-format on
 
 #ifdef _WIN32
-    }
-    else
-    {
-      dx11_interop->copy(eye_render_texture[i], swapchain_images_d3d11[i][swapchain_index].texture, eye_render_target_sizes[i]);
-    }
+      }
+      else
+      {
+        dx11_interop->copy(eye_render_texture[i], swapchain_images_d3d11[i][swapchain_index].texture, eye_render_target_sizes[i]);
+      }
 #endif
 
-    projection_layer_views[i] = layer;
+      projection_layer_views[i] = layer;
 
-    XrSwapchainImageReleaseInfo swapchain_image_release_info { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
 
-    status = xrReleaseSwapchainImage(swapchain[i], &swapchain_image_release_info);
+      status = xrReleaseSwapchainImage(swapchain[i], &swapchain_image_release_info);
+    }
+    if(can_submit_detph_buffers)
+    {
+      std::string group_name = "depth_pass eye "+ std::to_string(i);
+      opengl_debug_group stack_frame(group_name.c_str());
+      XrSwapchainImageAcquireInfo swapchain_image_acquire_info { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+      xrAcquireSwapchainImage(swapchainDepth[i], &swapchain_image_acquire_info, &swapchain_depth_index);
+      XrSwapchainImageWaitInfo swapchain_image_wait_info { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
+      swapchain_image_wait_info.timeout = 1000;
+      if(XR_SUCCEEDED(xrWaitSwapchainImage(swapchainDepth[i], &swapchain_image_wait_info)))
+      {
+        //TODO check if this is correct, as this is copying a depth buffer.
+        // clang-format off
+        glCopyImageSubData(eye_render_depth[i],
+                           GL_TEXTURE_2D,0,0,0,0,
+                           swapchain_images_opengl_depth[i][swapchain_depth_index].image,
+                           GL_TEXTURE_2D,0,0,0,0,
+                           eye_render_target_sizes[i].x,
+                           eye_render_target_sizes[i].y,1);
+        // clang-format on
+
+#ifdef _DEBUG
+        const auto error_state = glGetError();
+#endif
+        xrReleaseSwapchainImage(swapchainDepth[i], &swapchain_image_release_info);
+        depth_indexes[i] = swapchain_depth_index;
+      }
+    }
+
     if(status != XR_SUCCESS) { }
   }
   glFlush();
+
+  std::vector<XrCompositionLayerDepthInfoKHR> depth_layer(2, { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR });
+
+  if(can_submit_detph_buffers)
+  {
+    for(int i = 0; i < 2; ++i)
+    {
+      depth_layer[i].nearZ                            = eye_camera[i]->get_near_clip();
+      depth_layer[i].farZ                             = eye_camera[i]->get_far_clip();
+      depth_layer[i].subImage.imageArrayIndex         = depth_indexes[i];
+      depth_layer[i].subImage.swapchain               = swapchainDepth[i];
+      depth_layer[i].subImage.imageRect.extent.width  = eye_render_target_sizes[i].x;
+      depth_layer[i].subImage.imageRect.extent.height = eye_render_target_sizes[i].y;
+      //OpenGL depth
+      depth_layer[i].minDepth = -1;
+      depth_layer[i].maxDepth = 1;
+
+      projection_layer_views[i].next = &depth_layer[i];
+    }
+  }
 
   XrCompositionLayerProjection layer_projection { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
   layer_projection.space     = application_space;

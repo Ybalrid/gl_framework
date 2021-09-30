@@ -48,6 +48,12 @@ void camera::update_projection(int viewport_w, int viewport_h, int viewport_x, i
   }
 }
 
+float camera::get_near_clip() const
+{ return near_clip; }
+
+float camera::get_far_clip() const
+{ return far_clip; }
+
 //Save the "global" state of the last time we ran `set_gl_viewport`
 int camera::last_w = -1;
 int camera::last_h = -1;

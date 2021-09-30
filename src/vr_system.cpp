@@ -28,8 +28,9 @@ vr_system::~vr_system()
   if(initialized_opengl_resources)
   {
     glDeleteFramebuffers(2, eye_fbo);
-    glDeleteRenderbuffers(2, eye_render_depth);
+    //glDeleteRenderbuffers(2, eye_render_depth);
     glDeleteTextures(2, eye_render_texture);
+    glDeleteTextures(2, eye_render_depth);
   }
 #ifdef WIN32
   if(LIV_Texture)
@@ -61,7 +62,7 @@ void vr_system::initialize_opengl_resources()
   //The rest of the engine don't care bout our "VR" hardware.
   //It just want to bind and render to a pair of FBOs, one for left eye, one for right
   glGenTextures(2, eye_render_texture);
-  glGenRenderbuffers(2, eye_render_depth);
+  glGenTextures(2, eye_render_depth);
   glGenFramebuffers(2, eye_fbo);
 
   for(size_t i = 0; i < 2; ++i)
@@ -78,9 +79,13 @@ void vr_system::initialize_opengl_resources()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, eye_render_texture[i], 0);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, eye_render_depth[i]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, eye_render_depth[i]);
+    glBindTexture(GL_TEXTURE_2D, eye_render_depth[i]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, eye_render_depth[i], 0);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     { std::cerr << "eye fbo " << i << " is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << "\n"; }

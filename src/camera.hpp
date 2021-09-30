@@ -35,6 +35,9 @@ class camera
   ///Call this with the viewport geometry
   void update_projection(int viewport_w, int viewport_h, int viewport_x = 0, int viewport_y = 0);
 
+  [[nodiscard]] float get_near_clip() const;
+  [[nodiscard]] float get_far_clip() const;
+
   private:
   //enclosed projection matrix
   glm::mat4 projection { 1.f };
