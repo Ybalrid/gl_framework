@@ -457,6 +457,8 @@ void application::create_opengl_context()
   const auto bit_depth = sdl::Window::gl_get_attribute(SDL_GL_DEPTH_SIZE);
   std::cout << "Depth buffer is " << bit_depth << " bits wide\n";
 
+  sdl::Window::gl_set_swap_interval(sdl::Window::gl_swap_interval::immediate);
+
   glEnable(GL_MULTISAMPLE);
 }
 

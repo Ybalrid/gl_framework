@@ -37,7 +37,7 @@ class vr_system_openxr : public vr_system
 
   XrFrameState current_frame_state {};
   XrCompositionLayerBaseHeader* layers[1];
-  XrCompositionLayerProjectionView projection_layer_views[2];
+  XrCompositionLayerProjectionView layer_projection_views[2];
   XrSpace application_space = XR_NULL_HANDLE;
 
   node* eye_camera_node[2] = { nullptr, nullptr };

@@ -9,6 +9,11 @@
 
 #include "opengl_debug_group.hpp"
 
+#ifdef _DEBUG
+//#define trace(message) std::cout << "[trace] " << (message) << "\n"
+//#else
+#define trace(message) ((void)(message))
+#endif
 PFN_xrDebugUtilsMessengerCallbackEXT debug_messenger_callback = [](XrDebugUtilsMessageSeverityFlagsEXT,
                                                           XrDebugUtilsMessageTypeFlagsEXT,
                                                           const XrDebugUtilsMessengerCallbackDataEXT* data,
@@ -400,6 +405,7 @@ bool vr_system_openxr::initialize(sdl::Window& window)
       print_swapchain_format_supported(GL_DEPTH_COMPONENT16);
       print_swapchain_format_supported(GL_DEPTH_COMPONENT24);
       print_swapchain_format_supported(GL_DEPTH_COMPONENT32);
+      print_swapchain_format_supported(GL_DEPTH24_STENCIL8); //No thanks to Oculus
       default: break;
 #undef print_swapchain_format_supported
     }
@@ -468,18 +474,31 @@ bool vr_system_openxr::initialize(sdl::Window& window)
     xrCreateSwapchain(session, &swapchain_create_info, &swapchain[i]);
 
 
-    if(has_composition_layer_depth
-       && std::find(std::begin(formats), std::end(formats), GL_DEPTH_COMPONENT24) != std::end(formats))
+    int64_t depth_format = 0;
+    if(has_composition_layer_depth)
+    {
+      if(std::find(std::begin(formats), std::end(formats), GL_DEPTH_COMPONENT24) != std::end(formats))
+      {
+        depth_format = GL_DEPTH_COMPONENT24;
+      }
+      else if(std::find(std::begin(formats), std::end(formats), GL_DEPTH24_STENCIL8) != std::end(formats))
+      {
+        depth_format = GL_DEPTH24_STENCIL8;
+      }
+    }
+
+
+    if(depth_format)
     {
       swapchain_create_info.usageFlags |= XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-      swapchain_create_info.format = GL_DEPTH_COMPONENT24;
+      swapchain_create_info.format = depth_format;
       if(XR_SUCCEEDED(xrCreateSwapchain(session, &swapchain_create_info, &swapchainDepth[i])))
       {
         std::cout << "Created depth buffer swapchain for eye " << i << "\n";
 
         uint32_t swapchain_depth_image_count = 0;
         xrEnumerateSwapchainImages(swapchainDepth[i], swapchain_depth_image_count, &swapchain_depth_image_count, nullptr);
-        swapchain_images_opengl_depth[i].resize(swapchain_depth_image_count, {XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR});
+        swapchain_images_opengl_depth[i].resize(swapchain_depth_image_count, { XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR });
         if(XR_SUCCEEDED(xrEnumerateSwapchainImages(
                swapchainDepth[i],
                swapchain_depth_image_count,
@@ -655,14 +674,13 @@ void vr_system_openxr::wait_until_next_frame()
   const XrFrameWaitInfo frame_wait_info { XR_TYPE_FRAME_WAIT_INFO };
   current_frame_state.type = XR_TYPE_FRAME_STATE;
 
-  if(auto status = xrWaitFrame(session, &frame_wait_info, &current_frame_state); status != XR_SUCCESS)
-  {
-    std::cerr << "Error while waiting for new frame " << NAMEOF_ENUM(status) << "\n";
-  }
+  xrWaitFrame(session, &frame_wait_info, &current_frame_state);
+  trace("xrWaitFrame");
 
   //Now the framestate contains the timing information for getting the view location, we can begin a new frame
   const XrFrameBeginInfo frame_begin_info { XR_TYPE_FRAME_BEGIN_INFO };
   xrBeginFrame(session, &frame_begin_info);
+  trace("xrBeginFrame");
 }
 
 void vr_system_openxr::update_tracking()
@@ -733,9 +751,6 @@ void vr_system_openxr::submit_frame_to_vr_system()
 {
   opengl_debug_group stack_frame("vr_system_openxr::submit_frame_to_vr_system()");
   XrSwapchainImageReleaseInfo swapchain_image_release_info { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-  XrResult status;
-
-  uint32_t depth_indexes[2]{-1,-1};
 
   //We have two swapchain to use:
   for(size_t i = 0; i < 2; i++)
@@ -748,22 +763,19 @@ void vr_system_openxr::submit_frame_to_vr_system()
       opengl_debug_group stack_frame(group_name.c_str());
 
       XrSwapchainImageAcquireInfo swapchain_image_acquire_info { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-
-      status = xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &swapchain_index);
-      if(status != XR_SUCCESS) { }
-
+      xrAcquireSwapchainImage(swapchain[i], &swapchain_image_acquire_info, &swapchain_index);
+      trace("xrAcquireSwapchainImage");
       XrSwapchainImageWaitInfo swapchain_image_wait_info { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
       swapchain_image_wait_info.timeout = 1000;
+      xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
+      trace("xrWaitSwapchainImage");
 
-      status = xrWaitSwapchainImage(swapchain[i], &swapchain_image_wait_info);
-      if(status != XR_SUCCESS) { }
-
-      XrCompositionLayerProjectionView layer { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
-      layer.pose                      = views[i].pose;
-      layer.fov                       = views[i].fov;
-      layer.subImage.swapchain        = swapchain[i];
-      layer.subImage.imageRect.offset = { 0, 0 };
-      layer.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
+      XrCompositionLayerProjectionView layer_projection_view { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
+      layer_projection_view.pose                      = views[i].pose;
+      layer_projection_view.fov                       = views[i].fov;
+      layer_projection_view.subImage.swapchain        = swapchain[i];
+      layer_projection_view.subImage.imageRect.offset = { 0, 0 };
+      layer_projection_view.subImage.imageRect.extent = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
 
       //When this function has been called, the rendering of the frame to be pushed already occured,
       //we just need to copy the data in them.
@@ -788,20 +800,24 @@ void vr_system_openxr::submit_frame_to_vr_system()
       }
 #endif
 
-      projection_layer_views[i] = layer;
+      layer_projection_views[i] = layer_projection_view;
 
 
-      status = xrReleaseSwapchainImage(swapchain[i], &swapchain_image_release_info);
+      xrReleaseSwapchainImage(swapchain[i], &swapchain_image_release_info);
+      trace("xrReleaseSwapchainImage");
     }
     if(can_submit_detph_buffers)
     {
       std::string group_name = "depth_pass eye "+ std::to_string(i);
       opengl_debug_group stack_frame(group_name.c_str());
+
       XrSwapchainImageAcquireInfo swapchain_image_acquire_info { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
       xrAcquireSwapchainImage(swapchainDepth[i], &swapchain_image_acquire_info, &swapchain_depth_index);
+      trace("xrAcquireSwapchainImage");
       XrSwapchainImageWaitInfo swapchain_image_wait_info { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
       swapchain_image_wait_info.timeout = 1000;
-      if(XR_SUCCEEDED(xrWaitSwapchainImage(swapchainDepth[i], &swapchain_image_wait_info)))
+      xrWaitSwapchainImage(swapchainDepth[i], &swapchain_image_wait_info);
+      trace("xrWaitSwapchainImage");
       {
         //TODO check if this is correct, as this is copying a depth buffer.
         // clang-format off
@@ -817,11 +833,10 @@ void vr_system_openxr::submit_frame_to_vr_system()
         const auto error_state = glGetError();
 #endif
         xrReleaseSwapchainImage(swapchainDepth[i], &swapchain_image_release_info);
-        depth_indexes[i] = swapchain_depth_index;
+        trace("xrReleaseSwapchainImage");
       }
     }
 
-    if(status != XR_SUCCESS) { }
   }
   glFlush();
 
@@ -831,24 +846,23 @@ void vr_system_openxr::submit_frame_to_vr_system()
   {
     for(int i = 0; i < 2; ++i)
     {
-      depth_layer[i].nearZ                            = eye_camera[i]->get_near_clip();
-      depth_layer[i].farZ                             = eye_camera[i]->get_far_clip();
-      depth_layer[i].subImage.imageArrayIndex         = depth_indexes[i];
       depth_layer[i].subImage.swapchain               = swapchainDepth[i];
-      depth_layer[i].subImage.imageRect.extent.width  = eye_render_target_sizes[i].x;
-      depth_layer[i].subImage.imageRect.extent.height = eye_render_target_sizes[i].y;
+      depth_layer[i].subImage.imageRect.offset        = { 0, 0 };
+      depth_layer[i].subImage.imageRect.extent        = { eye_render_target_sizes[i].x, eye_render_target_sizes[i].y };
       //OpenGL depth
       depth_layer[i].minDepth = -1;
       depth_layer[i].maxDepth = 1;
+      depth_layer[i].nearZ    = eye_camera[i]->get_near_clip();
+      depth_layer[i].farZ     = eye_camera[i]->get_far_clip();
 
-      projection_layer_views[i].next = &depth_layer[i];
+      layer_projection_views[i].next = &depth_layer[i];
     }
   }
 
   XrCompositionLayerProjection layer_projection { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
   layer_projection.space     = application_space;
-  layer_projection.viewCount = 2;
-  layer_projection.views     = projection_layer_views;
+  layer_projection.viewCount = static_array_size(layer_projection_views);
+  layer_projection.views     = layer_projection_views;
   layers[0]                  = reinterpret_cast<XrCompositionLayerBaseHeader*>(&layer_projection);
 
   XrFrameEndInfo frame_end_info { XR_TYPE_FRAME_END_INFO };
@@ -857,6 +871,7 @@ void vr_system_openxr::submit_frame_to_vr_system()
   frame_end_info.layers               = layers;
   frame_end_info.displayTime          = current_frame_state.predictedDisplayTime;
 
-  status = xrEndFrame(session, &frame_end_info);
+  xrEndFrame(session, &frame_end_info);
+  trace("xrEndFrame");
 }
 #endif

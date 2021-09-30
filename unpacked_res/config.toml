@@ -1,10 +1,10 @@
 [configuration]
-multisampling = true
-samples = 4
+multisampling = false
+samples = 1
 resolution = [1024, 768]
 fullscreen = false
 is_vr = true
 vr_system = "openxr"
-use_LIV = true
+use_LIV = false
 hidpi = false
 levels = ["sponza"]
