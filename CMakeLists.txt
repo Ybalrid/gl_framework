@@ -132,6 +132,8 @@ ADD_EXECUTABLE (${GAME_NAME}_exe ${sources}  "${CMAKE_SOURCE_DIR}/third_party/LI
 TARGET_COMPILE_DEFINITIONS(${GAME_NAME}_exe PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
 
 # Add header only libraries include path
+# Bullet is not "convinient" in the way their repo is structured for this:
+TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/bullet3/src")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/nameof/include")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/cpp-sdl2/sources/")
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/ChaiScript/include/")
@@ -146,8 +148,7 @@ TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
 TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
-# Bullet is not "convinient" in the way their repo is structured for this:
-TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/bullet3/src")
+
 
 IF(HAS_OPENVR)
   MESSAGE(STATUS "Configuring OpenVR includes and libraries")

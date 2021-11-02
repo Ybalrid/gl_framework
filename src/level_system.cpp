@@ -1,4 +1,7 @@
+#ifdef _WIN32
 #include <Windows.h>
+#endif
+
 #include "level_system.hpp"
 #include "resource_system.hpp"
 #include "node.hpp"
