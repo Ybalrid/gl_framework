@@ -40,6 +40,9 @@ class texture
   void bind(int index = 0, GLenum target = GL_TEXTURE_2D) const;
   ///load a texture from an image
   void load_from(const image& img, bool is_sRGB = true, GLenum target = GL_TEXTURE_2D) const;
+
+  void load_from_raw_memory(const void* bytes, size_t width, size_t height, GLint format = GL_RGBA, GLint target = GL_TEXTURE_2D) const;
+
   ///Generate mim maps for the texture
   void generate_mipmaps(GLenum target = GL_TEXTURE_2D) const;
   ///Set the filtering parameters

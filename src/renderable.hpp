@@ -11,6 +11,11 @@
 
 #include <array>
 
+#include "physics_system.hpp"
+
+//fw declare node
+class node;
+
 ///A bounding box is 8 points in space forming a cuboid
 using bounding_box = std::array<glm::vec3, 8>;
 
@@ -25,8 +30,8 @@ class renderable
   struct vertex_buffer_extrema
   {
     glm::vec3 min, max;
-    vertex_buffer_extrema() : min { 0 }, max { 0 } {}
-    vertex_buffer_extrema(const glm::vec3& minimal, const glm::vec3& maximal) : min { minimal }, max { maximal } {}
+    vertex_buffer_extrema() : min { 0 }, max { 0 } { }
+    vertex_buffer_extrema(const glm::vec3& minimal, const glm::vec3& maximal) : min { minimal }, max { maximal } { }
     vertex_buffer_extrema(const vertex_buffer_extrema&) = default;
   };
 
@@ -77,6 +82,10 @@ class renderable
                      size_t normal_coord_offset,
                      size_t tangent_coord_offset,
                      GLenum buffer_usage);
+
+  std::vector<float> cached_vertex_buffer;
+  std::vector<unsigned> cached_index_buffer;
+  size_t cached_vertex_buffer_stride = ~0;
 
   public:
   ///Object material
@@ -132,7 +141,7 @@ class renderable
 
   vertex_buffer_extrema get_bounds() const;
 
-  /*                              
+  /*
 							    2---Y-----6
 							   /.   |    /|
 							  / .   |   / |
@@ -150,7 +159,7 @@ class renderable
 	These vectors contains the minimal and maximal XYZ values of the whole object vertices.
 
 	We need to describe a cuboid that effectively is an AABB of the object in model space.
-	To describe the cuboid itself, we need 8 points, arbitrary chosen as this : 
+	To describe the cuboid itself, we need 8 points, arbitrary chosen as this :
 
 	0 = {min.x, min.y, max.z};
 	1 = {min.x, max.y, max.z};
@@ -168,4 +177,7 @@ class renderable
 
   inline bounding_box calculate_model_aabb() const;
   bounding_box get_world_obb(const glm::mat4& world_transform) const;
+
+  physics_system::physics_proxy
+  create_proxy(physics_system* system, float mass, glm::vec3 scale, physics_system::shape shape, node* attachee);
 };

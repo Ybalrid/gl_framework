@@ -42,7 +42,7 @@ class gui
   ///When this flag is set to true, next call of gui::console will stick the scrollbar at the bottom
   bool scroll_console_to_bottom = false;
   ///Currently used input consumer
-  console_input_consumer* cis_ptr = nullptr;
+  console_input_consumer* console_input_consumer_ptr = nullptr;
   ///Number of things we are down the history right now
   int history_counter = 0;
 

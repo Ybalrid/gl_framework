@@ -1,0 +1,15 @@
+class rotate_test
+{
+	attr node;
+
+	def rotate_test(owner)
+	{
+		print("created print_hello");
+		this.node := owner;
+	}
+
+	def update()
+	{
+		this.node.local_xform().rotate(0.1, vec3(0,1,0));
+	}
+}

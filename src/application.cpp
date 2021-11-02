@@ -12,23 +12,25 @@
 #include <chrono>
 
 #include "opengl_debug_group.hpp"
+#include "gizmo.hpp"
 
-//just a test
 
-float shadow_map_ortho_scale          = 50;
-float shadow_map_direction_multiplier = 100;
-float shadow_map_near_plane           = .1;
-float shadow_map_far_plane            = 250;
-glm::vec3 sun_direction_unormalized { -0.5f, -0.75f, -0.25f };
+//TODO move these globals to the application class!
+float shadow_map_ortho_scale          = 80;
+float shadow_map_direction_multiplier = 95;
+float shadow_map_near_plane           = .337;
+float shadow_map_far_plane            = 300;
+glm::vec3 sun_direction_unormalized { -0.25f, -1.f, -0.10f };
+GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
+GLuint line_drawer_vbo, line_drawer_vao;
+shader_handle color_debug_shader = shader_program_manager::invalid_shader;
+shader_handle vertex_debug_shader = shader_program_manager::invalid_shader;
 
 //The statics
 std::vector<std::string> application::resource_paks;
 scene* application::main_scene = nullptr;
-
 glm::vec4 application::clear_color { 0.4f, 0.5f, 0.6f, 1.f };
 
-GLuint bbox_drawer_vbo, bbox_drawer_ebo, bbox_drawer_vao;
-shader_handle color_debug_shader = shader_program_manager::invalid_shader;
 
 void application::activate_vsync() const
 {
@@ -60,7 +62,6 @@ void application::activate_vsync() const
   }
 }
 
-#include "gizmo.hpp"
 
 void scene_node_outline(node* current_node, node*& active_node)
 {
@@ -83,13 +84,27 @@ void scene_node_outline(node* current_node, node*& active_node)
     else
       type = std::string("ERROR: missing node type in") + __FILE__ + " " + std::to_string(__LINE__);
   });
-  const std::string name = type + " node " + std::to_string(current_node->get_id());
+  const std::string name = type + " node " + std::to_string(current_node->get_id()) + (!current_node->get_name().empty() ? " [" + current_node->get_name() + "]" : "") ;
 
   //Draw selection ball
   if(ImGui::RadioButton(("###select " + name).c_str(), current_node == active_node)) active_node = current_node;
   ImGui::SameLine();
   if(ImGui::TreeNode(name.c_str()))
   {
+    current_node->visit([&](auto&& content) {
+      using T = std::decay_t<decltype(content)>;
+      if constexpr(std::is_same<T, point_light>::value)
+      {
+        auto& light = static_cast<point_light&>(content);
+        ImGui::ColorEdit3("Diffuse", glm::value_ptr(light.diffuse));
+        ImGui::ColorEdit3("Ambient", glm::value_ptr(light.ambient));
+        ImGui::SliderFloat("Constant", &light.constant, 0, 5);
+        ImGui::SliderFloat("Linear", &light.linear, 0, 2);
+        ImGui::SliderFloat("Quadratic", &light.quadratic, 0, 2);
+        ImGui::Separator();
+      }
+    });
+
     const auto children_count = current_node->get_child_count();
     for(size_t i = 0; i < children_count; ++i) { scene_node_outline(current_node->get_child(i), active_node); }
     ImGui::TreePop();
@@ -168,18 +183,22 @@ void application::draw_debug_ui()
     {
       ImGui::Text("FPS: %d", fps);
       ImGui::Text("%3lu objects passed frustum culling", draw_list.size());
+      ImGui::Separator();
+      ImGui::Checkbox("Draw physics debug ?", &debug_draw_physics);
       ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
       ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
       ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
       //ImGui::BeginChild(
       //	"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
-      ImGui::Text("Main ShadowMap:");
+      ImGui::Separator();
       ImGui::SliderFloat3("sun direction", static_cast<float*>(glm::value_ptr(sun_direction_unormalized)), -1.f, 1.f);
+      ImGui::ColorEdit3("Sun color", glm::value_ptr(sun.diffuse));
+      ImGui::Separator();
+      ImGui::Text("Main ShadowMap:");
       ImGui::SliderFloat("near", &shadow_map_near_plane, 0.0001f, 1.f);
       ImGui::SliderFloat("far", &shadow_map_far_plane, 50.f, 500.f);
       ImGui::SliderFloat("ortho window", &shadow_map_ortho_scale, 10.f, 200.f);
       ImGui::SliderFloat("distance scale", &shadow_map_direction_multiplier, 1.f, 1000.f);
-
       ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
@@ -219,6 +238,42 @@ void application::draw_debug_ui()
       if(ImGui::Begin("Style Editor", &show_style_editor)) ImGui::ShowStyleEditor();
       ImGui::End();
     }
+
+    if(ImGui::Begin("BGM", &debug_ui))
+    {
+      auto* source = audio.get_bgm_source();
+      if(source)
+      {
+        const auto source_state = audio_source::state_to_string(source->get_state());
+        ImGui::Text("Current state %s", source_state.c_str());
+        ImGui::Text("Playback position:");
+        ImGui::SameLine();
+        ImGui::ProgressBar(source->get_playback_position());
+
+        bool looping_state = source->get_looping();
+        ImGui::Checkbox("Looping", &looping_state);
+        source->set_looping(looping_state);
+
+        float volume = source->get_volume();
+        ImGui::SliderFloat("Volume", &volume, 0, 1);
+        source->set_volume(volume);
+
+        float pitch = source->get_pitch();
+        ImGui::SliderFloat("Pitch", &pitch, 0, 2);
+        source->set_pitch(pitch);
+
+        if(ImGui::Button("Play")) source->play();
+        ImGui::SameLine();
+        if(ImGui::Button("Pause")) source->pause();
+        ImGui::SameLine();
+        if(ImGui::Button("Stop")) source->stop();
+      }
+      else
+      {
+        ImGui::Text("No BGM set.");
+      }
+    }
+    ImGui::End();
 
     if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
   }
@@ -303,6 +358,7 @@ void application::initialize_glew() const
 
 void application::install_opengl_debug_callback() const
 {
+#ifdef _DEBUG
   if(glDebugMessageCallback)
   {
     glEnable(GL_DEBUG_OUTPUT);
@@ -323,6 +379,7 @@ void application::install_opengl_debug_callback() const
         },
         nullptr);
   }
+#endif
 }
 
 void application::configure_and_create_window(const std::string& application_name)
@@ -350,6 +407,13 @@ void application::configure_and_create_window(const std::string& application_nam
   const auto window_size_array = configuration_table->get_array_of<int64_t>("resolution");
   window_size.x                = int(window_size_array->at(0));
   window_size.y                = int(window_size_array->at(1));
+
+  const auto level_list = configuration_table->get_array_of<std::string>("levels");
+  if(level_list->empty()) { start_level_name = "sponza"; }
+  else
+  {
+    start_level_name = level_list->at(0);
+  }
 
   const auto is_vr = configuration_table->get_as<bool>("is_vr").value_or(false);
   if(is_vr)
@@ -415,10 +479,10 @@ void application::initialize_gui()
 
 void application::frame_prepare()
 {
-  sun.direction               = glm::normalize(sun_direction_unormalized);
   const auto opengl_debug_tag = opengl_debug_group("application::frame_prepare()");
   (void)opengl_debug_tag;
 
+  sun.direction               = glm::normalize(sun_direction_unormalized);
   s.scene_root->update_world_matrix();
   //The camera world matrix is stored inside the camera to permit to compute the camera view matrix
   main_camera->set_world_matrix(cam_node->get_world_matrix());
@@ -431,6 +495,11 @@ void application::frame_prepare()
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_1, *p_lights[1]);
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_2, *p_lights[2]);
   shader_program_manager::set_frame_uniform(shader::uniform::point_light_3, *p_lights[3]);
+  shader_program_manager::set_frame_uniform(shader::uniform::light_space_matrix, light_space_matrix);
+
+  glActiveTexture(GL_TEXTURE0 + shader::material_shadow_map_texture_slot);
+  glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
+  shader_program_manager::set_frame_uniform(shader::uniform::shadow_map, shader::material_shadow_map_texture_slot);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -442,6 +511,8 @@ void application::render_shadowmap()
 {
   const auto opengl_debug_tag = opengl_debug_group("application::render_shadowmap()");
   (void)opengl_debug_tag;
+
+  sun.direction               = glm::normalize(sun_direction_unormalized);
 
   //Set the opengl to be the full shadowmap
   glViewport(0, 0, shadow_width, shadow_height);
@@ -460,11 +531,13 @@ void application::render_shadowmap()
                                           shadow_map_near_plane,
                                           shadow_map_far_plane);
   glm::mat4 light_view       = glm::lookAt(-(shadow_map_direction_multiplier * sun.direction), glm::vec3(0.f), transform::Y_AXIS);
-  glm::mat4 light_space_matrix = light_projection * light_view;
-  shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
+  light_space_matrix = light_projection * light_view;
 
-  glFrontFace(GL_CCW);
+  //glDisable(GL_CULL_FACE);
+  //glCullFace(GL_BACK);
+
   //draw everything...
+  s.scene_root->update_world_matrix(); //This compute the whole model matrices
   s.run_on_whole_graph([&](node* current_node) {
     current_node->visit([&](auto&& node_attached_object) {
       using T = std::decay_t<decltype(node_attached_object)>;
@@ -474,13 +547,19 @@ void application::render_shadowmap()
         for(const auto submesh : object.get_mesh().get_submeshes())
         {
           auto& to_render = renderable_manager::get_from_handle(submesh);
-          shader.set_uniform(shader::uniform::model, to_render.get_model_matrix());
+          shader.set_uniform(shader::uniform::model, current_node->get_world_matrix());
+          shader.set_uniform(shader::uniform::light_space_matrix, light_space_matrix);
           to_render.submit_draw_call();
         }
       }
     });
   });
-  glFrontFace(GL_CW);
+ // glCullFace(GL_FRONT);
+  //glEnable(GL_CULL_FACE);
+  glFinish();
+
+  //ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   const auto size = window.size();
@@ -489,7 +568,7 @@ void application::render_shadowmap()
 
 void application::render_draw_list(camera* render_camera)
 {
-  const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list");
+  const auto opengl_debug_tag = opengl_debug_group("application::render_draw_list()");
   (void)opengl_debug_tag;
   for(auto [node, handle] : draw_list)
   {
@@ -548,7 +627,7 @@ void application::build_draw_list_from_camera(camera* render_camera)
           if(debug_draw_bbox)
           {
             auto scene_obj                   = static_cast<scene_object>(node_attached_object);
-            const auto opengl_debug_tag_obbs = opengl_debug_group("debug_draw_bbox");
+            const auto opengl_debug_tag_obbs = opengl_debug_group("debug obb pass");
             (void)opengl_debug_tag_obbs;
 
             GLint bind_back;
@@ -571,8 +650,32 @@ void application::build_draw_list_from_camera(camera* render_camera)
   });
 }
 
+void application::render_skybox(camera* skybox_camera) {
+  opengl_debug_group group("application::render_skybox");
+  (void)(group);
+
+  const auto projection = skybox_camera->get_projection_matrix();
+  const auto view       = glm::mat4(glm::mat3(skybox_camera->get_view_matrix()));
+
+  glDepthMask(GL_FALSE);
+  glBindVertexArray(skybox_vao);
+  glActiveTexture(GL_TEXTURE0 + shader::skybox_texture_slot);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, skybox->get_texture());
+  auto& shader = shader_manager.get_from_handle(skybox_shader);
+  shader.use();
+  shader.set_uniform(shader::uniform::projection, projection);
+  shader.set_uniform(shader::uniform::view, view);
+  shader.set_uniform(shader::uniform::cubemap, shader::skybox_texture_slot);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glDepthMask(GL_TRUE);
+}
+
 void application::render_frame()
 {
+  opengl_debug_group group("application::render_frame()");
+      //  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
+
+
   //When using VR, the VR system is the master of the framerate!
   if(vr)
   {
@@ -582,17 +685,16 @@ void application::render_frame()
 
   //gameplay side thingies
   ui.frame();
-  scripts.update(last_frame_delta_sec);
+  //scripts.update(last_frame_delta_sec);
 
   frame_prepare();
   render_shadowmap();
-
-  //this apply frustum culling algorithm and build a "objects to draw list" CPU side
+  render_skybox(main_camera);
 
   if(vr)
   {
     {
-      opengl_debug_group group("VR rendering");
+      opengl_debug_group group("vr pass");
       //We invert the culling position if the vr system returns true to must_vflip.
       //This is because this system will do a vertical flip in the projection matrix.
       if(vr->must_vflip()) glFrontFace(GL_CCW);
@@ -604,6 +706,7 @@ void application::render_frame()
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
       left_eye->update_projection(left_size.x, left_size.y);
+      render_skybox(left_eye);
       build_draw_list_from_camera(left_eye);
       render_draw_list(left_eye);
 
@@ -611,6 +714,7 @@ void application::render_frame()
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
       right_eye->update_projection(right_size.x, right_size.y);
+      render_skybox(right_eye);
       build_draw_list_from_camera(right_eye);
       render_draw_list(right_eye);
 
@@ -621,6 +725,7 @@ void application::render_frame()
 #ifdef _WIN32 //LIV.app only exist on Windows
     if(mr_activated)
     {
+      opengl_debug_group group("mr pass");
       //In case we haven't initialized Mixed Reality : This poke the SharedTextureProtocol to know if LIV is capturing
       if(!vr->is_mr_active()) vr->try_start_mr();
 
@@ -652,6 +757,7 @@ void application::render_frame()
         //Render everything to the background pass
         mr_camera->update_projection(mr_viewport_size.x, mr_viewport_size.y / 2);
         vr->mr_depth_buffer_clear();
+        render_skybox(mr_camera);
         render_draw_list(mr_camera);
 
         vr->submit_to_LIV(); //This causes resource copy from GL to DX
@@ -670,8 +776,13 @@ void application::render_frame()
   draw_debug_ui();
   ui.render();
 
+  if(debug_draw_physics)
+    physics.draw_phy_debug(
+        main_camera->get_view_matrix(), main_camera->get_projection_matrix(), line_drawer_vao, vertex_debug_shader);
+
   //swap buffers
   window.gl_swap();
+
 
   frames++;
 }
@@ -694,6 +805,13 @@ void application::run_events()
   fps_camera_controller->apply_movement(last_frame_delta_sec);
 }
 
+void application::run_script_update()
+{
+  s.run_on_whole_graph([](node* current_node) {
+    if(auto* script = current_node->get_script_interface(); script) script->update();
+  });
+}
+
 void application::run()
 {
   while(running)
@@ -704,9 +822,40 @@ void application::run()
 #endif
 #endif
     update_timing();
+    run_physics();
     run_events();
+    run_script_update();
     render_frame();
   }
+}
+
+void application::setup_lights()
+{
+  std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
+
+  lights[0] = s.scene_root->push_child(create_node("light_0"));
+  lights[1] = s.scene_root->push_child(create_node("light_1"));
+  lights[2] = s.scene_root->push_child(create_node("light_2"));
+  lights[3] = s.scene_root->push_child(create_node("light_3"));
+
+  for(size_t i = 0; i < 4; ++i)
+  {
+    auto* l     = lights[i];
+    auto* pl    = l->assign(point_light());
+    pl->ambient = glm::vec3(0.1f);
+    pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
+    p_lights[i]                = (pl);
+  }
+
+  lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
+  lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
+  lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
+  lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
+
+  sun.diffuse = sun.specular = glm::vec3(1);
+  sun.specular *= 42;
+  sun.ambient   = glm::vec3(0);
+  sun.direction = glm::normalize(sun_direction_unormalized);
 }
 
 void application::setup_scene()
@@ -716,7 +865,7 @@ void application::setup_scene()
 
   if(vr)
   {
-    vr->set_anchor(s.scene_root->push_child(create_node()));
+    vr->set_anchor(s.scene_root->push_child(create_node("vr_system_anchor")));
     vr->build_camera_node_system();
   }
 
@@ -748,6 +897,9 @@ void application::setup_scene()
 
   const shader_handle simple_shader
       = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/simple.frag.glsl");
+  const shader_handle unlit_shader
+      = shader_program_manager::create_shader("/shaders/simple.vert.glsl", "/shaders/unlit.frag.glsl");
+
   const renderable_handle textured_plane_primitive
       = renderable_manager::create_renderable(simple_shader,
                                               plane,
@@ -765,7 +917,7 @@ void application::setup_scene()
 
   gltf = gltf_loader(simple_shader);
 
-  cam_node = s.scene_root->push_child(create_node());
+  cam_node = s.scene_root->push_child(create_node("application_camera"));
   {
     camera cam_obj;
     cam_obj.fov = 45;
@@ -775,7 +927,7 @@ void application::setup_scene()
     main_camera = cam_node->get_if_is<camera>();
     assert(main_camera);
 
-    cam_node->push_child(create_node())->assign(listener_marker());
+    cam_node->push_child(create_node("audio_listener_position"))->assign(listener_marker());
   }
   fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
@@ -789,72 +941,84 @@ void application::setup_scene()
   inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
   inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
   inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
+  inputs.register_gamepad_button_down_command(SDL_CONTROLLER_BUTTON_START, 0, &gamepad_button_test_command);
 
-  //TODO build a real level system!
-  auto plane0 = s.scene_root->push_child(create_node());
-  plane0->assign(scene_object(textured_plane));
+  setup_lights();
 
-  auto corset_node = s.scene_root->push_child(create_node());
-  auto corset_mesh = gltf.load_mesh("/gltf/Corset.glb");
-  corset_node->assign(scene_object(corset_mesh));
-  corset_node->local_xform.translate(glm::vec3(-4, 0, 0));
-  corset_node->local_xform.scale(50.f * transform::UNIT_SCALE);
+  std::cout << "Loading " << start_level_name << "as a level...";
+  //TODO do not pass these objects here, initialize the level system with them:
+  if(levels.load_level(scripts, gltf, s, start_level_name)) { std::cout << "Loading successful\n"; }
+  else
+    std::cout << "Something failed!";
 
-  auto antique_camera_node = s.scene_root->push_child(create_node());
-  auto antique_camera_mesh = gltf.load_mesh("/gltf/AntiqueCamera.glb");
-  antique_camera_node->assign(scene_object(antique_camera_mesh));
-  antique_camera_node->local_xform.translate(glm::vec3(4, 0, 0));
-  antique_camera_node->local_xform.scale(0.25f * transform::UNIT_SCALE);
 
-  auto damaged_helmet_node = s.scene_root->push_child(create_node());
-  auto damaged_helmet_mesh = gltf.load_mesh("/gltf/DamagedHelmet.glb");
-  damaged_helmet_node->assign(scene_object(damaged_helmet_mesh));
-  damaged_helmet_node->local_xform.translate(glm::vec3(8.f, 1.f, 0));
-  damaged_helmet_node->local_xform.rotate(glm::angleAxis(glm::radians(90.f), transform::X_AXIS));
-
-  sun.diffuse = sun.specular = glm::vec3(1);
-  sun.specular *= 42;
-  sun.ambient   = glm::vec3(0);
-  sun.direction = glm::normalize(sun_direction_unormalized);
-
-  std::array<node*, 4> lights { nullptr, nullptr, nullptr, nullptr };
-
-  lights[0] = s.scene_root->push_child(create_node());
-  lights[1] = s.scene_root->push_child(create_node());
-  lights[2] = s.scene_root->push_child(create_node());
-  lights[3] = s.scene_root->push_child(create_node());
-
-  for(size_t i = 0; i < 4; ++i)
-  {
-    auto* l     = lights[i];
-    auto* pl    = l->assign(point_light());
-    pl->ambient = glm::vec3(0.1f);
-    pl->diffuse = pl->specular = glm::vec3(0.9f, 0.85f, 0.8f) * 1.0f / 4.0f;
-    p_lights[i]                = (pl);
-  }
-
-  lights[0]->local_xform.set_position(glm::vec3(-4.f, 3.f, -4.f));
-  lights[1]->local_xform.set_position(glm::vec3(-4.f, -3.f, -4.f));
-  lights[2]->local_xform.set_position(glm::vec3(-1.5f, 3.f, 1.75f));
-  lights[3]->local_xform.set_position(glm::vec3(-1.f, 0.75f, 1.75f));
-
-  auto sponza_root       = s.scene_root->push_child(create_node());
-  const auto sponza_mesh = gltf.load_mesh("gltf/Sponza/Sponza.gltf");
-  sponza_root->assign(scene_object(sponza_mesh));
-
-  sponza_root->local_xform.set_scale(0.031250f * transform::UNIT_SCALE);
   glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
+  audio.play_bgm("/bgm/bensound-slowmotion.wav");
 
   if(vr)
   {
     //Load some geometry and assign it to the hand nodes
     const auto vr_controller_mesh = gltf.load_mesh("gltf/vague_controller.glb"); //place holder red arrow thing
+    const auto left_controller    = vr->load_controller_model_from_runtime(vr_controller::hand_side::left, unlit_shader);
+    const auto right_controller   = vr->load_controller_model_from_runtime(vr_controller::hand_side::right, unlit_shader);
+
+    bool has_left_controller  = false;
+    bool has_right_controller = false;
+    mesh left_controller_mesh;
+    mesh right_controller_mesh;
+
+    if(left_controller.renderable != renderable_manager::invalid_renderable)
+    {
+      auto& renderable = renderable_manager::get_from_handle(left_controller.renderable);
+      renderable.set_diffuse_texture(left_controller.diffuse_texture != texture_manager::invalid_texture
+                                         ? left_controller.diffuse_texture
+                                         : texture_manager::get_dummy_texture());
+      left_controller_mesh.add_submesh(left_controller.renderable);
+      has_left_controller = true;
+    }
+
+    if(right_controller.renderable != renderable_manager::invalid_renderable)
+    {
+      auto& renderable = renderable_manager::get_from_handle(right_controller.renderable);
+      renderable.set_diffuse_texture(right_controller.diffuse_texture != texture_manager::invalid_texture
+                                         ? right_controller.diffuse_texture
+                                         : texture_manager::get_dummy_texture());
+      right_controller_mesh.add_submesh(right_controller.renderable);
+      has_right_controller = true;
+    }
 
     if(auto* left_hand = vr->get_hand(vr_controller::hand_side::left); left_hand)
-      left_hand->assign(scene_object(vr_controller_mesh));
+    {
+      auto node = left_hand->push_child(create_node("left_hand_tracker"));
+      node->assign(scene_object((has_left_controller ? left_controller_mesh : vr_controller_mesh)));
+    }
     if(auto* right_hand = vr->get_hand(vr_controller::hand_side::right); right_hand)
-      right_hand->assign(scene_object(vr_controller_mesh));
+    {
+      auto node = right_hand->push_child(create_node("right_hand_tracker"));
+      node->assign(scene_object((has_right_controller ? right_controller_mesh : vr_controller_mesh)));
+    }
   }
+
+  //Create a scene node attached to the root (so local xform == world xform)
+  //physics_test = s.scene_root->push_child(create_node("physics_test_node"));
+  //physics_test->local_xform.set_position(glm::vec3(0, 2, 0));
+
+  ////Load the 3D model of that fish from the Krhonos repo
+  //const auto physics_test_geometry = gltf.load_mesh("/gltf/BarramundiFish.glb");
+  //physics_test->assign(scene_object(physics_test_geometry));
+
+  ////This 20cm box body will represent the fish
+  //test_box = new physics_system::box_proxy(physics_test->local_xform.get_position(), glm::vec3(0.1f), 1);
+  //physics.add_to_world(*test_box);
+}
+
+void application::run_physics()
+{
+  physics.step_simulation(last_frame_delta_sec);
+
+  //Move the damn fish's node by hand so we can see that gravity works
+  //physics_test->local_xform = test_box->get_world_transform();
 }
 
 void application::set_clear_color(glm::vec4 color)
@@ -865,6 +1029,9 @@ void application::set_clear_color(glm::vec4 color)
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
   }
 }
+
+void application::gamepad_button_test_command_::execute() { std::cout << "You pressed the button\n"; }
+
 void application::splash_frame(const char* image_path)
 {
   sdl::Event e;
@@ -886,14 +1053,10 @@ void application::splash_frame(const char* image_path)
     splash_txt.load_from(default_splash, true, GL_TEXTURE_2D);
     splash_txt.generate_mipmaps(GL_TEXTURE_2D);
 
-
     auto splash_shader_handle = shader_program_manager::create_shader("shaders/splash.vert.glsl", "shaders/splash.frag.glsl");
     auto& splash_shader       = shader_program_manager::get_from_handle(splash_shader_handle);
 
-    float vtx_obj[] = 
-    { -1, -1, 0, 0,
-      3, -1, 2, 0,
-      -1, 3, 0, -2 };
+    float vtx_obj[] = { -1, -1, 0, 0, 3, -1, 2, 0, -1, 3, 0, -2 };
 
     GLuint splash_buffer, splash_buffer_vao;
     glGenVertexArrays(1, &splash_buffer_vao);
@@ -925,25 +1088,34 @@ void application::splash_frame(const char* image_path)
   }
 }
 
+application* application::instance = nullptr;
 application::application(int argc, char** argv, const std::string& application_name) : resources(argc > 0 ? argv[0] : nullptr)
 {
+
+  if(instance != nullptr) throw std::runtime_error("Only one application can exist");
+  instance = this;
+
+  //Bind the debug utilities
   inputs.register_keypress(SDL_SCANCODE_GRAVE, &keyboard_debug_utilities.toggle_console_keyboard_command);
   inputs.register_keypress(SDL_SCANCODE_TAB, &keyboard_debug_utilities.toggle_debug_keyboard_command);
   inputs.register_keyrelease(SDL_SCANCODE_R, &keyboard_debug_utilities.toggle_live_code_reload_command);
 
+  //Install resources
   for(const auto& pak : resource_paks)
   {
     std::cerr << "Adding to resources " << pak << '\n';
     resource_system::add_location(pak);
   }
 
+  //Basic initialization of the rendering context
   configure_and_create_window(application_name);
   create_opengl_context();
   initialize_modern_opengl();
   texture_manager::initialize_dummy_texture();
 
+  //We now have enough of a renderer available to display something on screen and pump some events
+  //Some OSes (like macOS) really likes that we can do this now so they actually show a window and not apear to hang
   splash_frame();
-
   initialize_gui();
 
   //attempt init VR
@@ -955,6 +1127,7 @@ application::application(int argc, char** argv, const std::string& application_n
       vr = nullptr;
   }
 
+  //Initialize main shadow map
   try
   {
     shadowmap_shader = shader_program_manager::create_shader("/shaders/shadow.vert.glsl", "/shaders/shadow.frag.glsl");
@@ -962,10 +1135,12 @@ application::application(int argc, char** argv, const std::string& application_n
     glGenTextures(1, &shadow_depth_map);
     glBindTexture(GL_TEXTURE_2D, shadow_depth_map);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    const GLfloat border_color[] { 1.0, 1.0, 1.0, 1.0 };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_depth_map, 0);
     glDrawBuffer(GL_NONE);
@@ -975,6 +1150,44 @@ application::application(int argc, char** argv, const std::string& application_n
   catch(const std::exception& e)
   {
     sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create shadowmap shader!", e.what());
+    throw;
+  }
+
+  //Initialize skybox
+  try
+  {
+    skybox_shader = shader_program_manager::create_shader("/shaders/skybox.vert.glsl", "/shaders/skybox.frag.glsl");
+
+    std::array<image, 6> skybox_images { { { "/skybox/right.jpg" },
+                                           { "/skybox/left.jpg" },
+                                           { "/skybox/top.jpg" },
+                                           { "/skybox/bottom.jpg" },
+                                           { "/skybox/front.jpg" },
+                                           { "/skybox/back.jpg" } } };
+    skybox        = std::make_unique<cubemap>(skybox_images);
+    const float skybox_vertices[] //This is just the 36 vertices of a cube drawn with tris
+        = {
+            -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+            1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+            1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+            1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f
+          };
+
+    glGenVertexArrays(1, &skybox_vao);
+    glBindVertexArray(skybox_vao);
+    glGenBuffers(1, &skybox_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), skybox_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+  }
+  catch(const std::exception& e)
+  {
+    sdl::show_message_box(SDL_MESSAGEBOX_ERROR, "Could not create skybox shader!", e.what());
     throw;
   }
 
@@ -1003,6 +1216,17 @@ application::application(int argc, char** argv, const std::string& application_n
     glPointSize(10);
     glLineWidth(5);
     glBindVertexArray(0);
+
+    glGenBuffers(1, &line_drawer_vbo);
+    glGenVertexArrays(1, &line_drawer_vao);
+    glBindVertexArray(line_drawer_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, line_drawer_vbo);
+    float empty_line[2 * 3] {0};
+    glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(float), empty_line, GL_STREAM_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)( 3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
   }
   catch(const std::exception& e)
   {
@@ -1010,10 +1234,27 @@ application::application(int argc, char** argv, const std::string& application_n
     color_debug_shader = shader_program_manager::invalid_shader;
   }
 
+  try
+  {
+    vertex_debug_shader = shader_program_manager::create_shader("/shaders/debug_vertex_color.vert.glsl", "/shaders/debug_vertex_color.frag.glsl");
+
+  }
+  catch(const std::exception& e)
+  {
+    sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "Could not initialize the debug shader", e.what());
+    vertex_debug_shader = shader_program_manager::invalid_shader;
+
+  }
+
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
   glFrontFace(GL_CW);
+
+  scripts.evaluate_file("/scripts/test.chai");
+
+  physics.set_gravity(physics_system::earth_average_gravitational_acceleration_field);
+  physics.add_ground_plane();
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

@@ -1,0 +1,12 @@
+class test_behavior
+{
+	def test_behavior()
+	{
+		print("initialized test_behavior script");
+	}
+
+	def update()
+	{
+		print("hello world form chaiscript in test_behavior::update()")
+	}
+}

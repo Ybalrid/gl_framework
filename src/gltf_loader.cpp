@@ -151,6 +151,7 @@ std::tuple<std::vector<float>, renderable::vertex_buffer_extrema> gltf_loader::g
   //We have to deal with possibly interleaved buffers that have possibliy different data types in them.
   for(size_t i = 0; i < vertex_accessor.count; i++)
   {
+    //TODO check again the glTF 2.0 spec, because I think these **cannot** be double!
     //3 floats for vertex position
     for(int j = 0; j < 3; ++j) switch(vertex_accessor.componentType)
       {

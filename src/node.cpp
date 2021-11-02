@@ -20,10 +20,14 @@ void node::update_world_matrix()
     using T = std::decay_t<decltype(o)>;
 
     //lights are specific uniforms that needs to be set
-    if constexpr(std::is_same_v<T, light>)
+    if constexpr(std::is_same_v<T, point_light>)
     {
-      auto& li = static_cast<light&>(o);
+      auto& li = static_cast<point_light&>(o);
       li.set_position_from_world_mat(world_space_model);
+    }
+    if constexpr(std::is_same_v<T, directional_light>)
+    {
+      auto& li = static_cast<directional_light&>(o);
       li.set_direction_from_world_mat(world_space_model);
     }
 
@@ -70,10 +74,20 @@ void node::clean_child_list()
   children.erase(std::remove(std::begin(children), std::end(children), nullptr), std::end(children));
 }
 
+void node::attach_behavior_script(script_node_behavior* script_ptr) { behavior_script.reset(script_ptr); }
+
+std::string node::get_name() const { return name; }
+
 node_ptr create_node()
 {
   auto n = node_ptr(new node, destroy_node);
   //std::cout << "Creating scene node   " << n->get_id() << '\n';
+  return n;
+}
+
+node_ptr create_node(const std::string& new_node_name)
+{
+  auto n = node_ptr(new node(new_node_name), destroy_node);
   return n;
 }
 

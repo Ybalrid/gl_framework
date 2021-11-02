@@ -29,7 +29,11 @@ inline std::tuple<glm::vec3, glm::quat> get_translation_rotation(const glm::mat4
   return std::tie(tr, rot);
 }
 
-vr_system_openvr::vr_system_openvr() : vr_system() { std::cout << "Initialized OpenVR based vr_system implementation\n"; }
+vr_system_openvr::vr_system_openvr() : vr_system()
+{
+  std::cout << "Initialized OpenVR based vr_system implementation\n";
+  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers | caps_controller_model;
+}
 
 vr_system_openvr::~vr_system_openvr()
 {
@@ -121,10 +125,10 @@ void vr_system_openvr::build_camera_node_system()
   glm::vec3 tr, sc, sk;
   glm::quat rot;
 
-  head_node = vr_tracking_anchor->push_child(create_node());
+  head_node = vr_tracking_anchor->push_child(create_node("head_node"));
   for(size_t eye = 0; eye < 2; ++eye)
   {
-    eye_camera_node[eye] = head_node->push_child(create_node());
+    eye_camera_node[eye] = head_node->push_child(create_node("eye_camera_" + std::to_string(eye)));
     camera cam;
     eye_camera[eye] = eye_camera_node[eye]->assign(std::move(cam));
 
@@ -141,7 +145,7 @@ void vr_system_openvr::build_camera_node_system()
 
   for(size_t hand = 0; hand < 2; ++hand)
   {
-    hand_node[hand]              = vr_tracking_anchor->push_child(create_node());
+    hand_node[hand]              = vr_tracking_anchor->push_child(create_node("hand_node_" + std::to_string(hand)));
     hand_controllers[hand]       = new vr_controller;
     hand_controllers[hand]->side = vr_controller::hand_side(hand + 1);
   }
@@ -164,6 +168,102 @@ void vr_system_openvr::get_right_eye_proj_matrix(glm::mat4& matrix, float near_c
   matrix = glm::frustum(near_clip * left, near_clip * right, near_clip * -bottom, near_clip * -top, near_clip, far_clip);
 }
 
+vr_render_model vr_system_openvr::load_controller_model_from_runtime(vr_controller::hand_side side, shader_handle shader)
+{
+  const auto role
+      = (side == vr_controller::hand_side::left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+
+  for(vr::TrackedDeviceIndex_t device_index = 0; device_index < vr::k_unMaxTrackedDeviceCount; ++device_index)
+  {
+    if(hmd->GetTrackedDeviceClass(device_index) == vr::TrackedDeviceClass_Controller)
+    {
+      if(hmd->GetControllerRoleForTrackedDeviceIndex(device_index) == role)
+      {
+        uint32_t str_len = 0;
+        str_len          = hmd->GetStringTrackedDeviceProperty(
+            device_index, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, nullptr, str_len);
+        std::vector<char> str(str_len, 0);
+        (void)hmd->GetStringTrackedDeviceProperty(
+            device_index, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, str.data(), str_len);
+
+        vr::RenderModel_t* render_model = nullptr;
+        vr::EVRRenderModelError error;
+
+        //The non-async version of LoadRenderModel that the wiki metion doesn't seem to exist. Just wait for the damn model to be loaded by SteamVR
+        //in this stupid busy loop
+        for(;;)
+        {
+          error = vr::VRRenderModels()->LoadRenderModel_Async(str.data(), &render_model);
+          if(vr::VRRenderModelError_Loading != error) break;
+        }
+
+        if(error == vr::VRRenderModelError_None)
+        {
+          const size_t vertex_buffer_size_float = render_model->unVertexCount * (3 + 3 + 2);
+          const size_t index_buffer_count_unsigned = render_model->unTriangleCount * 3;
+          std::vector<float> vertex_buffer(vertex_buffer_size_float);
+          std::vector<uint16_t> index_buffer_u16(index_buffer_count_unsigned);
+          std::vector<unsigned> index_buffer(index_buffer_count_unsigned); //We use 32bit indices everywhere because lazyness
+
+          memcpy(vertex_buffer.data(), render_model->rVertexData, vertex_buffer.size() * sizeof(float));
+          memcpy(index_buffer_u16.data(), render_model->rIndexData, index_buffer_u16.size() * sizeof(uint16_t));
+          for(size_t i = 0; i < index_buffer.size(); ++i) index_buffer[i] = static_cast<unsigned>(index_buffer_u16[i]);
+
+
+          //we have position, texture coordinates, and normals; but no tangents:
+          const renderable::configuration vertex_configuration{true, true, true, false};
+          //TODO compute bounding box
+          renderable::vertex_buffer_extrema extrema {glm::vec3(-.1f, -.1f, -.1f), glm::vec3(.1f, .1f, .1f)};
+
+          const auto controller_renderable_handle
+          = renderable_manager::create_renderable(
+              shader, vertex_buffer, index_buffer, extrema, vertex_configuration, 3 + 3 + 2, 0, 6, 3);
+
+          const auto controller_texture_handle = texture_manager::create_texture();
+          if(controller_texture_handle != texture_manager::invalid_texture)
+          {
+            texture& controller_texture = texture_manager::get_from_handle(controller_texture_handle);
+
+            vr::RenderModel_TextureMap_t* render_model_texture = nullptr;
+
+            for(;;)
+            {
+              error = vr::VRRenderModels()->LoadTexture_Async(render_model->diffuseTextureId, &render_model_texture);
+              if(error != vr::VRRenderModelError_Loading)
+                  break;
+            }
+            if(error == vr::VRRenderModelError_None)
+            {
+              GLint format = GL_RGBA;
+
+              switch(render_model_texture->format)
+              {
+                case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_RGBA8_SRGB: format = GL_SRGB_ALPHA;break;
+                default:
+                case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC2:
+                case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC4:
+                case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC7:
+                case vr::EVRRenderModelTextureFormat::VRRenderModelTextureFormat_BC7_SRGB:
+                  fprintf(stderr, "This render model is using a texture format we don't support here (%s)\n", ((std::string)NAMEOF_ENUM(render_model_texture->format)).c_str());
+                  break;
+              }
+
+              controller_texture.load_from_raw_memory(
+                  render_model_texture->rubTextureMapData, render_model_texture->unWidth, render_model_texture->unHeight, format);
+              controller_texture.generate_mipmaps();
+              vr::VRRenderModels()->FreeTexture(render_model_texture);
+            }
+          }
+
+          vr::VRRenderModels()->FreeRenderModel(render_model);
+          return { controller_renderable_handle, controller_texture_handle };
+        }
+      }
+    }
+  }
+
+  return { renderable_manager::invalid_renderable, texture_manager::invalid_texture };
+}
 #ifdef _WIN32
 vr::TrackedDeviceIndex_t find_liv_tracker()
 {

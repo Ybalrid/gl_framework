@@ -4,9 +4,6 @@
 [submodule "third_party/ChaiScript"]
 	path = third_party/ChaiScript
 	url = https://github.com/ChaiScript/ChaiScript.git
-[submodule "third_party/physfs"]
-	path = third_party/physfs
-	url = https://github.com/Ybalrid/physfs
 [submodule "third_party/glm"]
 	path = third_party/glm
 	url = https://github.com/g-truc/glm
@@ -37,3 +34,12 @@
 [submodule "third_party/OpenXR-SDK"]
 	path = third_party/OpenXR-SDK
 	url = https://github.com/KhronosGroup/OpenXR-SDK
+[submodule "third_party/xrew"]
+	path = third_party/xrew
+	url = https://github.com/liv/xrew
+[submodule "third_party/physfs"]
+	path = third_party/physfs
+	url = https://github.com/ybalrid/physfs-1.git
+[submodule "third_party/bullet3"]
+	path = third_party/bullet3
+	url = https://github.com/bulletphysics/bullet3.git

@@ -59,6 +59,7 @@ std::vector<std::string> resource_system::list_files(const std::string& root, bo
       //Get full path of (potential) subdirectories
       const auto file = output[i];
       auto path       = root;
+      if(path.empty()) path = "/";
       if(path[path.size() - 1] != '/') path += "/"; //In case root doesn't end with "/"
       path += file; //This file may, or may not be a directory. path is a full path form root to it
 

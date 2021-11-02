@@ -30,6 +30,9 @@
 #include "input_handler.hpp"
 #include "camera_controller.hpp"
 #include "vr_system.hpp"
+#include "level_system.hpp"
+#include "cubemap.hpp"
+#include "physics_system.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -67,9 +70,12 @@ class application
   void render_shadowmap();
   void render_draw_list(camera* render_camera);
   void build_draw_list_from_camera(camera* render_camera);
+  void render_skybox(camera* skybox_camera);
   void render_frame();
   void run_events();
+  void run_script_update();
   void setup_scene();
+  void run_physics();
 
   freeimage free_img;
   resource_system resources;
@@ -119,10 +125,12 @@ class application
   std::vector<draw_operation> draw_list;
 
   bool debug_draw_bbox           = false;
+  bool debug_draw_physics        = true;
   shader_handle shadowmap_shader = shader_program_manager::invalid_shader;
   GLuint shadow_depth_fbo, shadow_depth_map;
 
-  static constexpr unsigned int shadow_width = 1024, shadow_height = 1024;
+
+  static constexpr unsigned int shadow_width = 1024 * 4, shadow_height = shadow_width;
 
   static glm::vec4 clear_color;
 
@@ -153,15 +161,47 @@ class application
     keyboard_debug_utilities_(application* parent) : parent_ { parent } { }
   } keyboard_debug_utilities { this };
 
+
+  struct gamepad_button_test_command_ : gamepad_button_command
+  {
+    void execute() override;
+  } gamepad_button_test_command{};
+
   vr_system_ptr vr  = nullptr;
   bool mr_activated = false;
 
   void splash_frame(const char* image_path = "/textures/splash.png");
 
+  level_system levels;
+  std::string start_level_name;
+  glm::mat4 light_space_matrix;
+
+  std::unique_ptr<cubemap> skybox;
+  shader_handle skybox_shader = shader_program_manager::invalid_shader;
+  GLuint skybox_vao, skybox_vbo;
+
+  physics_system physics;
+  node* physics_test;
+
+  physics_system::box_proxy* test_box;
+
+  static application* instance;
+
   public:
   static scene* get_main_scene();
   void run();
+  void setup_lights();
   application(int argc, char** argv, const std::string& application_name);
   static std::vector<std::string> resource_paks;
   static void set_clear_color(glm::vec4 color);
+
+  static application& get_singleton()
+  {
+    return *instance;
+  }
+
+  physics_system* get_physics_system()
+  {
+    return &physics;
+  }
 };

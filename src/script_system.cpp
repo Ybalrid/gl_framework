@@ -1,7 +1,51 @@
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #include "script_system.hpp"
 #include <chaiscript/chaiscript.hpp>
 #include "gui.hpp"
 #include <type_traits>
+#include <regex>
+#include <algorithm>
+
+#include "transform.hpp"
+#include "application.hpp"
+#include "scene.hpp"
+#include "node.hpp"
+#include "audio_system.hpp"
+
+size_t script_system::script_id = 0;
+
+using update_hook_t = std::function<void(chaiscript::Boxed_Value&)>;
+
+class script_node_behavior_chaiscript : public script_node_behavior
+{
+  public:
+  script_node_behavior_chaiscript(chaiscript::Boxed_Value&& bval, update_hook_t&& update_hook) :
+   instance(std::move(bval)), update_on_instance(std::move(update_hook))
+  { }
+
+  void update() final
+  {
+    if(update_on_instance) try
+      {
+        update_on_instance(instance);
+      }
+      catch(const std::exception& e)
+      {
+#ifdef _DEBUG
+        std::cerr << "Failed to call update on script instance : [" << e.what() << "]\n";
+#else
+        (void)(e);
+#endif
+      }
+  }
+
+  private:
+  chaiscript::Boxed_Value instance; //Object representing the script instance in the chaiscript context
+  update_hook_t update_on_instance; //Function object containing the "update()" method
+};
 
 //We are using a pimpl idiom here. This limit chaiscript to be compiled only in this compilation unit
 struct script_system::impl
@@ -54,7 +98,12 @@ void script_system::register_imgui_library(gui* ui)
 
   //Pipe the console I/O to this
   //Declare a chaiscript function that pipe text output to the imgui console. Then override the `print()` function to use it
-  chai.add(fun([=](const std::string& str) { gui_ptr->push_to_console(str); }), "handle_output");
+  chai.add(fun([=](const std::string& str) {
+             gui_ptr->push_to_console(str);
+             std::cout << str << "\n";
+           }),
+           "handle_output");
+
   (void)chai.eval("global print = fun(x) { handle_output (to_string(x)); }");
   //After declaring a global (print) function here, any printing made by chaiscript will be sent to handle_output.
   //Handle output will systematically take advantage of a "to_string" function. All built-in chaiscript types have one.
@@ -117,18 +166,21 @@ std::vector<std::string> script_system::global_scope_object_names() const
     output.emplace_back(local_name);
   }
 
+  (void)output.erase(std::remove_if(output.begin(),
+                                    output.end(),
+                                    [](const std::string& str) {
+                                      if(str.find("__internal__") != str.npos) return true;
+                                      return false;
+                                    }),
+                     output.end());
+
   //Sorting here will make the searching faster later
   std::sort(output.begin(), output.end());
 
   return output;
 }
 
-//include and bind the rest of this engine API to ChaiScript
-#include "transform.hpp"
-#include "application.hpp"
-#include "scene.hpp"
-#include "node.hpp"
-#include "audio_system.hpp"
+
 
 void script_system::install_additional_api()
 {
@@ -157,7 +209,7 @@ void script_system::install_additional_api()
   chai.add(user_type<scene>(), "scene");
 
   // clang-format off
-	chai.add(fun([](scene* s) -> node* 
+	chai.add(fun([](scene* s) -> node*
 			{
 				 return (s->scene_root.get());
 			 }),
@@ -169,60 +221,59 @@ void script_system::install_additional_api()
   chai.add(fun(&node::get_child_count), "get_child_count");
   chai.add(fun(&node::get_child), "get_child");
   chai.add(fun(&node::get_parent), "get_parent");
+
+  chai.add(fun([](node* n) {
+             auto* script = n->get_script_interface();
+             if(script) script->update();
+           }),
+           "run_update");
+
   chai.add(fun([](node* n) { return (&n->local_xform); }), "local_xform");
   chai.add(fun(&application::get_main_scene), "get_main_scene");
   chai.add(fun(&scene::find_node), "find_node");
-  // clang-format off
-	chai.add(fun([](node* n) -> std::string 
-			{
-				 std::string type;
-				 n->visit([&](auto&& content) 
-				 {
-					 if constexpr(std::is_same_v<std::decay_t<decltype(content)>, std::monostate>)
-						 type = "empty";
-					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, scene_object>)
-						 type = "scene_object";
-					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, camera>)
-						 type = "camera";
-					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, light>)
-						 type = "light";
-					 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, point_light>)
-	                     type = "point_light";
-	                 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, audio_source>)
-	                    type = "audio_source";
-	                 else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, listener_marker>)
-	                    type = "audio_listener_marker";
-					 else
-						 type = std::string("???????? :O TODO add missing node type in ") + __FILE__ + " " + std::to_string(__LINE__);
-				 });
-				 return "node : " + std::to_string(n->get_id())
-					 + (n->get_parent() ? "\nchild of :" + std::to_string(n->get_parent()->get_id()) : "") + "\n"
-					 + "type : " + type;
-			 }),
-			 "to_string");
+  chai.add(fun([](node* n) -> std::string {
+             std::string type;
+             n->visit([&](auto&& content) {
+               if constexpr(std::is_same_v<std::decay_t<decltype(content)>, std::monostate>)
+                 type = "empty";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, scene_object>)
+                 type = "scene_object";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, camera>)
+                 type = "camera";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, light>)
+                 type = "light";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, point_light>)
+                 type = "point_light";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, audio_source>)
+                 type = "audio_source";
+               else if constexpr(std::is_same_v<std::decay_t<decltype(content)>, listener_marker>)
+                 type = "audio_listener_marker";
+               else
+                 type = std::string("???????? :O TODO add missing node type in ") + __FILE__ + " " + std::to_string(__LINE__);
+             });
+             return "node : " + std::to_string(n->get_id()) + (!n->get_name().empty() ? "\nname : " + n->get_name() : "")
+                 + (n->get_parent() ? "\nchild of : " + std::to_string(n->get_parent()->get_id()) : "") + "\n" + "type : " + type;
+           }),
+           "to_string");
 
-	chai.add(fun([&](scene* s) -> std::string 
-			{
-				 std::string str;
-				 auto to_string_node = chai.eval<std::function<std::string(node*)>>("to_string");
-                 auto to_string_xform = chai.eval<std::function<std::string(::transform*)>>("to_string");
-				 s->run_on_whole_graph([&](node* n) 
-				 {
-					 str += to_string_node(n);
-                     str += "\n";
-                     str += to_string_xform(&n->local_xform);
-					 str += "\n\n";
-				 });
-				 return str;
-			 }),
-			 "to_string");
-  // clang-format on
+  chai.add(fun([&](scene* s) -> std::string {
+             std::string str;
+             auto to_string_node  = chai.eval<std::function<std::string(node*)>>("to_string");
+             auto to_string_xform = chai.eval<std::function<std::string(::transform*)>>("to_string");
+             s->run_on_whole_graph([&](node* n) {
+               str += to_string_node(n);
+               str += "\n";
+               str += to_string_xform(&n->local_xform);
+               str += "\n\n";
+             });
+             return str;
+           }),
+           "to_string");
 
   chai.add(fun(&sdl::Mouse::set_relative), "set_mouse_relative");
   chai.add(fun(&application::set_clear_color), "set_clear_color");
 
   //TODO light integration
-  //TODO physicsfs exploration?
 
   chai.add(fun([](const std::string& root) { return resource_system::list_files(root, true); }), "list_files");
 
@@ -240,4 +291,75 @@ void script_system::install_additional_api()
              return output;
            }),
            "to_string");
+}
+
+bool script_system::evaluate_file(const std::string& path) const
+{
+  //If we already have this file evaluated, skip;
+  static std::vector<std::string> list {};
+  if(std::find(list.begin(), list.end(), path) != list.end()) return true;
+
+  try
+  {
+    const auto file_content = resource_system::get_file(path);
+    const std::string file_text(reinterpret_cast<const char*>(file_content.data()), file_content.size());
+    pimpl->chai.eval(file_text);
+    list.push_back(path); //So we never evaluate a file twice.
+    return true;
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << "Exception while loading script file [" << path << "] : [" << e.what() << "]\n";
+    return false;
+  }
+}
+
+bool script_system::attach_behavior_script(const std::string& name, node* attachment) const
+{
+  const std::string chai_path = "/scripts/" + name + ".chai";
+
+  if(evaluate_file(chai_path))
+  {
+    const size_t id = script_id++;
+
+    using bootstrap_function_pointer  = std::function<chaiscript::Boxed_Value(node*)>;
+    static constexpr char bootstrap[] = R"chai(
+def __internal__create_$id(owner)
+{
+  print("Creating script object instance for $name");
+  print("This is script object $id");
+  var instance_$id = $name(owner);
+  return  instance_$id;
+}
+)chai";
+
+    std::string bootstrap_code(bootstrap);
+    bootstrap_code = std::regex_replace(bootstrap_code, std::regex("\\$id"), std::to_string(id));
+    bootstrap_code = std::regex_replace(bootstrap_code, std::regex("\\$name"), name);
+
+    pimpl->chai.eval(bootstrap_code);
+    const auto bootstrap_function = pimpl->chai.eval<bootstrap_function_pointer>("__internal__create_" + std::to_string(id));
+    auto script_instance          = bootstrap_function(attachment);
+    update_hook_t script_update_on_instance;
+
+    try
+    {
+      script_update_on_instance = pimpl->chai.eval<decltype(script_update_on_instance)>("update");
+    }
+    catch(const chaiscript::exception::eval_error& e)
+    {
+#ifdef _DEBUG
+      std::cerr << "Failed to find update hook in script " << name << ":" << id << " " << e.what() << "\n";
+#else
+      (void)(e);
+#endif
+      script_update_on_instance = nullptr;
+    }
+
+    attachment->attach_behavior_script(
+        new script_node_behavior_chaiscript(std::move(script_instance), std::move(script_update_on_instance)));
+    return true;
+  }
+
+  return false;
 }

@@ -5,11 +5,14 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "opengl_debug_group.hpp"
+
 float shader::gamma              = 2.2f;
 GLuint shader::last_used_program = 0;
 
 shader::shader(const std::string& vertex_shader_virtual_path, const std::string& fragment_shader_virtual_path)
 {
+  opengl_debug_group group("shader::shader()");
   std::cout << "Loading shader from " << vertex_shader_virtual_path << ", " << fragment_shader_virtual_path << '\n';
 
   //Load source files as C strings
@@ -65,6 +68,8 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
 
+  for(int i = 0; i < (int)uniform::MAX_UNIFORM_LOCATION_COUNT; ++i) uniform_indices[i] = -1;
+
   //Object invariant:
   uniform_indices[int(uniform::mvp)]    = glGetUniformLocation(program, "mvp");
   uniform_indices[int(uniform::model)]  = glGetUniformLocation(program, "model");
@@ -88,6 +93,9 @@ shader::shader(const std::string& vertex_shader_virtual_path, const std::string&
   uniform_indices[int(uniform::debug_color)]        = glGetUniformLocation(program, "debug_color");
   uniform_indices[int(uniform::light_space_matrix)] = glGetUniformLocation(program, "light_space_matrix");
   uniform_indices[int(uniform::debug_float_0)] = glGetUniformLocation(program, "debug_float_0");
+
+  uniform_indices[int(uniform::shadow_map)] = glGetUniformLocation(program, "shadow_map");
+  uniform_indices[int(uniform::cubemap)]    = glGetUniformLocation(program, "cubemap");
 
   //one directional lights
   main_directional_light_uniform_locations.direction = glGetUniformLocation(program, "main_directional_light.direction");
@@ -153,39 +161,47 @@ void shader::use_0()
 //Avoid to set uniform on invalid opengl shader programs
 #define shader_valid_check                                                                                                       \
   if(!program) return
+#define uniform_valid_check                                                                                                      \
+  if(uniform_indices[int(type)] == -1) return
 void shader::set_uniform(uniform type, const glm::mat4& matrix) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniformMatrix4fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::mat3& matrix) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniformMatrix3fv(uniform_indices[int(type)], 1, GL_FALSE, value_ptr(matrix));
 }
 
 void shader::set_uniform(uniform type, const glm::vec3& v) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniform3f(uniform_indices[int(type)], v.x, v.y, v.z);
 }
 
 void shader::set_uniform(uniform type, const glm::vec4& v) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniform4f(uniform_indices[int(type)], v.r, v.g, v.b, v.a);
 }
 
 void shader::set_uniform(uniform type, float v) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniform1f(uniform_indices[int(type)], v);
 }
 
 void shader::set_uniform(uniform type, int i) const
 {
   shader_valid_check;
+  uniform_valid_check;
   glUniform1i(uniform_indices[int(type)], i);
 }
 
@@ -193,7 +209,7 @@ void shader::set_uniform(uniform type, const directional_light& light) const
 {
   shader_valid_check;
   if(type != uniform::main_directional_light) return;
-
+  if(main_directional_light_uniform_locations.direction == -1) return;
   glUniform3f(main_directional_light_uniform_locations.direction, light.direction.x, light.direction.y, light.direction.z);
   glUniform3f(main_directional_light_uniform_locations.ambient, light.ambient.r, light.ambient.g, light.ambient.b);
   glUniform3f(main_directional_light_uniform_locations.diffuse, light.diffuse.r, light.diffuse.g, light.diffuse.b);
@@ -217,6 +233,7 @@ void shader::set_uniform(uniform type, const point_light& light) const
   if(index < 0) return;
 
   const auto& point_light_location = point_light_list_uniform_locations[index];
+  if(point_light_location.position == -1) return;
   glUniform3f(point_light_location.position, light.position.x, light.position.y, light.position.z);
   glUniform1f(point_light_location.constant, light.constant);
   glUniform1f(point_light_location.linear, light.linear);

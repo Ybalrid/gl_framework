@@ -3,6 +3,7 @@
 
 GLint renderable::last_bound_vao = 0;
 
+//TODO this smells... it should be a move, not a copy...?
 void renderable::steal_guts(renderable& other)
 {
   shader_program   = other.shader_program;
@@ -21,6 +22,9 @@ void renderable::steal_guts(renderable& other)
   normal           = other.normal;
   mat              = other.mat;
   bounds           = other.bounds;
+  cached_index_buffer = other.cached_index_buffer;
+  cached_vertex_buffer = other.cached_vertex_buffer;
+  cached_vertex_buffer_stride = other.cached_vertex_buffer_stride;
 
   other.VAO = other.VBO = other.EBO = 0;
 }
@@ -74,6 +78,11 @@ void renderable::upload_to_gpu(const std::vector<float>& vertex_buffer,
                                size_t tangent_coord_offset,
                                GLenum buffer_usage)
 {
+  cached_index_buffer = index_buffer;
+  cached_vertex_buffer = vertex_buffer;
+  cached_vertex_buffer_stride = vertex_buffer_stride;
+
+  opengl_debug_group group("renderable::upload_to_gpu()");
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
   glGenVertexArrays(1, &VAO);
@@ -167,6 +176,7 @@ renderable::renderable(shader_handle program,
                   normal_coord_offset,
                   tangent_coord_offset,
                   buffer_usage);
+
   }
   else
   {
@@ -180,6 +190,7 @@ renderable::renderable(shader_handle program,
                   normal_coord_offset,
                   tangent_coord_offset,
                   buffer_usage);
+
   }
 }
 
@@ -212,6 +223,7 @@ renderable& renderable::operator=(renderable&& other) noexcept
 
 void renderable::draw() const
 {
+  opengl_debug_group group("renderable::draw()");
   //We need to have a shader and a texture!
   assert(shader_program != shader_program_manager::invalid_shader);
 
@@ -293,4 +305,11 @@ std::array<glm::vec3, 8> renderable::get_world_obb(const glm::mat4& world_transf
       obb.begin(), obb.end(), obb.begin(), [&](const glm::vec3& v) -> glm::vec3 { return world_transform * glm::vec4(v, 1.f); });
 
   return obb;
+}
+
+class node;
+physics_system::physics_proxy renderable::create_proxy(physics_system* system, float mass, glm::vec3 scale,
+    physics_system::shape shape, node* attachee)
+{
+  return system->create_proxy(shape, cached_vertex_buffer, cached_index_buffer, cached_vertex_buffer_stride, mass, scale, (attachee ? new bullet_utils::transform_sync(attachee) : nullptr));
 }
