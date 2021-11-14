@@ -108,9 +108,76 @@ Version `1.43.0` is known to work at this time.
 
 You will need to put the `OpenVR_API.dll` (or platform equivalent on Linux) next to your executable (or in the build directory when testing with Visual Studio on Windows)
 
+### Level system
+
+A 3D environment (defined as a "level") can be loaded as a scene.
+
+These are defined as json files in the "/level" virtual diretory
+
+Their syntax is self-descriptory, they contain an array of rerferences to glTF assets, and a number of parameters for scripting, physics, and the root transforom of the gltf in the global scene.
+
+```json
+[
+	{
+		"asset" : "/gltf/Sponza/Sponza.gltf",
+		"scale" : [0.03125, 0.03125, 0.03125],
+		"proxy" : "static_triangle_mesh",
+		"enable_physics": true
+	},
+	{
+		"asset" : "/gltf/Corset.glb",
+		"position" : [0, 5, -0.5],
+		"scale" : [50, 50, 50],
+		"mass": 10,
+		"enable_physics": true,
+		"proxy": "convex_hull"
+
+	},
+	{
+		"asset" : "/gltf/DamagedHelmet.glb",
+		"position" : [8, 1, 0],
+		"orientation" : [0.707, 0, 0, 0.707],
+		"script": "rotate_test"
+	}
+]
+```
+
+
 ### Scripting
 
-//TODO
+The engine support scripting using ChaiScript. 
+
+A script console is acessible with the `~` or `²` key, usually the one at the top left of the keyboard, below the escape key.
+
+The API is currently not documented, but mostly matches the methods accessible to a number of C++ classes. See `script_system.cpp` to check the bindings to the ChaiScript context.
+
+#### Behavior nodes
+
+Any node can see itself attached a behavior script. A behavior script is a ChaiScript file implementing a class like this:
+
+```js
+class rotate_test
+{
+	attr node;
+
+	def rotate_test(owner)
+	{
+		print("created print_hello");
+		this.node := owner;
+	}
+
+	def update()
+	{
+		this.node.local_xform().rotate(0.1, vec3(0,1,0));
+	}
+}
+```
+
+They define a class. This class contains a constructor, and a `update` method.
+
+The first argument passed to the constructor is a pointer to the `node` this class instance has been attached to.
+
+Name of the file and the class containing it **must** be the same.
 
 ## Open Source dependancies
 

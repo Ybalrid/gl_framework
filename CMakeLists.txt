@@ -107,6 +107,7 @@ FILE (GLOB sources
   ./src/*.hpp
   ./unpacked_res/shaders/*
   ./unpacked_res/scripts/*.chai
+  ./unpacked_res/levels/*.json
   ./third_party/imgui/imgui*.cpp
   ./third_party/imgui/examples/imgui_impl_sdl.cpp
   ./third_party/imgui/examples/imgui_impl_opengl3.cpp
