@@ -29,6 +29,11 @@ void freeimage_image::set_ptr_to(FIBITMAP* naked)
   ptr = naked;
 }
 
+unsigned freeimage_image::get_width() const { return FreeImage_GetWidth(ptr);}
+unsigned freeimage_image::get_height() const { return FreeImage_GetHeight(ptr);}
+unsigned freeimage_image::get_byte_per_pixel() const { return FreeImage_GetBPP(ptr);}
+unsigned char* freeimage_image::get_raw_data() const {return FreeImage_GetBits(ptr);}
+
 freeimage_image::freeimage_image(freeimage_image&& o) noexcept
 {
   ptr   = o.ptr;
@@ -42,7 +47,7 @@ freeimage_image& freeimage_image::operator=(freeimage_image&& o) noexcept
   return *this;
 }
 
-freeimage_memory::freeimage_memory(unsigned char* memory, unsigned char size) : ptr(FreeImage_OpenMemory(memory, size)) {}
+freeimage_memory::freeimage_memory(unsigned char* memory, size_t size) : ptr(FreeImage_OpenMemory(memory, (DWORD)size)) {}
 
 freeimage_memory::freeimage_memory(FIMEMORY* naked) : ptr(naked) {}
 

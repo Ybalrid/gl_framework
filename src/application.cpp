@@ -802,6 +802,9 @@ void application::run_events()
     if(const auto command { inputs.process_input_event(event) }; command) command->execute();
   }
 
+  //Maybe we running on steam?
+  steam_api.update_steam_input();
+
   fps_camera_controller->apply_movement(last_frame_delta_sec);
 }
 
@@ -1255,6 +1258,8 @@ application::application(int argc, char** argv, const std::string& application_n
 
   physics.set_gravity(physics_system::earth_average_gravitational_acceleration_field);
   physics.add_ground_plane();
+
+  steam_api.load_controller_glyphs();
 }
 
 void application::keyboard_debug_utilities_::toggle_console_keyboard_command_::execute()

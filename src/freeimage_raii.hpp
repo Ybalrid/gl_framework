@@ -25,14 +25,19 @@ struct freeimage_image
   FIBITMAP* get() const;
   void set_ptr_to(FIBITMAP* naked);
 
-  private:
+  unsigned get_width() const;
+  unsigned get_height() const;
+  unsigned get_byte_per_pixel() const;
+  unsigned char* get_raw_data() const;
+
+private:
   FIBITMAP* ptr = nullptr;
 };
 
 struct freeimage_memory
 {
   freeimage_memory() = default;
-  freeimage_memory(unsigned char* memory, unsigned char size);
+  freeimage_memory(unsigned char* memory, size_t size);
   freeimage_memory(FIMEMORY* naked);
   ~freeimage_memory();
   freeimage_memory(const freeimage_memory&) = delete;

@@ -92,7 +92,7 @@ The OpenXR loader will be statically linked into the game EXE.
 
 Linux support is untested.
 
-#### DirectX11 Fallback
+##### DirectX11 Fallback
 
 On Win32 platforms, a situation can occur where the currently installed OpenXR runtime can only be rendered to using DirectX 
 (At the time of writing WMR and SteamVR do not provide the OpenGL extension). The `vr_sytem_openxr` will attempt to create an
@@ -103,6 +103,8 @@ lower due to an extra texture copy being performed to share the texture between 
 
 The Oculus SDK is not shipped with inside this repository. To use the Oculus SDK, you will need to downlad it from the website, and extract the content of the zip into `third_party/oculus_sdk`. 
 Version `1.43.0` is known to work at this time.
+
+#### OpenVR
 
 You will need to put the `OpenVR_API.dll` (or platform equivalent on Linux) next to your executable (or in the build directory when testing with Visual Studio on Windows)
 

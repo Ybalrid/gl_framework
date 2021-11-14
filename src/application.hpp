@@ -33,6 +33,7 @@
 #include "level_system.hpp"
 #include "cubemap.hpp"
 #include "physics_system.hpp"
+#include "steamworks.hpp"
 
 #ifdef USING_JETLIVE
 #ifdef _DEBUG
@@ -184,6 +185,8 @@ class application
   node* physics_test;
 
   physics_system::box_proxy* test_box;
+
+  steamworks steam_api;
 
   static application* instance;
 

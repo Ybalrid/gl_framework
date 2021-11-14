@@ -20,6 +20,9 @@ class image
   ///constructor
   image(const std::string& virtual_path);
 
+  image(freeimage_image&& raw_image) :
+    internal_image(std::move(raw_image)) { }
+
   ///Destructor
   ~image() = default;
 

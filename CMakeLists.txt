@@ -9,6 +9,10 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 3.21)
 SET (GAME_NAME "test_project")
 
+IF(UNIX AND NOT APPLE)
+set(LINUX TRUE)
+endif()
+
 if(CMAKE_GENERATOR STREQUAL Xcode)
   message(STATUS "xcode!!!!!")
   set(CMAKE_C_COMPILER "clang")
@@ -130,6 +134,14 @@ FIND_PACKAGE (Threads REQUIRED)
 # Create our build target
 ADD_EXECUTABLE (${GAME_NAME}_exe ${sources}  "${CMAKE_SOURCE_DIR}/third_party/LIV_v1/SharedTextureProtocol.cpp")
 TARGET_COMPILE_DEFINITIONS(${GAME_NAME}_exe PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
+
+target_include_directories (${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/steamworks/public/")
+if(WIN32)
+  target_link_libraries(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/steamworks/redistributable_bin/win64/steam_api64.lib")
+endif()
+if(LINUX)
+  target_link_libraries(${GAME_NAME}_exe PRIVATE "${CMAKE_SOURCE_DIR}/third_party/steamworks/redistributable_bin/linux64/libsteam_api.so")
+endif()
 
 # Add header only libraries include path
 # Bullet is not "convinient" in the way their repo is structured for this:
