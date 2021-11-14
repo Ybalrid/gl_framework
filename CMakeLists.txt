@@ -9,12 +9,13 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 3.21)
 SET (GAME_NAME "test_project")
 
+#Some generation options
 IF(UNIX AND NOT APPLE)
-set(LINUX TRUE)
+    set(LINUX TRUE)
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
-  message(STATUS "xcode!!!!!")
+  message(STATUS "xcode detected, setting compiler explicity to clang(++)")
   set(CMAKE_C_COMPILER "clang")
   set(CMAKE_CXX_COMPILER "clang++")
 endif()
@@ -23,6 +24,8 @@ PROJECT (${GAME_NAME})
 
 #Language and basic compiler configuratino
 SET (CMAKE_CXX_STANDARD 17)
+
+# TODO is the following really necessary?:
 IF (UNIX)
   IF (NOT CMAKE_BUILD_TYPE)
     SET (CMAKE_BUILD_TYPE Release)
@@ -44,25 +47,25 @@ ENDIF()
 
 IF(HAS_VR)
   MESSAGE(STATUS "Detected a VR platform")
+
+	IF(HAS_OPENVR)
+	  SET(CPP_HAS_OPENVR "true")
+	ELSE()
+	  SET(CPP_HAS_OPENVR "false")
+	ENDIf()
+
+	IF(HAS_OCULUS_VR)
+	  SET(CPP_HAS_OCULUS_VR "true")
+	ELSE()
+	  SET(CPP_HAS_OCULUS_VR "false")
+	ENDIf()
+
+	IF(HAS_OPENXR)
+	  SET(CPP_HAS_OPENXR "true")
+	ELSE()
+	  SET(CPP_HAS_OPENXR "false")
+	ENDIf()
 ENDIF()
-
-IF(HAS_OPENVR)
-  SET(CPP_HAS_OPENVR "true")
-ELSE()
-  SET(CPP_HAS_OPENVR "false")
-ENDIf()
-
-IF(HAS_OCULUS_VR)
-  SET(CPP_HAS_OCULUS_VR "true")
-ELSE()
-  SET(CPP_HAS_OCULUS_VR "false")
-ENDIf()
-
-IF(HAS_OPENXR)
-  SET(CPP_HAS_OPENXR "true")
-ELSE()
-  SET(CPP_HAS_OPENXR "false")
-ENDIf()
 
 # Generate the configured header file
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/build_config.template.hpp ${CMAKE_SOURCE_DIR}/src/build_config.hpp )
@@ -103,11 +106,14 @@ FILE (GLOB sources
   ./src/*.cpp
   ./src/*.hpp
   ./unpacked_res/shaders/*
+  ./unpacked_res/scripts/*.chai
   ./third_party/imgui/imgui*.cpp
   ./third_party/imgui/examples/imgui_impl_sdl.cpp
   ./third_party/imgui/examples/imgui_impl_opengl3.cpp
   ./third_party/ImGuizmo/ImGuizmo.cpp
   ./README.md)
+
+#TODO use the source tree option to put shaders and chaiscript files in their own folders in the IDE
 
 # just add this lib as a subdir,
 SET (PHYSFS_BUILD_TEST OFF CACHE BOOL "no physfs tests" FORCE)
@@ -160,6 +166,11 @@ TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE "${OPENAL_INCLUDE_DIR}")
 TARGET_COMPILE_DEFINITIONS (${GAME_NAME}_exe PRIVATE NOMINMAX IMGUI_IMPL_OPENGL_LOADER_GLEW)
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${FREEIMAGE_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES (${GAME_NAME}_exe PRIVATE ${SNDFILE_INCLUDE_DIR})
+
+if(MSVC)
+  target_compile_options(${GAME_NAME}_exe PRIVATE /bigobj)
+endif()
+
 
 
 IF(HAS_OPENVR)
