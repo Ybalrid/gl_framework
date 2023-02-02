@@ -114,4 +114,6 @@ class shader
 
 public:
   GLuint _get_program() { return program; }//This is to get access to the shader object OpenGL side, in case you want to mess with it directly... Not recommended
+
+  static void force_rebind() { glUseProgram(last_used_program); }
 };
