@@ -1,0 +1,26 @@
+var a01599 =
+[
+    [ "assoc_laguerre", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga41f206b7aaf85b07d45a66d68400a1a6", null ],
+    [ "assoc_legendre", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga7cba5e4fcae2550e496bac5ce5347379", null ],
+    [ "beta", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gabf90c74e3920ea3853f5786f90b8aa2b", null ],
+    [ "comp_ellint_1", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga35acc5bbe07b74718e22e5e7abe52fec", null ],
+    [ "comp_ellint_2", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga67dca5d65386e74a0e2f17d842f0d450", null ],
+    [ "comp_ellint_3", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga61ba4b9c23985c1d0ae83cf48b180231", null ],
+    [ "conf_hyperg", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gafd178133d3ebc657708ad8174baf2a74", null ],
+    [ "cyl_bessel_i", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga07dddd9af049c8700682f9de63f49430", null ],
+    [ "cyl_bessel_j", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga9f8aeb36e3e3ee1f6e15d597a46d772b", null ],
+    [ "cyl_bessel_k", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga77fcb104653b63975ae800e48fb72ed0", null ],
+    [ "cyl_neumann", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga36bb3adce8d3308d85891700c78bea91", null ],
+    [ "ellint_1", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga7d289fce6de2d3ac3abfcecf4f419396", null ],
+    [ "ellint_2", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gaca3de93877d9d195863279ef8e2d2b83", null ],
+    [ "ellint_3", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga55963b25d9fb39d84193ca03cd6772d4", null ],
+    [ "expint", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gac555d8d9bf9256070f2238a6a788727c", null ],
+    [ "hermite", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gaf363be9138ed0e7c26c71d34f97d0345", null ],
+    [ "hyperg", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gaf320db7639ced3d53b1b86cf8f2aaa3f", null ],
+    [ "laguerre", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga2fcf4c16f11f22583104dd3f0f47e8d9", null ],
+    [ "legendre", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gafbabf25c3e530e0b94b5e6a3aaab6b5a", null ],
+    [ "riemann_zeta", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#gadfc115751fa7ee0a1c44d9f7028d3a01", null ],
+    [ "sph_bessel", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga2bf44b5e5a3b33d518d8a49e06433ece", null ],
+    [ "sph_legendre", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga6281837b14f373c4b331509580f66b35", null ],
+    [ "sph_neumann", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01599.html#ga2d353e21ed716e078f26147fb603ed33", null ]
+];

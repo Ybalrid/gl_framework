@@ -1,0 +1,6 @@
+<map id="T5_WandReport" name="T5_WandReport">
+<area shape="rect" id="node1" title="Contains wand related information (Pose, Buttons, Trigger, Stick, Battery)" alt="" coords="81,124,195,151"/>
+<area shape="rect" id="node2" href="$a03664.html" title="2D vector" alt="" coords="5,5,79,32"/>
+<area shape="rect" id="node3" href="$a03672.html" title="Quaternion." alt="" coords="103,5,173,32"/>
+<area shape="rect" id="node4" href="$a03668.html" title="3D vector" alt="" coords="232,5,305,32"/>
+</map>

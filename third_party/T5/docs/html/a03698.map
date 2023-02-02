@@ -1,0 +1,5 @@
+<map id="T5_CamImage" name="T5_CamImage">
+<area shape="rect" id="node1" title="Camera Frame information to be retrieved with t5GetFilledCamImageBuffer()" alt="" coords="49,95,155,121"/>
+<area shape="rect" id="node2" href="$a03668.html" title="3D vector" alt="" coords="5,5,79,32"/>
+<area shape="rect" id="node3" href="$a03672.html" title="Quaternion." alt="" coords="127,5,197,32"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="T5_GlassesPose" name="T5_GlassesPose">
+<area shape="rect" id="node1" title="Glasses pose information to be retrieved with t5GetGlassesPose()" alt="" coords="40,95,161,121"/>
+<area shape="rect" id="node2" href="$a03668.html" title="3D vector" alt="" coords="5,5,79,32"/>
+<area shape="rect" id="node3" href="$a03672.html" title="Quaternion." alt="" coords="124,5,195,32"/>
+</map>

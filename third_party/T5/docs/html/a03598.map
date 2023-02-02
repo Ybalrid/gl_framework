@@ -1,0 +1,5 @@
+<map id="tiltfive::BadResultAccess" name="tiltfive::BadResultAccess">
+<area shape="rect" id="node1" title="Throw when attempting to access a bad result." alt="" coords="5,155,172,181"/>
+<area shape="rect" id="node2" href="C:/build/execroot/com_tiltfive_t5sw/bazel-out/x64_windows-opt/bin/sdk/native/docs/docs/build/libstdc++.tag$a02945" title=" " alt="" coords="35,80,143,107"/>
+<area shape="rect" id="node3" href="C:/build/execroot/com_tiltfive_t5sw/bazel-out/x64_windows-opt/bin/sdk/native/docs/docs/build/libstdc++.tag$a05405" title=" " alt="" coords="37,5,141,32"/>
+</map>

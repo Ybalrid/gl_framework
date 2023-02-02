@@ -1,0 +1,26 @@
+var a01596 =
+[
+    [ "accumulate", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga1ab9deae5b1fb5b1f44e11200e7ed692", null ],
+    [ "accumulate", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga1a36d8691b0b4b72b32ea9ac57156c17", null ],
+    [ "adjacent_difference", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga76306a74ff39e25f64d4edb438c09642", null ],
+    [ "adjacent_difference", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gad9f0dd3e246adea056b3591d776bd761", null ],
+    [ "exclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gaa51085deb3c4692098b97d32eeddbc8e", null ],
+    [ "exclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga61a9b34939ee5d0391a322bb56bdfcdf", null ],
+    [ "inclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga540e844ba6c5fe2e9daf1269a885e9ad", null ],
+    [ "inclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga595f419832752698e04564ecf013929e", null ],
+    [ "inclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga1d79b3e26a3c75a075e1585802f5c7cd", null ],
+    [ "inner_product", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gaee19c7558ac11a31ab3bb2dd390f4a82", null ],
+    [ "inner_product", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gaab0eef2f424aef434aa167c329ef4a24", null ],
+    [ "iota", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga854ad160d17fe9e284d784acd491e69f", null ],
+    [ "partial_sum", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gad80570b71def65f6c121ab87d1a30a2f", null ],
+    [ "partial_sum", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga12a68a0208860c08aeefe4101afb86de", null ],
+    [ "reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga55282e5b31aa6fee5020851cbcff0a19", null ],
+    [ "reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gafca8dc87b33e39f78d6b6ab8ccdc629c", null ],
+    [ "reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gaef915fe46272db0b4de2062a965d99da", null ],
+    [ "transform_exclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga9d5ca1f5df5964485762ce38e7849f09", null ],
+    [ "transform_inclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga2f10c28e6f385b2d73a0a207e128430c", null ],
+    [ "transform_inclusive_scan", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga73371f6cca271826894a5982cbfe950b", null ],
+    [ "transform_reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gae863f426a71c7822dcbb86e7327b3886", null ],
+    [ "transform_reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#ga32daf475195ccd8af36b498e2c1e3f43", null ],
+    [ "transform_reduce", "http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01596.html#gacc069a4136d43548d5a6ef1c4308fb7b", null ]
+];

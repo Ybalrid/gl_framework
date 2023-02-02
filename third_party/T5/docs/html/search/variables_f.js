@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['parallel_5fbalanced_0',['parallel_balanced',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01673.html#a76f6cbf29b1b8d57762cce1ed9bd01a8a44044e5486122945728060ea6de7d32c',1,'__gnu_parallel']]],
+  ['parallel_5fomp_5floop_1',['parallel_omp_loop',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01673.html#a76f6cbf29b1b8d57762cce1ed9bd01a8ad1e39d5a03b2603328b50ada20730bd0',1,'__gnu_parallel']]],
+  ['parallel_5fomp_5floop_5fstatic_2',['parallel_omp_loop_static',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01673.html#a76f6cbf29b1b8d57762cce1ed9bd01a8aa5624cdd99806daed0060c56908fd043',1,'__gnu_parallel']]],
+  ['parallel_5ftaskqueue_3',['parallel_taskqueue',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01673.html#a76f6cbf29b1b8d57762cce1ed9bd01a8aec9d9a6b7777354079bb906baaec2ff4',1,'__gnu_parallel']]],
+  ['parallel_5funbalanced_4',['parallel_unbalanced',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01673.html#a76f6cbf29b1b8d57762cce1ed9bd01a8ac530f35e669c50e9676af20454e1676f',1,'__gnu_parallel']]],
+  ['partial_5fsort_5fminimal_5fn_5',['partial_sort_minimal_n',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#a79a53af11312c55af15998bf7a3f46d3',1,'__gnu_parallel::_Settings']]],
+  ['partial_5fsum_5fdilation_6',['partial_sum_dilation',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#a781c6a0034d1669b90e37407e1c6d09e',1,'__gnu_parallel::_Settings']]],
+  ['partial_5fsum_5fminimal_5fn_7',['partial_sum_minimal_n',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#a768fbc7a7e588eabb25fd3824c4322fb',1,'__gnu_parallel::_Settings']]],
+  ['partition_5fchunk_5fshare_8',['partition_chunk_share',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#aaac9b17f2715c8b9101a2905562a43d1',1,'__gnu_parallel::_Settings']]],
+  ['partition_5fchunk_5fsize_9',['partition_chunk_size',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#ad796aab8446ea9eaadfbc0b7b0787c71',1,'__gnu_parallel::_Settings']]],
+  ['partition_5fminimal_5fn_10',['partition_minimal_n',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a09245.html#ae56b6a01dc27becaa478828011527b4b',1,'__gnu_parallel::_Settings']]],
+  ['piecewise_5fconstruct_11',['piecewise_construct',['http://gcc.gnu.org/onlinedocs/libstdc++/latest-doxygen/a01567.html#ga9251cc200339814c062d2bda48994255',1,]]],
+  ['pixeldata_12',['pixelData',['../a03700.html#a7186161570c8672b287171e4f03706a1',1,'T5_CamImage']]],
+  ['posaim_5fgbd_13',['posAim_GBD',['../a03708.html#a83af992091c013e4cd52976a88768500',1,'T5_WandReport']]],
+  ['poscam_5fgbd_14',['posCAM_GBD',['../a03700.html#a9bcf416c01c2462fb5d659b38a3d0811',1,'T5_CamImage']]],
+  ['posevalid_15',['poseValid',['../a03708.html#a0d2061c0006f6cde815342a28558f72e',1,'T5_WandReport']]],
+  ['posfingertips_5fgbd_16',['posFingertips_GBD',['../a03708.html#a944fbfedd26c8a23515aeaa24fe8e670',1,'T5_WandReport']]],
+  ['posgls_5fgbd_17',['posGLS_GBD',['../a03684.html#a14824e5d998242919338c80b7fa688d0',1,'T5_GlassesPose']]],
+  ['posgrip_5fgbd_18',['posGrip_GBD',['../a03708.html#a5c61f193df1e25dedb349794419dd082',1,'T5_WandReport']]],
+  ['poslvc_5fgbd_19',['posLVC_GBD',['../a03692.html#a714f026dfe310c90ec73a7e4afeadead',1,'T5_FrameInfo']]],
+  ['posrvc_5fgbd_20',['posRVC_GBD',['../a03692.html#a9baaac3ce5fd0a36385d3b31c95b02d6',1,'T5_FrameInfo']]]
+];
