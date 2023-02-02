@@ -431,6 +431,8 @@ void application::configure_and_create_window(const std::string& application_nam
       if(system_name == "oculus") { vr = std::make_unique<vr_system_oculus>(); }
 #endif
 
+      if(system_name == "tiltfive") { vr = std::make_unique<vr_system_t5>(); }
+
       if(!vr)
       {
         std::cerr << "application is VR, but VR system named " << system_name
@@ -705,19 +707,24 @@ void application::render_frame()
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::left));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* left_eye = vr->get_eye_camera(vr_system::eye::left);
-      left_eye->update_projection(left_size.x, left_size.y);
-      render_skybox(left_eye);
-      build_draw_list_from_camera(left_eye);
-      render_draw_list(left_eye);
+      if(left_eye)
+      {
+        left_eye->update_projection(left_size.x, left_size.y);
+        render_skybox(left_eye);
+        build_draw_list_from_camera(left_eye);
+        render_draw_list(left_eye);
+      }
 
       glBindFramebuffer(GL_FRAMEBUFFER, vr->get_eye_framebuffer(vr_system::eye::right));
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       camera* right_eye = vr->get_eye_camera(vr_system::eye::right);
-      right_eye->update_projection(right_size.x, right_size.y);
-      render_skybox(right_eye);
-      build_draw_list_from_camera(right_eye);
-      render_draw_list(right_eye);
-
+      if(right_eye)
+      {
+        right_eye->update_projection(right_size.x, right_size.y);
+        render_skybox(right_eye);
+        build_draw_list_from_camera(right_eye);
+        render_draw_list(right_eye);
+      }
       vr->submit_frame_to_vr_system();
       if(vr->must_vflip()) glFrontFace(GL_CW);
     }

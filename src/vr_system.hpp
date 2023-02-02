@@ -100,7 +100,7 @@ class vr_system
   shader_handle depth_plane_shader = shader_program_manager::invalid_shader;
 
   //LIV specific
-  ID3D11Texture2D* LIV_Texture;
+  ID3D11Texture2D* LIV_Texture = nullptr;
   HANDLE LIV_Texture_SharedHandle;
 
   //Directory watcher to read FOV updates
@@ -201,3 +201,5 @@ using vr_system_ptr = std::unique_ptr<vr_system>;
 #if USING_OPENXR
 #include "vr_system_openxr.hpp"
 #endif
+
+#include "vr_system_t5.hpp"
