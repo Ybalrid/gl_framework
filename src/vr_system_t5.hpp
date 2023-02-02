@@ -20,6 +20,7 @@ class vr_system_t5 : public vr_system
 
   node* eye_camera_node[2]{nullptr, nullptr};
   GLuint t5Buffer;
+  T5_GlassesPose pose;
 
   public:
   vr_system_t5();

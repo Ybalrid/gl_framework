@@ -3,8 +3,15 @@
 static constexpr size_t GLASSES_BUFFER_SIZE { 1024 };
 static constexpr size_t PARAM_BUFFER_SIZE { 1024 };
 
+static constexpr int defaultWidth  = 1216;
+static constexpr int defaultHeight = 768;
+static float defaultFOV            = 48.0;
+
 //TODO handle t5 projection
-void eye_projection(glm::mat4& p,float,float) { p = glm::mat4(1); }
+void eye_projection(glm::mat4& p,float nearz,float farz)
+{
+  p = glm::perspectiveFov<float>(glm::radians(defaultFOV), defaultWidth, defaultHeight, nearz, farz);
+}
 
 vr_system_t5::vr_system_t5()
 {
@@ -135,16 +142,18 @@ bool vr_system_t5::initialize(sdl::Window& window)
 
   for(auto& textureSize : eye_render_target_sizes)
   {
-    textureSize.x = 1280;
-    textureSize.y = 720;
+    textureSize.x = defaultWidth;
+    textureSize.y = defaultHeight;
   }
 
-  glGenTextures(1, &t5Buffer);
-  glBindTexture(GL_TEXTURE_2D, t5Buffer);
-  glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 1280 * 2, 720, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-  glBindTexture(GL_TEXTURE_2D, 0);
 
-  err = t5InitGlassesGraphicsContext(glassesHandle, kT5_GraphicsApi_GL, (void*)t5Buffer);
+  err = t5InitGlassesGraphicsContext(glassesHandle, kT5_GraphicsApi_GL, nullptr);
+
+  if(err)
+  {
+    std::cout << "Failed to init the OpenGL Graphics Context"<< t5GetResultMessage(err) <<"\n";
+    return false;
+  }
 
   return true;
 }
@@ -187,7 +196,6 @@ void vr_system_t5::wait_until_next_frame()
 
 void vr_system_t5::update_tracking()
 {
-  T5_GlassesPose pose;
   T5_Result err = t5GetGlassesPose(glassesHandle, kT5_GlassesPoseUsage_GlassesPresentation, &pose);
 
   if(err)
@@ -217,15 +225,23 @@ void vr_system_t5::submit_frame_to_vr_system()
   T5_FrameInfo frameInfo {};
   frameInfo.leftTexHandle = (void*)eye_render_texture[0];
   frameInfo.rightTexHandle = (void*)eye_render_texture[1];
-  frameInfo.isUpsideDown   = false; //TODO maybe true
+  frameInfo.isUpsideDown   = false; //TODO maybe true. *Commiting OpenGL Crimes*
   frameInfo.isSrgb         = false;
-  frameInfo.texHeight_PIX  = 720;
-  frameInfo.texWidth_PIX   = 1280;
-  //TODO "not sure what VC (virtual camera) is supposed to be.
-  frameInfo.vci.height_VCI = 720;
-  frameInfo.vci.width_VCI = 1280;
-  frameInfo.rotToLVC_GBD.w = 1;
-  frameInfo.rotToRVC_GBD.w = 1;
+
+
+  frameInfo.vci.startY_VCI = -tan(glm::radians(defaultFOV) * 0.5f);
+  frameInfo.vci.startX_VCI = frameInfo.vci.startY_VCI * defaultWidth / (float)defaultHeight;
+  frameInfo.vci.width_VCI  = -2.0f * frameInfo.vci.startX_VCI;
+  frameInfo.vci.height_VCI = -2.0f * frameInfo.vci.startY_VCI;
+  frameInfo.texWidth_PIX   = defaultWidth;
+  frameInfo.texHeight_PIX  = defaultHeight;
+
+  //TODO IPD
+  frameInfo.posLVC_GBD = pose.posGLS_GBD;
+  frameInfo.posRVC_GBD = pose.posGLS_GBD;
+  frameInfo.rotToLVC_GBD = pose.rotToGLS_GBD;
+  frameInfo.rotToRVC_GBD = pose.rotToGLS_GBD;
+
 
   //TODO this call is pushing error messages in the console about invalid frames.
   T5_Result err = t5SendFrameToGlasses(glassesHandle, &frameInfo);
