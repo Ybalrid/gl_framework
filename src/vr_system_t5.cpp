@@ -1,5 +1,7 @@
 #include "vr_system_t5.hpp"
 
+#include "include/TiltFiveNative.hpp"
+
 static constexpr size_t GLASSES_BUFFER_SIZE { 1024 };
 static constexpr size_t PARAM_BUFFER_SIZE { 1024 };
 
@@ -7,20 +9,64 @@ static constexpr int defaultWidth  = 1216;
 static constexpr int defaultHeight = 768;
 static float defaultFOV            = 48.0;
 
-//TODO handle t5 projection
+//TODO handle t5 projection "correctly"
 void eye_projection(glm::mat4& p,float nearz,float farz)
 {
   p = glm::perspectiveFov<float>(glm::radians(defaultFOV), defaultWidth, defaultHeight, nearz, farz);
+}
+
+glm::vec3 vr_system_t5::T5_to_GL(const T5_Vec3& pos)
+{
+  glm::vec3 glPos_GBD { pos.x, pos.z, -pos.y };
+
+  return glPos_GBD;
+}
+
+inline std::string to_string(const glm::vec3& v)
+{
+  return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")";
+}
+
+glm::quat vr_system_t5::T5_to_GL(const T5_Quat& rot)
+{
+  glm::quat glRot_gbd;
+  glRot_gbd.w = rot.w;
+  glRot_gbd.x = rot.x;
+  glRot_gbd.y = rot.y;
+  glRot_gbd.z = rot.z;
+
+  const auto euler = glm::eulerAngles(glRot_gbd);
+
+  glm::vec3 flippedAngles(-euler.x, -euler.z, euler.y);
+  std::cout << to_string(flippedAngles) << std::endl;
+
+  return flippedAngles;
+}
+
+T5_Vec3 vr_system_t5::GL_to_T5(const glm::vec3& pos)
+{
+  T5_Vec3 t5Pos { pos.x, pos.z, -pos.y };
+  return t5Pos;
+}
+
+T5_Quat vr_system_t5::GL_to_T5(const glm::quat& rot)
+{
+  T5_Quat t5Rot { rot.w,-rot.x, rot.y, rot.z };
+  return t5Rot;
 }
 
 vr_system_t5::vr_system_t5()
 {
   std::cout << "Initialized TiltFive based vr_system implementation\n";
 
-  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers;
+  caps = caps_hmd_3dof | caps_hmd_6dof /* | caps_hand_controllers */;
 }
 
-vr_system_t5::~vr_system_t5() { }
+vr_system_t5::~vr_system_t5()
+{
+  t5DestroyGlasses(&glassesHandle);
+  t5DestroyContext(&t5ctx);
+}
 
 bool vr_system_t5::initialize(sdl::Window& window)
 {
@@ -125,7 +171,7 @@ bool vr_system_t5::initialize(sdl::Window& window)
     err = t5ReserveGlasses(glassesHandle, GAME_NAME);
     if(err)
     {
-      std::cout << "Failed to reserve glasse : " << t5GetResultMessage(err) << std::endl;
+      std::cout << "Failed to reserve glasses : " << t5GetResultMessage(err) << std::endl;
       return false;
     }
 
@@ -160,9 +206,23 @@ bool vr_system_t5::initialize(sdl::Window& window)
 
 void vr_system_t5::build_camera_node_system()
 {
-  head_node = vr_tracking_anchor->push_child(create_node("head_node"));
-  eye_camera_node[0] = head_node->push_child(create_node("eye_0"));
-  eye_camera_node[1] = head_node->push_child(create_node("eye_1"));
+
+  gameboard_frame = vr_tracking_anchor->push_child(create_node("T5"));
+  gameboard_frame->local_xform.scale(glm::vec3(2.5));
+  //gameboard_frame->local_xform.rotate(-90.f, transform::X_AXIS); //Z is up for T5, Y is up for us.
+
+  //TODO pre-scale the Gameboard Frame?
+  head_node = gameboard_frame->push_child(create_node("head_node"));
+  head_frame = head_node->push_child(create_node("head_frame"));
+  //head_frame->local_xform.rotate(-90, transform::X_AXIS);
+
+  eye_camera_node[0] = head_frame->push_child(create_node("eye_0"));
+  eye_camera_node[1] = head_frame->push_child(create_node("eye_1"));
+
+  eye_frame[0] = eye_camera_node[0]->push_child(create_node("eye_0_camera"));
+  eye_frame[1] = eye_camera_node[1]->push_child(create_node("eye_1_camera"));
+
+  //for(auto* eye_camera_frame : eye_frame) eye_camera_frame->local_xform.rotate(-90, transform::X_AXIS);
 
   //We have glasses here so we can read the IPD
   double ipd = 0;
@@ -184,8 +244,8 @@ void vr_system_t5::build_camera_node_system()
     r.vr_eye_projection_callback = eye_projection;
     l.projection_type            = camera::projection_mode::vr_eye_projection;
     r.projection_type            = camera::projection_mode::vr_eye_projection;
-    eye_camera[0]                = eye_camera_node[0]->assign(std::move(l));
-    eye_camera[1]                = eye_camera_node[1]->assign(std::move(r));
+    eye_camera[0]                = eye_frame[0]->assign(std::move(l));
+    eye_camera[1]                = eye_frame[1]->assign(std::move(r));
   }
 }
 
@@ -197,17 +257,20 @@ void vr_system_t5::wait_until_next_frame()
 void vr_system_t5::update_tracking()
 {
   T5_Result err = t5GetGlassesPose(glassesHandle, kT5_GlassesPoseUsage_GlassesPresentation, &pose);
+  poseIsUsable = !err;
 
   if(err)
   {
-    if(T5_ERROR_TRY_AGAIN == err) return;
+    std::cout << __FUNCTION__ << " err != 0 : " << t5GetResultMessage(err) << std::endl;
+    return;
   }
+
+  //std::cout << pose << std::endl;
 
   //TODO this is just to get started, have not check tracking space.
   //TODO we might want to scale up/down the VR node anchor, as this is a tabletop experience, not a fully immersive VR one
-  head_node->local_xform.set_position(*(glm::vec3*)&pose.posGLS_GBD.x);
-  head_node->local_xform.set_orientation(*(glm::vec3*)&pose.rotToGLS_GBD.x);
-
+  head_node->local_xform.set_position(T5_to_GL(pose.posGLS_GBD));
+  head_node->local_xform.set_orientation(T5_to_GL(pose.rotToGLS_GBD));
 
   //TODO move this out of the VR system child, every subclass is copy pasting this snippet around...
   //This updates the world matrices on everybody
@@ -221,6 +284,10 @@ void vr_system_t5::update_tracking()
 
 void vr_system_t5::submit_frame_to_vr_system()
 {
+  //do not submit to T5 if the pose is nonsense, as it generates async errors to be spewed all over the output console
+  if(!poseIsUsable) 
+      return;
+
   opengl_debug_group group(__FUNCTION__);
   T5_FrameInfo frameInfo {};
   frameInfo.leftTexHandle = (void*)eye_render_texture[0];
@@ -228,27 +295,29 @@ void vr_system_t5::submit_frame_to_vr_system()
   frameInfo.isUpsideDown   = false; //TODO maybe true. *Commiting OpenGL Crimes*
   frameInfo.isSrgb         = false;
 
-
+  //TODO this is copy pasted from Pierre's example.
   frameInfo.vci.startY_VCI = -tan(glm::radians(defaultFOV) * 0.5f);
-  frameInfo.vci.startX_VCI = frameInfo.vci.startY_VCI * defaultWidth / (float)defaultHeight;
+  frameInfo.vci.startX_VCI = frameInfo.vci.startY_VCI * (float)defaultWidth / (float)defaultHeight;
   frameInfo.vci.width_VCI  = -2.0f * frameInfo.vci.startX_VCI;
   frameInfo.vci.height_VCI = -2.0f * frameInfo.vci.startY_VCI;
   frameInfo.texWidth_PIX   = defaultWidth;
   frameInfo.texHeight_PIX  = defaultHeight;
 
-  //TODO IPD
+  //TODO we need to get those *relative to their parent frame*
+  frameInfo.posLVC_GBD = GL_to_T5(eye_camera_node[0]->local_xform.get_position());
+  frameInfo.posRVC_GBD = GL_to_T5(eye_camera_node[1]->local_xform.get_position());
+  //we may be messing with those rotations to get the eye cameras to be properly anligned so... this may be invalid
+  frameInfo.rotToLVC_GBD = GL_to_T5(eye_camera_node[1]->local_xform.get_orientation());
+  frameInfo.rotToRVC_GBD = GL_to_T5(eye_camera_node[1]->local_xform.get_orientation());
+
   frameInfo.posLVC_GBD = pose.posGLS_GBD;
-  frameInfo.posRVC_GBD = pose.posGLS_GBD;
+  frameInfo.posRVC_GBD   = pose.posGLS_GBD;
   frameInfo.rotToLVC_GBD = pose.rotToGLS_GBD;
   frameInfo.rotToRVC_GBD = pose.rotToGLS_GBD;
 
-
-  //TODO this call is pushing error messages in the console about invalid frames.
   T5_Result err = t5SendFrameToGlasses(glassesHandle, &frameInfo);
   if(err) 
-  {
     std::cout << t5GetResultMessage(err) << std::endl;
-  }
 
   //handle dirty state
   shader::force_rebind();

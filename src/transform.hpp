@@ -39,7 +39,7 @@ struct transform
   ///Rotate this transform by this quaternion
   void rotate(const glm::quat& q);
 
-  ///Rotate this transform by `angle` radians around `axis`
+  ///Rotate this transform by `angle` degrees around `axis`
   void rotate(float angle, const glm::vec3& axis);
 
   ///Positive X axis.
