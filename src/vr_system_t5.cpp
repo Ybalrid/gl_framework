@@ -3,7 +3,7 @@
 #include "include/TiltFiveNative.hpp"
 
 static constexpr size_t GLASSES_BUFFER_SIZE { 1024 };
-static constexpr size_t WAND_BUFFER_SIZE { 1024 };
+static constexpr size_t WAND_BUFFER_SIZE { 4 };
 static constexpr size_t PARAM_BUFFER_SIZE { 1024 };
 
 static constexpr int defaultWidth  = 1216;
@@ -178,6 +178,23 @@ bool vr_system_t5::initialize(sdl::Window& window)
 
   //TODO obtain wand stream
 
+  uint8_t count = WAND_BUFFER_SIZE;
+  T5_WandHandle wandListBuffer[WAND_BUFFER_SIZE];
+  err = t5ListWandsForGlasses(glassesHandle, wandListBuffer, &count);
+
+  if(!err) { std::cout << "Wand List " << count << std::endl;
+    for(int i = 0; i < count; ++i) 
+        std::cout << "\t- " << wandListBuffer[i];
+
+    if(count > 0)
+    {
+      T5_WandStreamConfig config {};
+      config.enabled = true;
+
+      err = t5ConfigureWandStreamForGlasses(glassesHandle, &config);
+    }
+  }
+
   return true;
 }
 
@@ -253,6 +270,26 @@ void vr_system_t5::update_tracking()
   head_node->local_xform.set_position(T5_to_GL(pose.posGLS_GBD));
   head_node->local_xform.set_orientation(T5_to_GL(pose.rotToGLS_GBD));
 
+  //read wand event buffer
+  T5_WandStreamEvent event;
+  for(int i = 0; i < 2; ++i)
+  {
+    err = t5ReadWandStreamForGlasses(glassesHandle, &event, 1);
+    if(!err)
+    {
+      switch(event.type)
+      {
+        case kT5_WandStreamEventType_Report: 
+          hand_node[0]->local_xform.set_position(T5_to_GL(event.report.posAim_GBD));
+          hand_node[0]->local_xform.set_orientation(T5_to_GL(event.report.rotToWND_GBD));
+
+        //TODO read sticks and buttons and everything else.
+
+        break;
+      }
+    }
+  }
+
   //TODO move this out of the VR system child, every subclass is copy pasting this snippet around...
   //This updates the world matrices on everybody
   vr_tracking_anchor->update_world_matrix();
@@ -261,7 +298,7 @@ void vr_system_t5::update_tracking()
   //The camera object is not aware it's attached to a node, it only know it has a view matrix.
   //Set world matrix on a camera update the view matrix by computing the inverse of the input
   for(size_t i = 0; i < 2; ++i) eye_camera[i]->set_world_matrix(eye_camera_node[i]->get_world_matrix());
-}   
+}
 
 inline T5_Vec3 TranslateByHalfIPD(const float halfIPD, const T5_Quat& headRot, const T5_Vec3& position)
 {

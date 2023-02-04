@@ -29,7 +29,6 @@ class vr_system_t5 : public vr_system
   double ipd = 0;
   bool has_wand = false;
 
-
   public:
   vr_system_t5();
   virtual ~vr_system_t5();
