@@ -7,8 +7,6 @@
 class vr_system_t5 : public vr_system
 {
   node* gameboard_frame = nullptr;
-  node* eye_frame[2] { nullptr, nullptr };
-  node* head_frame = nullptr;
 
   T5_Context t5ctx{};
   T5_ClientInfo clientInfo = { "info.ybalrid.todogengine-" GAME_NAME, "0.1.0", 0, 0 };
@@ -27,8 +25,9 @@ class vr_system_t5 : public vr_system
 
   static glm::vec3 T5_to_GL(const T5_Vec3& pos);
   static glm::quat T5_to_GL(const T5_Quat& rot);
-  static T5_Vec3 GL_to_T5(const glm::vec3& pos);
-  static T5_Quat GL_to_T5(const glm::quat& rot);
+
+  double ipd = 0;
+  bool has_wand = false;
 
 
   public:
