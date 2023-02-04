@@ -192,6 +192,21 @@ bool vr_system_t5::initialize(sdl::Window& window)
       config.enabled = true;
 
       err = t5ConfigureWandStreamForGlasses(glassesHandle, &config);
+
+      if(!err)
+      {
+        hand_controllers[0] = new vr_controller;
+        auto& controller    = *hand_controllers;
+
+        controller->button_names = 
+        { "t5", "1", "2", "3", "A", "B", "X", "Y"};
+        //controller->buttons.resize(controller->button_names.size());
+
+
+        controller->trigger_names = { "trigger" };
+        //controller->triggers.resize(controller->trigger_names.size());
+        //controller->stick_names   = { "" };
+      }
     }
   }
 
@@ -239,6 +254,7 @@ void vr_system_t5::build_camera_node_system()
   }
 
   hand_node[0] = gameboard_frame->push_child(create_node("wand_0"));
+  hand_controllers[0]->pose_node = hand_node[0];
 }
 
 void vr_system_t5::wait_until_next_frame()

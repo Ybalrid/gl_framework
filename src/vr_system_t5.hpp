@@ -19,7 +19,6 @@ class vr_system_t5 : public vr_system
   std::string singleUserGlassesSN{};
 
   node* eye_camera_node[2]{nullptr, nullptr};
-  GLuint t5Buffer;
   T5_GlassesPose pose;
   bool poseIsUsable = false;
 
@@ -27,7 +26,6 @@ class vr_system_t5 : public vr_system
   static glm::quat T5_to_GL(const T5_Quat& rot);
 
   double ipd = 0;
-  bool has_wand = false;
 
   public:
   vr_system_t5();
