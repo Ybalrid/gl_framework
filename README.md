@@ -63,6 +63,78 @@ an easy distribution-version agnostic way of distributing applications using it.
 
 ## Features
 
+### VFS
+
+The engine loads and access all files through a virtual file system. A number of assets needs to be findable for the engine to function.
+
+The folder called `unpacked_res`, and the archive `res.zip` included will be automatically mounted at the root of the virutal file system.
+
+#### Tree
+
+```
+(root)
+|
+├───config.toml
+|
+├───bgm
+├───gltf
+├───levels
+├───scripts
+├───shaders
+├───skybox
+├───sounds
+└───textures
+```
+
+##### config.toml
+A configuraiton file loaded at engine startup, describes some general configurations parameters, including the level that is first to be loaded.
+
+```toml
+[configuration]
+multisampling = true
+samples = 4
+resolution = [1024, 768]
+fullscreen = false
+is_vr = true
+vr_system = "tiltfive"
+use_LIV = false
+hidpi = false
+levels = ["sponza"]
+```
+
+##### bgm
+A folder conatining audio files for background music
+
+##### gltf
+A folder contains 3d assets, in the glTF format.
+
+These can be ASCII or Binary based glTF files. All resources linked inside the glTF assets must be present next to the .gltf files in this folder.
+
+##### levels
+
+JSON files representing 3d enviornements
+
+##### scripts
+
+ChaiScript files reprenseting scripts that can be executed by the engine
+
+##### shaders
+
+GLSL files containg all shaders that can be used by the engine
+
+##### skybox
+
+Textures for cubemaps to be used as background
+
+##### sounds
+
+A folder containg audio files for sound effects
+
+##### textures
+
+A folder containing 2d images that could be used for texturing, or spritework.
+
+
 ### VR
 
 VR rendering is an optional component. To be activated in your build, you need to set the apropriate CMake cache variables to "ON"
@@ -150,12 +222,25 @@ Their syntax is self-descriptory, they contain an array of rerferences to glTF a
 ]
 ```
 
+#### Valid keys
+
+ - `asset` : VFS path to the asset to load
+ - `position` : array of 3 number representing a position as XYZ vector 
+ - `orientation` : array of 4 numbers represneting an orientation as a XYZW quaternion
+ - `scale` : array of 3 numbers represneting a scale as a XYZ number
+ - `script` : name of a script to attach to the node
+ - `mass` : number that represent the object mass in Kg for the physic engien
+ - `enable_physics` : boolean that enable representing the object in the physics engine
+ - `proxy` : string representing the kind of physics representation for the object as a rigid body
+   - `"box"`
+   - `"converx_hull"`
+   - `"static_triangle_mesh"`
 
 ### Scripting
 
 The engine support scripting using ChaiScript. 
 
-A script console is acessible with the `~` or `²` key, usually the one at the top left of the keyboard, below the escape key.
+A script console is acessible with the `~`, or `²` key, usually the one at the top left of the keyboard, below the escape key.
 
 The API is currently not documented, but mostly matches the methods accessible to a number of C++ classes. See `script_system.cpp` to check the bindings to the ChaiScript context.
 
