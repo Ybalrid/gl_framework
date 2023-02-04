@@ -202,4 +202,6 @@ using vr_system_ptr = std::unique_ptr<vr_system>;
 #include "vr_system_openxr.hpp"
 #endif
 
+#if USING_TILT_FIVE
 #include "vr_system_t5.hpp"
+#endif

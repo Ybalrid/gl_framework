@@ -430,8 +430,9 @@ void application::configure_and_create_window(const std::string& application_nam
 #if USING_OCULUS_VR
       if(system_name == "oculus") { vr = std::make_unique<vr_system_oculus>(); }
 #endif
-
+#if USING_TILT_FIVE
       if(system_name == "tiltfive") { vr = std::make_unique<vr_system_t5>(); }
+#endif
 
       if(!vr)
       {

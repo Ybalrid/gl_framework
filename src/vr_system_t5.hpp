@@ -2,6 +2,7 @@
 
 #include "vr_system.hpp"
 
+#if USING_TILT_FIVE
 #include "include/TiltFiveNative.h"
 
 class vr_system_t5 : public vr_system
@@ -39,3 +40,4 @@ class vr_system_t5 : public vr_system
   [[nodiscard]] bool must_vflip() const final;
   void update_mr_camera() final;
 };
+#endif

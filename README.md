@@ -70,6 +70,7 @@ VR rendering is an optional component. To be activated in your build, you need t
  - `HAS_OPENVR`
  - `HAS_OPENXR`
  - `HAS_OCULUS_VR`
+ - `HAS_TILT_FIVE`
 
 Preliminary VR support has been added. Engine configuration file (config.toml) must have the following keys inserted : 
 
@@ -85,12 +86,19 @@ Currently supported vr systems are:
  - `"openvr"`
  - `"openxr"`
  - `"oculus"`
+ - `"tiltfive"`
 
 #### OpenXR
 
 The OpenXR loader will be statically linked into the game EXE.
 
 Linux support is untested.
+
+#### Tilt Five
+
+The TiltFive NDK v1.3.0 has been copied in the resource directory.
+
+Currently the tracking and rendering works, although it needs some work to handle scaling down the world to be displayed properly on a tabletop display.
 
 ##### DirectX11 Fallback
 

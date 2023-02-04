@@ -131,7 +131,11 @@ bool vr_system_t5::initialize(sdl::Window& window)
       }
     }
 
-    if(glassesSerialNumber.empty()) return false;
+    if(glassesSerialNumber.empty())
+    {
+      std::cout << "Did not detect any Tilt Five glasses.\n";
+      return false;
+    }
     std::cout << "found " << glassesSerialNumber.size() << " TiltFive glasses:\n";
     for(const auto& glassesName : glassesSerialNumber) { std::cout << "\t- " << glassesName << "\n"; }
 
