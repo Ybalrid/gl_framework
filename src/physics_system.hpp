@@ -21,7 +21,7 @@ namespace bullet_utils
   inline btVector3 convert(glm::vec3 v) { return btVector3(v.x, v.y, v.z); }
   inline btQuaternion convert(glm::quat q) { return btQuaternion(q.x, q.y, q.z, q.w); }
 
-  inline transform convert(btTransform t)
+  inline transform convert(const btTransform& t)
   {
     const auto rotation = t.getRotation();
     const auto origin   = t.getOrigin();
@@ -33,7 +33,7 @@ namespace bullet_utils
     return xform;
   }
 
-  inline btTransform convert(transform t)
+  inline btTransform convert(const transform& t)
   {
     btTransform xform;
 
@@ -50,15 +50,14 @@ public:
     void getWorldTransform(btTransform& worldTrans) const override;
     void setWorldTransform(const btTransform& worldTrans) override;
 
-  private:
+private:
     node* scene_node;
-      glm::vec3 local_scale;
+    glm::vec3 local_scale;
   };
 }
 
 class physics_system
 {
-
   public:
   bool draw_debug_wireframe                                                 = false;
   static constexpr glm::vec3 earth_average_gravitational_acceleration_field = glm::vec3(0.f, -9.80665f, 0.f);
@@ -138,10 +137,9 @@ class physics_system
       glm::vec4 from_color;
       glm::vec3 to;
       glm::vec4 to_color;
-
     };
     std::vector<world_line> to_draw;
-    int debug_mode =  DBG_FastWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
+    int debug_mode = DBG_FastWireframe | DBG_DrawAabb | DBG_DrawContactPoints;
 
 public:
     debug_drawer();

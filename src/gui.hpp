@@ -60,7 +60,7 @@ class gui
   script_system* scripting_engine;
 
   bool show_console_     = false;
-  bool last_frame_showed = false;
+  bool forced_keyboard_focus_next = false;
 
   public:
   gui() = default;

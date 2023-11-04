@@ -10,10 +10,9 @@
 
 class level_system
 {
-public:
-  bool load_level(script_system& script_engine,  gltf_loader& gltf, scene& s, const std::string& level_name);
+  public:
+  bool load_level(script_system& script_engine, gltf_loader& gltf, scene& s, const std::string& level_name);
 
-private:
-
+  private:
   std::vector<physics_system::physics_proxy> proxies;
 };

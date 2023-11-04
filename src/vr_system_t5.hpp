@@ -18,6 +18,7 @@ class vr_system_t5 : public vr_system
 
   std::vector<std::string> glassesSerialNumber {};
   std::string singleUserGlassesSN{};
+  std::string singleUserGlassesFriendlyName {};
 
   node* eye_camera_node[2]{nullptr, nullptr};
   T5_GlassesPose pose;
@@ -27,6 +28,9 @@ class vr_system_t5 : public vr_system
   static glm::quat T5_to_GL(const T5_Quat& rot);
 
   double ipd = 0;
+  T5_WandReport lastReport;
+
+  void detect_events(const T5_WandReport& currentFrameReport);
 
   public:
   vr_system_t5();

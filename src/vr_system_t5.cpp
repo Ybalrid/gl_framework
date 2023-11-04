@@ -23,18 +23,9 @@ glm::vec3 vr_system_t5::T5_to_GL(const T5_Vec3& pos)
   return glPos_GBD;
 }
 
-inline std::string to_string(const glm::vec3& v)
-{
-  return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")";
-}
-
 glm::quat vr_system_t5::T5_to_GL(const T5_Quat& rot)
 {
-  glm::quat glRot_gbd;
-  glRot_gbd.w = rot.w;
-  glRot_gbd.x = rot.x;
-  glRot_gbd.y = rot.y;
-  glRot_gbd.z = rot.z;
+  glm::quat glRot_gbd(rot.w, rot.x, rot.y, rot.z);
 
   glRot_gbd = glm::inverse(glRot_gbd);
   glm::quat rotationFix(-glm::half_pi<float>(), glm::vec3(1.f, 0, 0)); //t5 headset is looking along the Y axis, not the Z axis
@@ -42,11 +33,18 @@ glm::quat vr_system_t5::T5_to_GL(const T5_Quat& rot)
   return rotationFix * glRot_gbd;
 }
 
+void vr_system_t5::detect_events(const T5_WandReport& currentFrameReport)
+{
+  if(lastReport.buttonsValid && currentFrameReport.buttonsValid) { }
+
+  if(lastReport.analogValid && currentFrameReport.analogValid) { }
+}
+
 vr_system_t5::vr_system_t5()
 {
   std::cout << "Initialized TiltFive based vr_system implementation\n";
 
-  caps = caps_hmd_3dof | caps_hmd_6dof /* | caps_hand_controllers */;
+  caps = caps_hmd_3dof | caps_hmd_6dof | caps_hand_controllers;
 }
 
 vr_system_t5::~vr_system_t5()
@@ -136,13 +134,27 @@ bool vr_system_t5::initialize(sdl::Window& window)
       std::cout << "Did not detect any Tilt Five glasses.\n";
       return false;
     }
+
     std::cout << "found " << glassesSerialNumber.size() << " TiltFive glasses:\n";
-    for(const auto& glassesName : glassesSerialNumber) { std::cout << "\t- " << glassesName << "\n"; }
+    for(const auto& glassesSN : glassesSerialNumber) { std::cout << "\t- " << glassesSN << "\n"; }
 
     singleUserGlassesSN = glassesSerialNumber.front();
 
     err = t5CreateGlasses(t5ctx, singleUserGlassesSN.c_str(), &glassesHandle);
-    if(err) { std::cout << "Error creating glasses " << singleUserGlassesSN << ": " << t5GetResultMessage(err); }
+    if(err)
+    {
+      std::cout << "Error creating glasses " << singleUserGlassesSN << ": " << t5GetResultMessage(err);
+      return false;
+    }
+
+    char glassesName[T5_MAX_STRING_PARAM_LEN] { 0 };
+    size_t glassesNameSize = T5_MAX_STRING_PARAM_LEN;
+    err = t5GetGlassesUtf8Param(glassesHandle, 0, kT5_ParamGlasses_UTF8_FriendlyName, glassesName, &glassesNameSize);
+    if(!err)
+    {
+      singleUserGlassesFriendlyName = glassesName;
+      std::cout << "Galsses friendly name : " << singleUserGlassesFriendlyName << std::endl;
+    }
 
     //TODO check connection routine :
     T5_ConnectionState connectionState;
@@ -186,9 +198,10 @@ bool vr_system_t5::initialize(sdl::Window& window)
   T5_WandHandle wandListBuffer[WAND_BUFFER_SIZE];
   err = t5ListWandsForGlasses(glassesHandle, wandListBuffer, &count);
 
-  if(!err) { std::cout << "Wand List " << count << std::endl;
-    for(int i = 0; i < count; ++i) 
-        std::cout << "\t- " << wandListBuffer[i];
+  if(!err)
+  {
+    std::cout << "Wand List " << count << std::endl;
+    for(int i = 0; i < count; ++i) std::cout << "\t- " << wandListBuffer[i];
 
     if(count > 0)
     {
@@ -202,10 +215,8 @@ bool vr_system_t5::initialize(sdl::Window& window)
         hand_controllers[0] = new vr_controller;
         auto& controller    = *hand_controllers;
 
-        controller->button_names = 
-        { "t5", "1", "2", "3", "A", "B", "X", "Y"};
+        controller->button_names = { "t5", "1", "2", "3", "A", "B", "X", "Y" };
         //controller->buttons.resize(controller->button_names.size());
-
 
         controller->trigger_names = { "trigger" };
         //controller->triggers.resize(controller->trigger_names.size());
@@ -221,7 +232,7 @@ void vr_system_t5::build_camera_node_system()
 {
 
   gameboard_frame = vr_tracking_anchor->push_child(create_node("T5"));
-  gameboard_frame->local_xform.scale(glm::vec3(5));
+  //gameboard_frame->local_xform.scale(glm::vec3(5));
   //gameboard_frame->local_xform.rotate(-90.f, transform::X_AXIS); //Z is up for T5, Y is up for us.
 
   //TODO pre-scale the Gameboard Frame?
@@ -258,7 +269,7 @@ void vr_system_t5::build_camera_node_system()
   }
 
   hand_node[0] = gameboard_frame->push_child(create_node("wand_0"));
-  hand_controllers[0]->pose_node = hand_node[0];
+  if(hand_controllers[0]) hand_controllers[0]->pose_node = hand_node[0];
 }
 
 void vr_system_t5::wait_until_next_frame()
@@ -283,7 +294,7 @@ void vr_system_t5::update_tracking()
   if(!poseIsUsable) std::cout << "T5 found tracking.\n";
   poseIsUsable = true;
 
-  //std::cout << pose << std::endl;
+  std::cout << pose << std::endl;
 
   //TODO this is just to get started, have not check tracking space.
   //TODO we might want to scale up/down the VR node anchor, as this is a tabletop experience, not a fully immersive VR one
@@ -291,6 +302,7 @@ void vr_system_t5::update_tracking()
   head_node->local_xform.set_orientation(T5_to_GL(pose.rotToGLS_GBD));
 
   //read wand event buffer
+  //Note: we probably should do it in a background thread, as the read function is blocking!
   T5_WandStreamEvent event;
   for(int i = 0; i < 2; ++i)
   {
@@ -299,13 +311,23 @@ void vr_system_t5::update_tracking()
     {
       switch(event.type)
       {
-        case kT5_WandStreamEventType_Report: 
-          hand_node[0]->local_xform.set_position(T5_to_GL(event.report.posAim_GBD));
-          hand_node[0]->local_xform.set_orientation(T5_to_GL(event.report.rotToWND_GBD));
+        case kT5_WandStreamEventType_Connect: break;
+        case kT5_WandStreamEventType_Disconnect: break;
+        case kT5_WandStreamEventType_Desync: break;
+        case kT5_WandStreamEventType_Report:
+          if(event.report.poseValid)
+          {
+            if(hand_node[0])
+            {
+              hand_node[0]->local_xform.set_position(T5_to_GL(event.report.posGrip_GBD));
+              hand_node[0]->local_xform.set_orientation(T5_to_GL(event.report.rotToWND_GBD));
+            }
+          }
 
-        //TODO read sticks and buttons and everything else.
+          detect_events(event.report);
+          memcpy(&lastReport, &event.report, sizeof(T5_WandReport));
 
-        break;
+          break;
       }
     }
   }

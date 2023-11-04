@@ -99,11 +99,16 @@ bool level_system::load_level(script_system& script_engine, gltf_loader& gltf, s
             {
               auto& renderable = renderable_manager::get_from_handle(submesh);
 
-              proxies.emplace_back(renderable.create_proxy(application::get_singleton().get_physics_system(), mass, level_asset_root->local_xform.get_scale(), [proxy] {
-                if(proxy == "box") return physics_system::shape::box;
-                if(proxy == "convex_hull") return physics_system::shape::convex_hull;
-                if(proxy == "static_triangle_mesh") return physics_system::shape::static_triangle_mesh;
-              }(), level_asset_root));
+              proxies.emplace_back(renderable.create_proxy(
+                  application::get_singleton().get_physics_system(),
+                  mass,
+                  level_asset_root->local_xform.get_scale(),
+                  [proxy] {
+                    if(proxy == "box") return physics_system::shape::box;
+                    if(proxy == "convex_hull") return physics_system::shape::convex_hull;
+                    if(proxy == "static_triangle_mesh") return physics_system::shape::static_triangle_mesh;
+                  }(),
+                  level_asset_root));
 
               proxies.back().xform = bullet_utils::convert(level_asset_root->local_xform);
               application::get_singleton().get_physics_system()->add_to_world(proxies.back());

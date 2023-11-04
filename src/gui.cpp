@@ -22,200 +22,196 @@
 
 void gui::set_script_engine_ptr(script_system* s) { scripting_engine = s; }
 
+
 void gui::console()
 {
-  if(show_console_)
+  if(!show_console_) return;
+
+  //Acquire window geometry
+  int x, y;
+  SDL_GetWindowSize(w, &x, &y);
+
+  //Configure window styling
+  ImGui::SetNextWindowSize(ImVec2(float(x), float(std::min(int(y * 0.75f), 900))));
+  ImGui::SetNextWindowPos({ 0, 0 });
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
+  ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking);
+
+  // Leave room for 1 separator + 1 InputText
+  ImGui::BeginChild("ScrollingRegion", ImVec2(0, -30), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
+
+  ImGui::PushFont(console_font);
+  for(const auto& log_line : console_content) ImGui::TextUnformatted(log_line.c_str());
+  ImGui::PopFont();
+
+  if(scroll_console_to_bottom) ImGui::SetScrollHereY(1.f);
+  scroll_console_to_bottom = false;
+
+  ImGui::PopStyleVar();
+
+  ImGui::EndChild();
+  ImGui::Separator();
+  //---------------
+  bool reclaim_focus = false;
+
+  ImGui::PushFont(console_font);
+  ImGui::PushItemWidth(-1);
+  if(!forced_keyboard_focus_next)
   {
-    //Acquire window geometry
-    int x, y;
-    SDL_GetWindowSize(w, &x, &y);
-
-    //Configure window styling
-    ImGui::SetNextWindowSize(ImVec2(float(x), float(std::min(int(y * 0.75f), 900))));
-    ImGui::SetNextWindowPos({ 0, 0 });
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.025f, 0.025f, 0.75f));
-    ImGui::Begin("Console", &show_console_, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking);
-
-    // Leave room for 1 separator + 1 InputText
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -30), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
-
-    ImGui::PushFont(console_font);
-    for(const auto& log_line : console_content) ImGui::TextUnformatted(log_line.c_str());
-    ImGui::PopFont();
-
-    if(scroll_console_to_bottom) ImGui::SetScrollHereY(1.f);
-    scroll_console_to_bottom = false;
-
-    ImGui::PopStyleVar();
-
-    ImGui::EndChild();
-    ImGui::Separator();
-    //---------------
-    bool reclaim_focus = false;
-
-    ImGui::PushFont(console_font);
-    ImGui::PushItemWidth(-1);
-    if(!last_frame_showed)
-    {
-      ImGui::SetKeyboardFocusHere(1);
-      last_frame_showed = true;
-    }
-    if(ImGui::InputText(
-           "##Input",
-           console_input,
-           sizeof(console_input),
-           ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory,
-           [](ImGuiInputTextCallbackData* data) -> int {
-             gui* ui = static_cast<gui*>(data->UserData);
-             switch(data->EventFlag)
-             {
-               case ImGuiInputTextFlags_CallbackCompletion:
-                 if(!ui->scripting_engine)
-                   ui->push_to_console("no completion yet...");
-                 else
-                 {
-                   //Get the updated list of functions and objects names
-                   auto list_of_words = ui->scripting_engine->global_scope_object_names();
-
-                   //get the content of the buffer
-                   const std::string current_input = (ui->console_input);
-
-                   //point where the last word shoud start
-                   int last_word_start_char = int(current_input.find_last_of(" .()[]-+-/<>~=\"'"));
-                   std::string last_word    = "";
-                   if(last_word_start_char != std::string::npos) { last_word = current_input.substr(1 + last_word_start_char); }
-                   else // try to use the whole input?
-                   {
-                     last_word            = current_input;
-                     last_word_start_char = 0;
-                   }
-
-                   //We have a word
-                   if(!last_word.empty())
-                   {
-                     //find matching symbols with the string at the beginning
-                     std::vector<std::string> matches;
-                     auto it = list_of_words.begin();
-                     while(it != list_of_words.end())
-                     {
-                       it = std::find_if(it, list_of_words.end(), [&](const std::string& str) {
-                         return str.rfind(last_word, 0) == 0; //this return true if str starts with last_word
-                       });
-                       if(it != list_of_words.end()) matches.emplace_back(*it);
-                       //Escape the loop now if we haven't found anything
-                       if(it == list_of_words.end()) break;
-                       ++it;
-                     }
-                     //if something matches
-                     if(!matches.empty())
-                     {
-                       //if there's only one to use:
-                       if(matches.size() == 1)
-                       {
-                         const auto& match = matches[0];
-                         //if(match.find("__internal__") != match.npos)
-                         {
-                           //Delete everything up to the one character after the found delimiter
-                           data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
-                                             int(current_input.size()) - last_word_start_char
-                                                 - (last_word_start_char > 0 ? 1 : 0));
-                           //Write the match at the end of the string
-                           data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, match.c_str());
-                           ui->scroll_console_to_bottom = true;
-                         }
-                       }
-                       else
-                       {
-                         for(const auto& match : matches)
-                         {
-                           //if(match.find("__internal__") != match.npos)
-                           {
-                             ui->push_to_console(match);
-                             ui->scroll_console_to_bottom = true;
-                           }
-                         }
-                       }
-                     }
-                   }
-                 }
-                 break;
-               case ImGuiInputTextFlags_CallbackHistory: {
-                 const char* text               = nullptr;
-                 const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
-
-                 if(data->EventKey == ImGuiKey_UpArrow)
-                 {
-                   if(!ui->console_history.empty())
-                     text = ui->console_history[size_t(console_history_max
-                                                       - std::max<int>(
-                                                           0, std::min<int>(console_history_max, ui->history_counter++)))]
-                                .c_str();
-                   ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
-                 }
-
-                 else if(data->EventKey == ImGuiKey_DownArrow)
-                 {
-                   if(!ui->console_history.empty())
-                     text = ui->console_history[size_t(console_history_max
-                                                       - std::min<int>(console_history_max,
-                                                                       std::max<int>(0, ui->history_counter--)))]
-                                .c_str();
-                   ui->history_counter = std::max<int>(0, ui->history_counter);
-                 }
-
-                 if(text)
-                 {
-                   data->DeleteChars(0, data->BufTextLen);
-                   data->InsertChars(0, text);
-                 }
-               }
-               break;
-
-               default: break;
-             }
-
-             return 0;
-           },
-           this))
-    {
-      console_content.push_back("> " + std::string(console_input));
-      console_history.emplace_back(console_input);
-      history_counter = 0;
-
-      //do something with text here :
-      if(console_input_consumer_ptr)
-          (*console_input_consumer_ptr)(std::string(console_input));
-
-      //erase text
-      console_input[0] = 0;
-
-      reclaim_focus            = true;
-      scroll_console_to_bottom = true;
-    }
-    ImGui::PopItemWidth();
-    ImGui::PopFont();
-
-    ImGui::SetItemDefaultFocus();
-    if(reclaim_focus) ImGui::SetKeyboardFocusHere(-1);
-    ImGui::End();
-    ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
+    ImGui::SetKeyboardFocusHere(1);
+    forced_keyboard_focus_next = true;
   }
+
+  if(ImGui::InputText(
+    "##Input",
+    console_input,
+    sizeof(console_input),
+    ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory,
+    [](ImGuiInputTextCallbackData* data) -> int {
+      gui* ui = static_cast<gui*>(data->UserData);
+      switch(data->EventFlag)
+      {
+        case ImGuiInputTextFlags_CallbackCompletion:
+          if(ui->scripting_engine)
+          {
+            const std::string current_input = (ui->console_input);
+
+            //Obtain the list of all compleatable words from the scripting engine.
+            auto list_of_words = ui->scripting_engine->global_scope_object_names();
+
+            //Find start of the last word in input buffer
+            auto last_word_start_char = (current_input.find_last_of(" .()[]-+-/<>~=\"'"));
+            std::string last_word;
+            if(last_word_start_char != std::string::npos) { last_word = current_input.substr(1 + last_word_start_char); }
+            else // try to use the whole input?
+            {
+              last_word            = current_input;
+              last_word_start_char = 0;
+            }
+
+            if(!last_word.empty())
+            {
+              //find matching symbols with the string at the beginning
+              std::vector<std::string> matches;
+              auto it = list_of_words.begin();
+              while(it != list_of_words.end())
+              {
+                it = std::find_if(it,
+                                  list_of_words.end(),
+                                  [&](const std::string& str) {
+                                    return str.rfind(last_word, 0) == 0; //this return true if str starts with last_word
+                                  });
+                if(it != list_of_words.end()) matches.emplace_back(*it);
+                //Escape the loop now if we haven't found anything
+                if(it == list_of_words.end()) break;
+                ++it;
+              }
+
+              //if something matches
+              if(!matches.empty())
+                //if there's more than one match
+                if(matches.size() != 1)
+                {
+                  for(const auto& match : matches)
+                  {
+                    ui->push_to_console(match);
+                    ui->scroll_console_to_bottom = true;
+                  }
+                }
+                else
+                {
+                  const auto& match = matches[0];
+                  {
+                    //Delete everything up to the one character after the found delimiter
+                    data->DeleteChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0,
+                                      int(current_input.size()) - last_word_start_char
+                                      - (last_word_start_char > 0 ? 1 : 0));
+                    //Write the match at the end of the string
+                    data->InsertChars(last_word_start_char > 0 ? last_word_start_char + 1 : 0, match.c_str());
+                    ui->scroll_console_to_bottom = true;
+                  }
+                }
+            }
+          }
+          else ui->push_to_console("no completion yet...");
+          break;
+
+        case ImGuiInputTextFlags_CallbackHistory: {
+          const char* text               = nullptr;
+          const auto console_history_max = int(!ui->console_history.empty() ? ui->console_history.size() - 1 : 0);
+
+          if(data->EventKey == ImGuiKey_UpArrow)
+          {
+            if(!ui->console_history.empty())
+              text = ui->console_history[size_t(console_history_max
+                    - std::max<int>(
+                      0, std::min<int>(console_history_max, ui->history_counter++)))]
+                  .c_str();
+            ui->history_counter = std::min<int>(console_history_max, ui->history_counter);
+          }
+
+          else if(data->EventKey == ImGuiKey_DownArrow)
+          {
+            if(!ui->console_history.empty())
+              text = ui->console_history[size_t(console_history_max
+                    - std::min<int>(console_history_max,
+                                    std::max<int>(0, ui->history_counter--)))]
+                  .c_str();
+            ui->history_counter = std::max<int>(0, ui->history_counter);
+          }
+
+          if(text)
+          {
+            data->DeleteChars(0, data->BufTextLen);
+            data->InsertChars(0, text);
+          }
+        }
+        break;
+
+        default: break;
+      }
+
+      return 0;
+    },
+    this))
+  {
+    console_content.push_back("> " + std::string(console_input));
+    console_history.emplace_back(console_input);
+    history_counter = 0;
+
+    //do something with text here :
+    if(console_input_consumer_ptr)
+      (*console_input_consumer_ptr)(std::string(console_input));
+
+    //erase text
+    console_input[0] = 0;
+
+    reclaim_focus            = true;
+    scroll_console_to_bottom = true;
+  }
+  ImGui::PopItemWidth();
+  ImGui::PopFont();
+
+  ImGui::SetItemDefaultFocus();
+  if(reclaim_focus) ImGui::SetKeyboardFocusHere(-1);
+  ImGui::End();
+  ImGui::PopStyleColor();
+  ImGui::PopStyleVar();
 }
 
 void gui::show_console()
 {
   show_console_     = true;
-  last_frame_showed = false;
+  forced_keyboard_focus_next = false;
 }
 
 void gui::hide_console()
 {
   show_console_     = false;
-  last_frame_showed = false;
+  forced_keyboard_focus_next = false;
 }
 
 bool gui::is_console_showed() const { return show_console_; }

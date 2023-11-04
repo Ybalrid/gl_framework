@@ -188,8 +188,6 @@ void application::draw_debug_ui()
       ImGui::Checkbox("Show *all* object's bounding boxes?", &debug_draw_bbox);
       ImGui::Checkbox("Show ImGui demo window ?", &show_demo_window);
       ImGui::Checkbox("Show ImGui style editor ?", &show_style_editor);
-      //ImGui::BeginChild(
-      //	"##debugger window scrollable region", ImVec2(300, 500), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
       ImGui::Separator();
       ImGui::SliderFloat3("sun direction", static_cast<float*>(glm::value_ptr(sun_direction_unormalized)), -1.f, 1.f);
       ImGui::ColorEdit3("Sun color", glm::value_ptr(sun.diffuse));
@@ -563,7 +561,6 @@ void application::render_shadowmap()
 
   //ImGui::Image(ImTextureID(size_t(shadow_depth_map)), ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   const auto size = window.size();
   glViewport(0, 0, size.x, size.y);
@@ -678,7 +675,6 @@ void application::render_frame()
   opengl_debug_group group("application::render_frame()");
       //  sun_direction_unormalized.z = glm::sin(current_time_in_sec * 0.5);
 
-
   //When using VR, the VR system is the master of the framerate!
   if(vr)
   {
@@ -726,6 +722,7 @@ void application::render_frame()
         build_draw_list_from_camera(right_eye);
         render_draw_list(right_eye);
       }
+
       vr->submit_frame_to_vr_system();
       if(vr->must_vflip()) glFrontFace(GL_CW);
     }
@@ -786,7 +783,10 @@ void application::render_frame()
 
   if(debug_draw_physics)
     physics.draw_phy_debug(
-        main_camera->get_view_matrix(), main_camera->get_projection_matrix(), line_drawer_vao, vertex_debug_shader);
+        main_camera->get_view_matrix(), 
+        main_camera->get_projection_matrix(), 
+        line_drawer_vao, 
+        vertex_debug_shader);
 
   //swap buffers
   window.gl_swap();
@@ -942,14 +942,14 @@ void application::setup_scene()
   }
   fps_camera_controller = std::make_unique<camera_controller>(cam_node);
 
-  inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
-  inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
   inputs.register_keypress(SDL_SCANCODE_W, fps_camera_controller->press(camera_controller_command::movement_type::up));
+  inputs.register_keypress(SDL_SCANCODE_A, fps_camera_controller->press(camera_controller_command::movement_type::left));
   inputs.register_keypress(SDL_SCANCODE_S, fps_camera_controller->press(camera_controller_command::movement_type::down));
-  inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
-  inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
+  inputs.register_keypress(SDL_SCANCODE_D, fps_camera_controller->press(camera_controller_command::movement_type::right));
   inputs.register_keyrelease(SDL_SCANCODE_W, fps_camera_controller->release(camera_controller_command::movement_type::up));
+  inputs.register_keyrelease(SDL_SCANCODE_A, fps_camera_controller->release(camera_controller_command::movement_type::left));
   inputs.register_keyrelease(SDL_SCANCODE_S, fps_camera_controller->release(camera_controller_command::movement_type::down));
+  inputs.register_keyrelease(SDL_SCANCODE_D, fps_camera_controller->release(camera_controller_command::movement_type::right));
   inputs.register_mouse_motion_command(fps_camera_controller->mouse_motion());
   inputs.register_keyany(SDL_SCANCODE_LSHIFT, fps_camera_controller->run());
   inputs.register_gamepad_button_down_command(SDL_CONTROLLER_BUTTON_START, 0, &gamepad_button_test_command);
@@ -1010,26 +1010,11 @@ void application::setup_scene()
       node->assign(scene_object((has_right_controller ? right_controller_mesh : vr_controller_mesh)));
     }
   }
-
-  //Create a scene node attached to the root (so local xform == world xform)
-  //physics_test = s.scene_root->push_child(create_node("physics_test_node"));
-  //physics_test->local_xform.set_position(glm::vec3(0, 2, 0));
-
-  ////Load the 3D model of that fish from the Krhonos repo
-  //const auto physics_test_geometry = gltf.load_mesh("/gltf/BarramundiFish.glb");
-  //physics_test->assign(scene_object(physics_test_geometry));
-
-  ////This 20cm box body will represent the fish
-  //test_box = new physics_system::box_proxy(physics_test->local_xform.get_position(), glm::vec3(0.1f), 1);
-  //physics.add_to_world(*test_box);
 }
 
 void application::run_physics()
 {
   physics.step_simulation(last_frame_delta_sec);
-
-  //Move the damn fish's node by hand so we can see that gravity works
-  //physics_test->local_xform = test_box->get_world_transform();
 }
 
 void application::set_clear_color(glm::vec4 color)
@@ -1046,10 +1031,7 @@ void application::gamepad_button_test_command_::execute() { std::cout << "You pr
 void application::splash_frame(const char* image_path)
 {
   sdl::Event e;
-  while(e.poll())
-  {
-    //empty the message queue
-  }
+  while(e.poll()) { }
 
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
@@ -1093,10 +1075,7 @@ void application::splash_frame(const char* image_path)
 
   window.gl_swap();
   glGetError();
-  while(e.poll())
-  {
-    //empty the message queue
-  }
+  while(e.poll()) { }
 }
 
 application* application::instance = nullptr;
@@ -1175,17 +1154,15 @@ application::application(int argc, char** argv, const std::string& application_n
                                            { "/skybox/bottom.jpg" },
                                            { "/skybox/front.jpg" },
                                            { "/skybox/back.jpg" } } };
-    skybox        = std::make_unique<cubemap>(skybox_images);
+    skybox = std::make_unique<cubemap>(skybox_images);
     const float skybox_vertices[] //This is just the 36 vertices of a cube drawn with tris
-        = {
-            -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+        = { -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
             1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
             1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
             1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
             1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,
             1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
-            1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f
-          };
+            1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f };
 
     glGenVertexArrays(1, &skybox_vao);
     glBindVertexArray(skybox_vao);
@@ -1232,11 +1209,11 @@ application::application(int argc, char** argv, const std::string& application_n
     glGenVertexArrays(1, &line_drawer_vao);
     glBindVertexArray(line_drawer_vao);
     glBindBuffer(GL_ARRAY_BUFFER, line_drawer_vbo);
-    float empty_line[2 * 3] {0};
+    float empty_line[2 * 3] { 0 };
     glBufferData(GL_ARRAY_BUFFER, 2 * 3 * sizeof(float), empty_line, GL_STREAM_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)( 3 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
   }
   catch(const std::exception& e)
@@ -1247,14 +1224,13 @@ application::application(int argc, char** argv, const std::string& application_n
 
   try
   {
-    vertex_debug_shader = shader_program_manager::create_shader("/shaders/debug_vertex_color.vert.glsl", "/shaders/debug_vertex_color.frag.glsl");
-
+    vertex_debug_shader
+        = shader_program_manager::create_shader("/shaders/debug_vertex_color.vert.glsl", "/shaders/debug_vertex_color.frag.glsl");
   }
   catch(const std::exception& e)
   {
     sdl::show_message_box(SDL_MESSAGEBOX_WARNING, "Could not initialize the debug shader", e.what());
     vertex_debug_shader = shader_program_manager::invalid_shader;
-
   }
 
   glEnable(GL_DEPTH_TEST);
@@ -1262,7 +1238,8 @@ application::application(int argc, char** argv, const std::string& application_n
   glCullFace(GL_FRONT);
   glFrontFace(GL_CW);
 
-  scripts.evaluate_file("/scripts/test.chai");
+  if(scripts.evaluate_file("/scripts/test.chai")) { std::cout << "test.chai evaluates successfully.\n"; }
+  else { std::cout << "failed to eval script.\n"; }
 
   physics.set_gravity(physics_system::earth_average_gravitational_acceleration_field);
   physics.add_ground_plane();
@@ -1291,10 +1268,7 @@ void application::keyboard_debug_utilities_::toggle_debug_keyboard_command_::exe
     sdl::Mouse::set_relative(true);
     parent_->debug_ui = false;
   }
-  else
-  {
-    parent_->debug_ui = true;
-  }
+  else { parent_->debug_ui = true; }
 }
 
 void application::keyboard_debug_utilities_::toggle_live_code_reload_command_::execute()

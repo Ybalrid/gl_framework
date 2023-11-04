@@ -52,10 +52,10 @@ class script_node_behavior_chaiscript : public script_node_behavior
 //We are using a pimpl idiom here. This limit chaiscript to be compiled only in this compilation unit
 struct script_system::impl
 {
-  impl(const impl&) = delete;
-  impl(impl&&)      = delete;
+  impl(const impl&)            = delete;
+  impl(impl&&)                 = delete;
   impl& operator=(const impl&) = delete;
-  impl& operator=(impl&&) = delete;
+  impl& operator=(impl&&)      = delete;
 
   //The chaiscript interpreter instance is created here
   chaiscript::ChaiScript chai;
@@ -85,8 +85,8 @@ script_system::script_system() : pimpl(new script_system::impl(), [](script_syst
   install_additional_api();
 }
 
-script_system::~script_system()                        = default;
-script_system::script_system(script_system&&) noexcept = default;
+script_system::~script_system()                                   = default;
+script_system::script_system(script_system&&) noexcept            = default;
 script_system& script_system::operator=(script_system&&) noexcept = default;
 
 void script_system::register_imgui_library(gui* ui)
@@ -181,8 +181,6 @@ std::vector<std::string> script_system::global_scope_object_names() const
 
   return output;
 }
-
-
 
 void script_system::install_additional_api()
 {
